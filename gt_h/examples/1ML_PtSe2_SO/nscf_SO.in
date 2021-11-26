@@ -1,0 +1,71 @@
+&CONTROL
+    calculation = 'nscf'
+!    restart_mode= 'from_scratch'
+    nstep       = 200
+    prefix      = '1L'
+    pseudo_dir  = '/usr/QE/.pseudopot'
+    verbosity   = 'high'
+    outdir      = 'tmp'
+!    wf_collect  = .TRUE.
+!    tstress     = .TRUE.
+/
+
+&SYSTEM
+    degauss                   =  1.0e-02
+    ecutwfc                   =  50
+    !nbnd                      = 80
+    ibrav                     = 0
+    nat                       = 6
+    ntyp                      = 2
+    occupations               = 'smearing'
+    smearing                  = 'gaussian'
+    noncolin		      = .true.
+    lspinorb			= .true.	 	
+!    vdw_corr                  = 'DFT-D2'
+/
+
+&ELECTRONS
+!    conv_thr         =  1.00000e-06
+!    diago_thr_init   =  1.00000e-06
+    electron_maxstep = 200
+    mixing_beta      =  5.00000e-01
+    startingpot      = 'atomic'
+    startingwfc      = 'atomic+random'
+/
+
+!K_POINTS {automatic}
+!12 12  1  0 0 0
+
+K_POINTS {crystal}
+8
+-0.25 0.0   0.0 1
+ 0.0  0.0   0.0 1
+ 0.25 0.0   0.0 1
+ 0.5  0.0   0.0 1
+-0.25 0.1   0.0 1
+ 0.0  0.1   0.0 1
+ 0.25 0.1   0.0 1
+ 0.5  0.1   0.0 1
+
+
+
+ATOMIC_SPECIES
+Pt     78.00000  Pt_ONCV_PBE_fr.upf
+Se     34.00000  Se_ONCV_PBE_fr.upf
+
+
+CELL_PARAMETERS {angstrom}
+  3.712000   0.000000   0.000000
+  0.000000   6.4295552  0.000000
+  0.000000   0.000000   23.00000
+
+
+ATOMIC_POSITIONS {angstrom}
+Pt       0.000000000  -0.000125168   10.0000
+Se       0.000000000   2.143094130   11.33920
+Se       1.856000000   1.071515877   8.660800
+Pt       1.856000000   3.214667030   10.00000
+Se       1.856000000   5.357837391   11.33920
+Se       0.000000000   4.286260740   8.600800
+
+

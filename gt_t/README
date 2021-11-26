@@ -1,0 +1,23 @@
+HOW TO COMPILE AND RUN GT_T
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+To compile:
+1. mkdir compiled
+2. modify the Makefile according your system (compiler and library paths)
+3. make
+If everything works fine, you will have the executable gt_t.x
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
+To run a simulation:
+1. ulimit -s unlimited (this is to unlimit the stack memory)
+2. set the enviromental variable KMP_STACKSIZE to a large value (for instance export KMP_STACKSIZE=32G)
+3. modify the input_file in order to describe your system (see examples).
+4. run "nohup gt_t.x < input_file &"  
+
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+ 

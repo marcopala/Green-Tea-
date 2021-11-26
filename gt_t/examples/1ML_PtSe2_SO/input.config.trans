@@ -1,0 +1,97 @@
+
+  &indata_mesh                  
+         Ndeltax=2,                                         
+         Ndeltay=16,                              
+         Ndeltaz=46              /
+  &indata_lenghts                    
+         source_len=20,                           
+         drain_len=20,                          
+         gate_len=51,
+	 spacer=0           /
+  &indata_oxide              
+         tox_top=13,
+         tox_bot=13,              
+         tox_lft=0,
+         tox_rgt=0,
+         to2_top=0,
+         to2_bot=0,
+         to2_lft=0,
+         to2_rgt=0              /
+  &indata_channel                      
+         tsc_w=16,                            
+         tsc_h=20              / 
+  &indata_regions                    
+         num_mat=1,               
+         num_reg=1              /
+         REGIONS
+	 1  91  1
+  &indata_heterojunctions
+  	 num_het=0	/
+  &indata_doping
+         source_dop_val= 5.0d20,                       
+         drain_dop_val = 5.0d20,                       
+         channel_dop_val=0.0d20   /
+  &indata_gate                       
+         top_gate=.true.,
+         bot_gate=.true.,
+         lft_gate=.false.,
+         rgt_gate=.false.      	/
+ &indata_device
+	 chtype='n',
+	 DIEL_SC=4.0d0,
+         DIEL_OX=4.0d0,
+	 DIEL_O2=8.0d0	    /
+  &indata_dimensionality
+	 ncy=10, 
+	 ncz=1,	
+	 nky=2,
+	 nkz=1 		/
+	 SELECTED_KYZ	
+	 0.0 0.0
+	 0.1 0.0
+  &indata_basis  
+         nsolv=4,
+         nsolc=4,
+	 g_spin=1.0d0,
+	 Ecut=50.0 		/
+	 BASIS_INFO	
+         1 156 60 0.0  
+  &indata_cell
+         ac1=3.712000d-8,
+         ac2=6.4295552d-8,
+         ac3=23.00000d-8               /
+  &indata_convergence
+         ERROR_INNER=1.0d-10,
+         MAX_ITER_INNER=50,
+         ERROR_OUTER=1.0d-3,
+         MAX_ITER_OUTER=30,
+         alphapot=1.0d0,	 
+	 Nomp=20                  /
+  &indata_energy
+         Eop=1.0d-3,
+         Nop_g=3,
+         Dop_g=0.0d-27,
+         Dac=0.0d-25,
+         Nsub=3,
+	 SCBA_alpha=1.01d0,
+         SCBA_tolerance=1.0d-8,
+         SCBA_max_iter=1000
+         TEMP=300.0d0,
+         NKT=15,
+	 eta=1.0d-4,             /
+  &indata_stimulus
+	 onlyT=.false.,
+         VGMIN=0.0,
+         VGMAX=0.8,
+         DELTAVG=0.05,
+         VDMIN=0.4,
+         VDMAX=0.4,
+         DELTAVD=0.05,
+	 workgate=-0.9d0             /                      
+  &indata_inout                     
+         outdir='./',
+	 inputdir='../Ham_SO/'    /             
+
+
+
+
