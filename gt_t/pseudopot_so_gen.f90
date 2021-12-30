@@ -474,7 +474,7 @@ form_factor(iyz,im)%F=0.0d0
 
  !$omp do 
    do ix=1,Nrx
-   write(*,*)'ix',ix
+!   write(*,*)'ix',ix
 
    do ip=1,npol
       do jgt=1,Ngt
@@ -485,32 +485,18 @@ form_factor(iyz,im)%F=0.0d0
    end do
    call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,U,NGt*npol,beta,A,NM)
 
-!   do iy=1,NRY
-!      do iz=1,NRZ
-!         do i=1,NM
-!            A(i,iy+(iz-1)*(nry))=A(i,iy+(iz-1)*(nry))*exp(-cmplx(0.0_dp,1.0_dp)*ELCH/HBAR*Hz(ix)*1.0d-4*dx*dy*dble(iy-iz))   !!! bz is in Tesla
-!         end do
-!      end do
-!   end do
-
-   
-!!!
-!!$   do iy=1,nry
-!!$      do iz=1,nrz
-!!$         tmp=0.0d0
-!!$         do i=1,nm!nband_val(im)
-!!$            tmp=tmp+(A(i,iy+(iz-1)*(nry))*dconjg( A(i,iy+(iz-1)*(nry)) ))
-!!$         end do
-!!$         write(1000+ix,*)(iy-1)*dy*1e7,(iz-1)*dz*1e7,dble(tmp)
-!!$               end do
-!!$      write(1000+ix,*)
-!!$   end do
-!!!!
+!!   do iy=1,NRY
+!!      do iz=1,NRZ
+!!         do i=1,NM
+!!            A(i,iy+(iz-1)*(nry))=A(i,iy+(iz-1)*(nry))*exp(-cmplx(0.0_dp,1.0_dp)*ELCH/HBAR*Hz(ix)*1.0d-4*dx*dy*dble(iy-iz))   !!! bz is in Tesla
+!!         end do
+!!      end do
+!!   end do
    
    do i=1,NM
       do j=1,NM    
          form_factor(iyz,im)%F(i,j)=form_factor(iyz,im)%F(i,j)+&
-              sum(dconjg(A(i,:))*A(j,:)*dconjg(A(j,:))*A(i,:))/(nrx*dx*dy*dz) 
+              sum(dconjg(A(i,:))*A(j,:)*dconjg(A(j,:))*A(i,:))/(nrx*dx*dy*dz)
       end do
    end do
 
@@ -610,10 +596,9 @@ end if
 end if
 
 write(*,*)'fine ikyz',iyz
-end do
-!deallocate(Upsi)
-!end if
-end do
+end do ! end do iyz
+
+end do ! end do im
 
 deallocate(U)
 
@@ -706,7 +691,7 @@ do i=imin,imax
 end do
 allocate(b(p+1),c(p+1))
 b=0.0_dp 
-b(3)=1.0_dp !b=[0 0 1 0 0 0 0 0 0 0 0]';
+b(3)=1.0_dp 
 dfatt = 2.0_dp
 
 call invertR(A,p+1,p+1)
@@ -722,36 +707,36 @@ end subroutine coefficienti
 
  
  subroutine MGS(np,nm,Q)
- !!!! MODIFIED GRAM SCHMIDT ALGORITHM
- implicit none
- 
- integer, intent(IN) :: np, nm
- complex(dp), intent(INOUT) ::  Q(np,nm)
- integer :: j,k
- complex(dp), allocatable :: X(:,:),R(:,:)!,v(:)
- 
- allocate(X(np,nm))  
+ !!!! MODIFIED GRAM-SCHMIDT ALGORITHM
 
- X=Q
+   implicit none
  
- allocate(R(nm,nm)) 
- R=0.0_dp
- Q=0.0_dp
- R(1,1)=sqrt(dble(dot_product(X(:,1),X(:,1))))
- Q(:,1)=X(:,1)/R(1,1)
-  
- do k=2,nm
-    do j=1,k-1
-       R(j,k)=dot_product(Q(:,j),X(:,k))
-       X(:,k) =  X(:,k) - R(j,k)*Q(:,j) 
-    end do
-    R(k,k) = sqrt(dble(dot_product(X(:,k),X(:,k))))
-    Q(:,k) = X(:,k)/R(k,k) 
- end do
+   integer, intent(IN) :: np, nm
+   complex(dp), intent(INOUT) ::  Q(np,nm)
+   integer :: j,k
+   complex(dp), allocatable :: X(:,:),R(:,:)
+ 
+   allocate(X(np,nm))  
+   allocate(R(nm,nm)) 
 
-deallocate(R,X)
-
-end subroutine MGS
+   X=Q
+   R=0.0_dp
+   Q=0.0_dp
+   R(1,1) = sqrt(dble(dot_product(X(:,1),X(:,1))))
+   Q(:,1) = X(:,1)/R(1,1)
+   
+   do k=2,nm
+      do j=1,k-1
+         R(j,k) = dot_product(Q(:,j),X(:,k))
+         X(:,k) =  X(:,k) - R(j,k)*Q(:,j) 
+      end do
+      R(k,k) = sqrt(dble(dot_product(X(:,k),X(:,k))))
+      Q(:,k) = X(:,k)/R(k,k) 
+   end do
+   
+   deallocate(R,X)
+   
+ end subroutine MGS
  
 
 END MODULE Pseudopot_so_gen

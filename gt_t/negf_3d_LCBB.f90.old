@@ -39,7 +39,7 @@ REAL(DP)              :: n_bose_g
 
 REAL(DP), ALLOCATABLE :: trans(:,:,:,:),cur(:,:,:,:),ldos(:,:,:,:),zdos(:,:,:,:),ndos(:,:,:,:),pdos(:,:,:,:)
 
-INTEGER :: i, j, l, n, xx, ix, iy, iz, ip, ii, pp, nn, nsol, SCBA_iter,nph
+INTEGER :: i, j, l, n, xx, ix, iy, iz, ip, ii, pp, nn, nsol, SCBA_iter
 
 REAL(DP) :: en, epsilon, emin_local
 INTEGER ::  ref_index, nmax, ee, nee 
@@ -154,14 +154,13 @@ Hi=0.0_dp
 
 allocate(degeneracy(nkyz))
 do iyz=1,NKYZ !!! loop over transverse k-vectors
-   t1=SECNDS(0.0)
-   
+ 
    degeneracy(iyz)=deg_kyz(iyz)*g_spin 
    write(*,*)iyz,'degeneracy',deg_kyz(iyz),degeneracy(iyz)
 
-   if(allocated(kgt))deallocate(kgt)
-   allocate(KGt(4,1*Ngt))
-   KGt(1:4,1:1*Ngt)=KGt_kyz(1:4,1:1*Ngt,iyz)
+if(allocated(kgt))deallocate(kgt)
+allocate(KGt(4,1*Ngt))
+KGt(1:4,1:1*Ngt)=KGt_kyz(1:4,1:1*Ngt,iyz)
 
 
 if(.not. onlyT)then
@@ -174,7 +173,35 @@ do iy=1,NY+1
    end do
 end do
 
-call omp_set_num_threads(Nomp)!(NCX_D) !!! this set the environement varia
+!!!!!
+!!$xx=Ncx_D/2
+!!$ix=1
+!!$allocate(CR(2,2))
+!!$do iy=1,Ny+1  
+!!$   do iz=1,Nz+1  !!!!!            j=iy+(iz-1)*(NY+1)
+!!$      CR(1,1)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3),to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3))
+!!$      CR(2,1)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3+1),to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3))
+!!$      CR(1,2)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3),to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3+1))
+!!$      CR(2,2)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3+1),to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3+1))
+!!$      call surf_interp(iy,iz,CR,tr)
+!!$      write(134,*)(iy-1)*dy+to2_lft*deltay,(iz-1)*dz+to2_bot*deltaz,tr
+!!$   end do
+!!$   write(134,*)
+!!$end do
+!!$deallocate(CR)
+!!$do iy=1,NTOT_Y
+!!$do iz=1,NTOT_Z
+!!$   write(135,*)(iy-1)*deltay,(iz-1)*deltaz, pot3D(ix+(xx-1)*Ndeltax, iy,iz)
+!!$end do
+!!$write(135,*)
+!!$end do
+!!$close(134)
+!!$close(135)
+!!!!
+
+
+call omp_set_num_threads(Nomp)!(NCX_D) !!! this set the environement variable OMP_NUM_THREADS = Ncx_d
+write(*,*)'TRANSFORMING THE POTENTIAL with',Nomp,'threads',', ikyz',iyz
 
 !$omp parallel default(none) private(xx,ix,iy,iz,i,j,n,ip,pt,pot,Gcc,GBB,A,B,CR,t1,t2) &
 !$omp shared(NCX_D,Nrx,Ndeltax,Ndeltay,Ndeltaz,Ny,Nz,NMAX,NM,NGT,npol,iyz,imat,ac,&
@@ -192,7 +219,7 @@ do xx=1,Ncx_D
 do ip=1,npol
    Gcc=0.0_dp   
    do ix=1,Ndeltax
-
+      t1=SECNDS(0.0)
       pt=0.0_dp
       do iy=1,Ny+1  
          do iz=1,Nz+1  
@@ -208,9 +235,12 @@ do ip=1,npol
 
       call zgemm('n','c',Ngt,ngt,(Ny+1)*(Nz+1),alpha,A,ngt,U(1:ngt,1:(Ny+1)*(Nz+1)),ngt,beta,pot,ngt)
 
+    !  !$omp critical
       Gcc(1:ngt,1:Ngt)=Gcc(1:Ngt,1:Ngt)+pot(1:Ngt,1:Ngt)/dble(Ndeltax)
+    !  !$omp end critical
    end do
    
+   t1=SECNDS(0.0)
    !!!! TRANSFORMING INTO THE Bloch states BASIS
 
    allocate(GBB(Ngt,NM(xx)))
@@ -221,7 +251,9 @@ do ip=1,npol
       call ZGEMM('c','n',NM(xx),NM(xx),Ngt,alpha,ULCBB(iyz,imat(xx))%H(1+(n-1)*Ngt+(ip-1)*ngt*nrx:n*Ngt+(ip-1)*ngt*nrx,1:NM(xx)),&
            Ngt,GBB(1:ngt,1:NM(xx)),Ngt,beta,B(1:NM(xx),1:NM(xx)),NM(xx))
 
+   !   !$omp critical
       Hi(1:NM(xx),1:NM(xx),xx,iyz)=Hi(1:NM(xx),1:NM(xx),xx,iyz)+B(1:NM(xx),1:NM(xx))
+   !   !$omp end critical
       
    end do
    deallocate(GBB,B)
@@ -259,7 +291,9 @@ call omp_set_num_threads(NCX_D)
   !$omp do
 do xx=1,ncx_d
    ref_index=nband_val(imat(xx))!!!+off_k_nvb(iyz)
-   
+   write(*,*)xx,'ref_index=',ref_index,ref_index-nsolv+1,ref_index+nsolc
+   write(*,*)xx,'kv_max=',kv_max(iyz,imat(xx)),'kc_min=',kc_min(iyz,imat(xx))
+
    allocate(A(NM(xx),NM(xx)))
    
    kappax=0.0d0
@@ -338,7 +372,7 @@ enddo
   enddo
 
 end do  ! fine loop kyz
-
+!stop
   emax=maxval(emax_yz(:))
   emin=minval(emin_yz(:))
   deallocate(emin_yz,emax_yz)
@@ -427,7 +461,7 @@ if(phonon)then!(dac > 0.0_dp .or. dop_g > 0.0_dp)then
 
         do iyz=1,NKYZ !loop over kyz    
 
-           !$omp parallel default(none)  private(nee,xx,pp,nn,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local) &
+           !$omp parallel default(none)  private(nee,xx,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local) &
            !$omp shared(ee,iyz,Nop,nm,imat,ncx_d,ncy,ncz,nmax,emin,emin_local,Eop,mus,mud,hi,&
            !$omp sigma_lesser_ph_prev,sigma_greater_ph_prev,sigma_r_ph_prev,cur,ldos,ndos,pdos,zdos,chtype,neutr,&
            !$omp degeneracy,w,temp,trans,g_lesser,g_greater,form_factor,flag)
@@ -445,20 +479,21 @@ if(phonon)then!(dac > 0.0_dp .or. dop_g > 0.0_dp)then
              tr,tre,cur(ee,nee,1:Ncx_d-1,iyz))
            
            do xx=1,ncx_d
-!              do pp=1,nm(xx)
+              do pp=1,nm(xx)
                  do nn=1,nm(xx)
-
-                    g_lesser (nee,1:nm(xx),xx)=g_lesser (nee,1:nm(xx),xx)+&
-                         degeneracy(iyz)/dble(NCY*NCZ)*g_lesser_diag_local(nn,nn,xx) * form_factor(iyz,imat(xx))%F(nn,1:nm(xx))
-
-                    g_greater(nee,1:nm(xx),xx)=g_greater(nee,1:nm(xx),xx)+&
-                         degeneracy(iyz)/dble(NCY*NCZ)*g_greater_diag_local(nn,nn,xx)* form_factor(iyz,imat(xx))%F(nn,1:nm(xx))
-
+                 !   !$omp critical
+                    g_lesser (nee,pp,xx)=g_lesser (nee,pp,xx)+&
+                         degeneracy(iyz)/dble(NCY*NCZ)*g_lesser_diag_local(nn,nn,xx) * form_factor(iyz,imat(xx))%F(nn,pp)
+                 !   !$omp end critical
+                 !   !$omp critical
+                    g_greater(nee,pp,xx)=g_greater(nee,pp,xx)+&
+                         degeneracy(iyz)/dble(NCY*NCZ)*g_greater_diag_local(nn,nn,xx)* form_factor(iyz,imat(xx))%F(nn,pp)
+                 !   !$omp end critical
                  end do
-!              end do
+              end do
            end do
 
-        enddo  ! end do nee
+        enddo  ! Nop
         !$omp end do
 
 
@@ -471,14 +506,14 @@ if(phonon)then!(dac > 0.0_dp .or. dop_g > 0.0_dp)then
 end do !End of the loop over kyz
      
 
-Nph=4
+
      !  self-energies calculation
   sigma_lesser_ph=0.0d0
   sigma_greater_ph=0.0d0
   sigma_r_ph=0.0d0
 
-  !$omp parallel default(none)  private(nee,ii,pp,l) shared(Nph,Nop,Nop_g,sigma_lesser_ph,sigma_greater_ph,sigma_r_ph, &
-  !$omp g_lesser,g_greater,Dop_g,n_bose_g,Dac,ncx_d,nm,eop,temp)
+  !$omp parallel default(none)  private(nee,ii,pp) shared(Nop,Nop_g,sigma_lesser_ph,sigma_greater_ph,sigma_r_ph, &
+  !$omp g_lesser,g_greater,Dop_g,n_bose_g,Dac,ncx_d,nm)
 
   !$omp do
   DO nee=1,Nop
@@ -486,20 +521,19 @@ Nph=4
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!Ottico g-type!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     do l=1,Nph
-          n_bose_g=1.0_dp/(EXP((l*Nop_g*Eop)/(BOLTZ*TEMP))-1.0_dp)
-     IF(nee.le.l*Nop_g)THEN
-        IF(nee.le.Nop-l*Nop_g)THEN
+     
+     IF(nee.le.Nop_g)THEN
+        IF(nee.le.Nop-Nop_g)THEN
            !Ottico con E+Eop_g
            
            DO ii=1,Ncx_d
               DO pp=1,NM(ii)  
-
+      !  !$omp atomic      
                  sigma_lesser_ph(nee,pp,ii)=sigma_lesser_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g+1.0d0)*g_lesser(nee+l*Nop_g,pp,ii)
-
+                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+Nop_g,pp,ii)
+      !  !$omp atomic
                  sigma_greater_ph(nee,pp,ii)=sigma_greater_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g)*(g_greater(nee+l*Nop_g,pp,ii))
+                      Dop_g*(n_bose_g)*(g_greater(nee+Nop_g,pp,ii))
               END DO
            END DO
            
@@ -507,19 +541,19 @@ Nph=4
            
      ELSE
         
-        IF(nee.le.Nop-l*Nop_g)THEN
+        IF(nee.le.Nop-Nop_g)THEN
            !Ottico con E+Eop_g e E-Eop_g
            
            DO ii=1,Ncx_d
               DO pp=1,NM(ii)
-      
+      !  !$omp atomic
                  sigma_lesser_ph(nee,pp,ii)= sigma_lesser_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g+1.0d0)*g_lesser(nee+l*Nop_g,pp,ii)+&   
-                      Dop_g*exp(dble(1-l))*(n_bose_g)*g_lesser(nee-l*Nop_g,pp,ii) 
-      
+                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+Nop_g,pp,ii)+&   
+                      Dop_g*(n_bose_g)*g_lesser(nee-Nop_g,pp,ii) 
+      !  !$omp atomic
                  sigma_greater_ph(nee,pp,ii)=sigma_greater_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g)*(g_greater(nee+l*Nop_g,pp,ii))+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g+1.0d0)*(g_greater(nee-l*Nop_g,pp,ii))
+                      Dop_g*(n_bose_g)*(g_greater(nee+Nop_g,pp,ii))+&
+                      Dop_g*(n_bose_g+1.0d0)*(g_greater(nee-Nop_g,pp,ii))
               END DO
            END DO
            
@@ -527,45 +561,44 @@ Nph=4
            !Ottico con E-Eop_g
            DO ii=1,Ncx_d
               DO pp=1,NM(ii)       
-      
+      !  !$omp atomic
                  sigma_lesser_ph(nee,pp,ii)=sigma_lesser_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g)*g_lesser(nee-l*Nop_g,pp,ii)  
-      
+                      Dop_g*(n_bose_g)*g_lesser(nee-Nop_g,pp,ii)  
+      !  !$omp atomic       
                  sigma_greater_ph(nee,pp,ii)=sigma_greater_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g+1.0d0)*(g_greater(nee-l*Nop_g,pp,ii))
+                      Dop_g*(n_bose_g+1.0d0)*(g_greater(nee-Nop_g,pp,ii))
               END DO
            END DO
            
         END IF
      END IF
-  end do !end do l
+
         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!Elastic Acoustic!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!Acustico!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         
      DO ii=1,Ncx_d
         DO pp=1,NM(ii)       
-      
+      !  !$omp atomic
            sigma_lesser_ph (nee,pp,ii)=sigma_lesser_ph (nee,pp,ii)+Dac*g_lesser (nee,pp,ii) 
-      
+      !  !$omp atomic
            sigma_greater_ph(nee,pp,ii)=sigma_greater_ph(nee,pp,ii)+Dac*g_greater(nee,pp,ii) 
-
         END DO
      END DO
 
         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!IMAGINARY PART!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!PARTE Immaginaria!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      
      DO ii=1,Ncx_d
         DO pp=1,NM(ii)
-        
+        !!$omp atomic
            sigma_lesser_ph(nee,pp,ii)=DCMPLX(0.0_dp*dble(sigma_lesser_ph(nee,pp,ii)),abs(aimag(sigma_lesser_ph(nee,pp,ii))))
-        
+        !!$omp atomic
            sigma_greater_ph(nee,pp,ii)=DCMPLX(0.0_dp*dble(sigma_greater_ph(nee,pp,ii)),-abs(aimag(sigma_greater_ph(nee,pp,ii))))
-        
+        !!$omp atomic
            sigma_r_ph(nee,pp,ii)=DCMPLX(0.0_dp,-0.5_dp*(abs(aimag(sigma_greater_ph(nee,pp,ii)))&
                 +abs(aimag(sigma_lesser_ph(nee,pp,ii))))) ! SOLO PARTE IMMAGINARIA
         end do

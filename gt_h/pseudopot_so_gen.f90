@@ -8,9 +8,6 @@ MODULE Pseudopot_so_gen
   SAVE
 
 !!! Variables  
- 
-!!!   1LBloom0
-
 
 CONTAINS
 
@@ -22,18 +19,18 @@ real(dp) :: a_1(3),a_2(3),a_3(3)
 real(dp) :: b_1(3),b_2(3),b_3(3)
 integer(k15), allocatable :: miller(:,:), ind_miller(:,:,:),N_projs(:), N_PW(:), ind_kG(:,:), ityp(:), miller_2D(:,:), ind_miller_2D(:,:),ind_cube(:)
 real(dp), allocatable :: x_at(:), y_at(:), z_at(:), Gvec(:,:), R_at(:,:)
-character(len=99), allocatable :: specie(:)
+character(len=6), allocatable :: specie(:)
 real(dp), allocatable :: k_vec(:,:),coeff(:),kx1(:),kx2(:)
 character(len=80) :: comment
-integer(k15) :: i,j,n,nn,npw,N_bands
-integer :: ikx,l,k,m,nnn,mmm,ivec(3),nrx,nrx0,nry,nrz,n1,n2,n3,m1,igt,jgt,ix,iy,iz,N_spin, nspin
+integer(k15) :: i,j,n,nnpw,npw,N_bands
+integer :: ikx,l,k,m,nn,nnn,mmm,ivec(3),nrx,nrx0,nry,nrz,n1,n2,n3,m1,igt,jgt,ix,iy,iz,N_spin, nspin
 integer(k15) :: N_at, N_typ_at, N_Gvec, N_k_pts, N_beta, max_mill_1,max_mill_2,max_mill_3, min_mill_1,min_mill_2,min_mill_3
 real(dp) :: aux1,aux2,vec(3),t0,a0
 real(dp) :: Ecutoff,ref
 complex(dp) :: tmp
 real(4) :: t1,t2
 real(dp), allocatable :: E(:), KGt(:,:), Gx(:)
-complex(dp), allocatable :: beta_fun(:,:),KS_fun(:,:),Psi_mod(:,:),Psi_mod_1(:,:),A(:,:),B(:,:),C(:,:),Q(:,:),Uh(:,:),U(:,:),Hk(:,:)
+complex(dp), allocatable :: beta_fun(:,:),KS_fun(:,:),Psi_mod(:,:),Psi_mod_1(:,:),A(:,:),B(:,:),C(:,:),D(:,:),Q(:,:),Uh(:,:),U(:,:),betafunc(:,:)
 complex(dp), allocatable :: Deeq(:,:,:),Deeq_so(:,:,:,:),HV(:,:),HLL(:,:),TLL(:,:),HLLL(:,:),TLLL(:,:),HLLLL(:,:),TLLLL(:,:)
 
 complex(dp), allocatable :: Vloc(:,:),HCC(:,:)
@@ -45,7 +42,9 @@ integer(k15), allocatable :: i_h(:,:)
 complex(dp) :: dummy(1,1)
 character(256) :: nome
 
-logical ::en_select
+logical :: en_select
+!LOGICAL :: skip_diag = .false.
+
 
 if(.not. refine ) write(*,*)'WRITING HAMILTONIANS'
 if( refine )  write(*,*)'READING HAMILTONIANS'
@@ -54,87 +53,58 @@ if( refine )  write(*,*)'READING HAMILTONIANS'
 t0=hbareV*hbareV/2.0_dp/m0 !eV cm**2
 a0=ac ! cm
 
-write(*,*)'ryd=',ryd
-write(*,*)'t0=',t0,t0*(2.0_dp*pi/a0)**2
-write(*,*)'a0 (nm)',a0*1d7
-
-call omp_set_num_threads(Nomp) !!! this set the environement variable OMP_NUM_THREADS = Ncx_d
-write(*,*)'TRANSFORMING THE POTENTIAL with',Nomp,'threads'
-
+call omp_set_num_threads(Nomp) !!! this set the environement variable OMP_NUM_THREADS = Nomp
+write(*,*)
+write(*,'(a,I3,a)')' This simulation will use',Nomp,' threads'
+write(*,*)
 open(unit=10,file=TRIM(input_file_DFT),status='unknown')
-read(10,*) comment
+read(10,'(a)') comment
 read(10,*) a_1(:), a_2(:), a_3(:)
-write(*,*)a_1
-write(*,*)a_2
-write(*,*)a_3
-write(*,*)a_1(1),a0
-write(*,*)a_1(1)*bohr
-write(*,*)a_2(2)*bohr
-write(*,*)a_3(3)*bohr
 
+!write(*,*)a_1(1)*bohr
+!write(*,*)a_2(2)*bohr
+!write(*,*)a_3(3)*bohr
 
-!
-read(10,*) comment
+read(10,'(a)') comment
 write(*,*) comment
 read(10,*) b_1(:), b_2(:), b_3(:)
-write(*,*) b_1
-write(*,*) b_2
-write(*,*) b_3
 write(*,*)
-write(*,*)dot_product(a_1,b_1)/(2.0_dp*pi),dot_product(a_1,b_2),dot_product(a_1,b_3)
-write(*,*)dot_product(a_2,b_1),dot_product(a_2,b_2)/(2.0_dp*pi),dot_product(a_2,b_3)
-write(*,*)dot_product(a_3,b_1),dot_product(a_3,b_2),dot_product(a_3,b_3)/(2.0_dp*pi)
-write(*,*)
+!write(*,*)dot_product(a_1,b_1)/(2.0_dp*pi),dot_product(a_1,b_2),dot_product(a_1,b_3)
+!write(*,*)dot_product(a_2,b_1),dot_product(a_2,b_2)/(2.0_dp*pi),dot_product(a_2,b_3)
+!write(*,*)dot_product(a_3,b_1),dot_product(a_3,b_2),dot_product(a_3,b_3)/(2.0_dp*pi)
+!write(*,*)
 
-b_1=b_1/(2.0_dp*pi/a0)/bohr !units of 2pi/a0
-b_2=b_2/(2.0_dp*pi/a0)/bohr !units of 2pi/a0
-b_3=b_3/(2.0_dp*pi/a0)/bohr !units of 2pi/a0
+b_1=b_1/(2.0_dp*pi/a0)/bohr !b1 in units of 2pi/a0
+b_2=b_2/(2.0_dp*pi/a0)/bohr !b2 in units of 2pi/a0
+b_3=b_3/(2.0_dp*pi/a0)/bohr !b3 in units of 2pi/a0
 write(*,*) 'b1', b_1
 write(*,*) 'b2', b_2
 write(*,*) 'b3', b_3
 
 
-read(10,*) comment
+read(10,'(a)') comment
 read(10,*) N_typ_at
-read(10,*) comment
+read(10,'(a)') comment
 read(10,*) N_at
-read(10,*) comment
-!write(*,*) comment
+read(10,'(a)') comment
 allocate(specie(N_at))
 allocate(ityp(N_at))
 allocate(x_at(N_at),y_at(N_at),z_at(N_at))
 allocate(R_at(3,N_at))
 do i=1,N_at
    read(10,*) ityp(i)
-   read(10,*) specie(i), R_at(1,i), R_at(2,i), R_at(3,i)
-   write(*,*) specie(i)
-   write(*,*) R_at(:,i)*bohr
+   read(10,'(a,3e25.15)') specie(i), R_at(:,i)
 end do
-!ityp=0
-!do j=1,N_at
-!      if(specie(j)=='Pt')ityp(j)=1
-!      if(specie(j)=='Se')ityp(j)=2
-!      write(*,*)j,ityp(j)
-!end do
 
-read(10,*) comment
-!write(*,*) comment
+read(10,'(a)') comment
 read(10,*) N_Gvec
-write(*,*) N_Gvec
-read(10,*) comment
+read(10,'(a)') comment
 write(*,*) comment
 
-!stop
-
 allocate(miller(3,N_Gvec))
-do i=1,N_Gvec
-   read(10,*) miller(1,i),miller(2,i),miller(3,i)
-   !write(*,'(4i6)')i, miller(1,i),miller(2,i),miller(3,i)
-end do
+READ(10,'(3i8)') (miller(:,i), i=1,N_Gvec)
 
-write(*,*)'max miller',maxval(miller(1,:)),maxval(miller(2,:)),maxval(miller(3,:))
-write(*,*)'min miller',minval(miller(1,:)),minval(miller(2,:)),minval(miller(3,:))
-!stop
+
 
 allocate(ind_miller(minval(miller(1,:)):maxval(miller(1,:)),&
      minval(miller(2,:)):maxval(miller(2,:)),&
@@ -151,45 +121,53 @@ do i=1,N_Gvec
 end do
 Gvec=dble(nint(Gvec)) !!! Gvec in units of 2pi/a0
 
-write(*,*)'N_Gvec',N_Gvec
-read(10,*) comment
-write(*,*)comment
+write(*,*)'N_Gvec =',N_Gvec
+read(10,'(a)') comment
+write(*,*) comment
 read(10,*) N_spin
-write(*,*) N_spin
-read(10,*) comment
+write(*,*)'NSPIN =',N_spin
 
-IF ( n_spin == 4 ) THEN
-   read(10,*) comment!!!     WRITE(iunpun,'("# magnetic, spin-orbit?")')
-   read(10,*) domag, lspinorb!!!WRITE(iunpun,*) domag, lspinorb
-   NPOL=2
+IF ( n_spin <= 2 ) THEN
+   npol = 1
+   domag=.FALSE.
+   lspinorb=.FALSE.
 ELSE
-   NPOL=1
-END IF
+   READ(10,'(a)') comment
+   READ(10,*) domag, lspinorb
+   npol = 2
+ENDIF
+write(*,*) 'domag =',domag
+write(*,*) 'lspinorb =',lspinorb
+write(*,*) 'NPOL =',npol
 
 allocate(Vloc(N_Gvec,N_spin))
+write(*,*) 'shape vloc',shape(vloc)
+   read(10,'(a)') comment
+   write(*,*) comment
 do is=1,N_spin
-   read(10,*) comment
-   do i=1,N_Gvec
-      read(10,*) aux1, aux2
-      Vloc(i,is)=dcmplx(aux1,aux2)
+   read(10,'(a)') comment
+   write(*,*) comment
+   do i=1,N_Gvec     
+      read(10,'(2e25.15)') Vloc(i,is)!aux1, aux2
+      !Vloc(i,is)=dcmplx(aux1,aux2)
    end do
 end do
 
-
-read(10,*) comment
+read(10,'(a)') comment
 read(10,*) okvan
-if(okvan=='T')then
-write(*,*)'errore'
+if (okvan) then
+write(*,*)'Error, US PP not implemented. The simulation will be stopped!'
 stop
 end if
 
 
-read(10,*) comment
+read(10,'(a)') comment
 allocate(N_projs(N_typ_at))
- read(10,*) N_projs(1:N_typ_at)
-write(*,*)'N_projs=',N_projs
+read(10,*) N_projs(1:N_typ_at)
+write(*,*)'N_projs =',N_projs
 
 nn=maxval(N_projs(:))
+
 IF ( n_spin /= 4 ) THEN
    allocate(hkl(nn,nn))
    allocate(Deeq(nn,nn,N_typ_at))
@@ -199,61 +177,36 @@ ELSE
 END IF
 
 
-read(10,*) comment
+read(10,'(a)') comment
 do j=1,N_typ_at
-   read(10,*) comment
+   read(10,'(a)') comment
    write(*,*)
    read(10,*) i,N_projs(j)
-   write(*,*) i,N_projs(j)
    IF ( n_spin /= 4 ) THEN
       read(10,*)Deeq(1:N_projs(j),1:N_projs(j),j)
-      !read(10,*)hkl(1:N_projs(j),1:N_projs(j))
-      !Deeq(1:N_projs(j),1:N_projs(j),j)=hkl(1:N_projs(j),1:N_projs(j))
    ELSE
       do is=1,N_spin
          read(10,*)comment
-         !read(10,*)hkl(1:N_projs(j),1:N_projs(j))
          read(10,*)Deeq_so(1:N_projs(j),1:N_projs(j),is,j)
-         !Deeq_so(1:N_projs(j),1:N_projs(j),is,j)=hkl(1:N_projs(j),1:N_projs(j))
       end do
    END IF
 end do
-IF ( n_spin /= 4 ) THEN
-   do j=1,N_typ_at
-      write(*,*)
-      write(*,*) 'Deeq',j
-!      write(*,*) Deeq(1:N_projs(j),1:N_projs(j),j)
-   end do
-   write(*,*)
-ELSE
-   do j=1,N_typ_at
-      do is=1,n_spin
-         write(*,*)
-         write(*,*) 'Deeq_so',is,j
-!         write(700+j,*) Deeq_so(1:N_projs(j),1:N_projs(j),is,j)
-!         write(700+j,*)
-      end do
-   end do
-   write(*,*)
-END IF
-!stop
 
 deallocate(hkl)
-read(10,*) comment
+read(10,'(a)') comment
 read(10,*) N_beta
 
-read(10,*) comment
+read(10,'(a)') comment
 write(*,*) comment
 read(10,*) N_k_pts
 write(*,*) N_k_pts
-write(*,*) 'N_k_pts',N_k_pts
+write(*,*) 'N_k_pts =',N_k_pts
 
 allocate(N_PW(N_k_pts))
 
-read(10,*) comment
+read(10,'(a)') comment
 write(*,*) comment
 read(10,*) N_PW(1:N_k_pts)
-write(*,*) 'N_PW',N_PW
 
 nkx=n_k_pts/Nkyz
 if(mod(n_k_pts,Nkyz) /=0)then
@@ -270,9 +223,9 @@ if(N_SPIN == 2) then
    end if
 end if
 
-write(*,*) 'NK points=',N_k_pts
-write(*,*) 'NKx points=',Nkx
-write(*,*) 'NKyz points=',Nkyz
+write(*,*) 'NK points =',N_k_pts
+write(*,*) 'NKx points =',Nkx
+write(*,*) 'NKyz points =',Nkyz
 
 allocate(k_vec(3,N_k_pts))
 allocate(ind_kG(N_Gvec,N_k_pts))
@@ -287,7 +240,7 @@ do n2=-1000,1000!minval(miller(1,:)),maxval(miller(1,:))
    if(t0*vec(1)**2*(2.0_dp*pi/a0)**2 < 4.0_dp*Ecutoff )nrx=nrx+1
 end do
 nrx=(nrx-1)
-write(*,*)'NRX',nrx
+write(*,*)'NRX =',nrx
 !nrx=maxval(miller(1,:))-minval(miller(1,:))+1
 nry=0
 do n2=minval(miller(2,:)),maxval(miller(2,:))
@@ -295,29 +248,26 @@ do n2=minval(miller(2,:)),maxval(miller(2,:))
    if(t0*vec(2)**2*(2.0_dp*pi/a0)**2 <= 4.0_dp*Ecutoff )nry=nry+1
 end do
 !nry=nry-1
-write(*,*)'NRY',nry
+write(*,*)'NRY =',nry
 nrz=0
 do n3=minval(miller(3,:)),maxval(miller(3,:))
    vec(2:3)=n3*b_3(2:3)
    if(t0*vec(3)**2*(2.0_dp*pi/a0)**2 <= 4.0_dp*Ecutoff )nrz=nrz+1
 end do
 !nrz=nrz-1
-write(*,*)'NRZ',nrz
+write(*,*)'NRZ =',nrz
 
 ndx=nrx
 ndy=nry
 ndz=nrz
 
-write(*,*)'Ndx=',ndx
-
-
 ncf=min((nrx/2-2),8)
 allocate(coeff(0:ncf))
-write(*,*)'pio'
+
 call coefficienti (2*ncf,coeff)
-write(*,*)'Discretization order=',ncf
+write(*,*)'Discretization order =',ncf
 do i=0,ncf
-   write(*,*)coeff(i)
+   write(*,*)i,coeff(i)
 end do
 !stop
 
@@ -340,10 +290,7 @@ min_mill_1=minval(miller(1,:))
 min_mill_2=minval(miller(2,:))
 min_mill_3=minval(miller(3,:))
 
-write(*,*)'Ngt=',Ngt,N_Gvec
-!write(*,*)'max miller 1',maxval(miller(1,:))
-!write(*,*)'max miller 2',maxval(miller(2,:))
-!write(*,*)'max miller 3',maxval(miller(3,:))
+write(*,*)'Ngt =',Ngt
 
 allocate(miller_2D(3,Ngt))
 miller_2D=0
@@ -357,7 +304,6 @@ if(t0*dot_product(vec(2:3),vec(2:3))*(2.0_dp*pi/a0)**2 <= Ecutoff) then ! eV
    j=j+1
    miller_2D(2,j)=n2
    miller_2D(3,j)=n3
-   !write(21,*)j,miller_2D(2,j),miller_2D(3,j)
 end if
 
 end do
@@ -375,8 +321,7 @@ if(mod(nrx,nrx0)/=0)then
    write(*,*)'nrx0problem',nrx,nrx0,ecut
    stop
 end if
-write(*,*)'ncell',ncell
-write(*,*)'NRX',nrx,nrx0,'NRY',nry,'NRZ',nrz
+write(*,*)'ncell =',ncell
 write(*,*)'max miller_2D 2',maxval(miller_2D(2,:))
 write(*,*)'max miller_2D 3',maxval(miller_2D(3,:))
 
@@ -390,28 +335,22 @@ do i=-nrx/2,nrx/2-1!maxval(miller(1,:)),maxval(miller(1,:))!-1
       m1 = m1 + 1
    end if
    Gx(m1)=dble(i)*b_1(1)
-   !write(24,*)m1,gx(m1),int(gx(m1)/b_1(1))
 end do
 
 Dx=a_1(1)*bohr/dble(nrx)
 Dy=a_2(2)*bohr/dble(nry)
 Dz=a_3(3)*bohr/dble(nrz)
 
-write(*,*)'a0/Dx',a0/Dx,Dx
-write(*,*)'a0/Dy',a0/Dy,Dy
-write(*,*)'a0/Dz',a0/Dz,Dz
+write(*,*)'a0/Dx =',a0/Dx,Dx
+write(*,*)'a0/Dy =',a0/Dy,Dy
+write(*,*)'a0/Dz =',a0/Dz,Dz
 
     nx=nrx-1
     ny=nry-1
     nz=nrz-1
 
-    write(*,*)'nx+1=',nx+1
-    write(*,*)'ny+1=',ny+1
-    write(*,*)'nz+1=',nz+1
-
     allocate(kc_min(Nkyz))
     allocate(kv_max(Nkyz))
-    write(*,*)'NPOL=',npol
 
     IF ( N_SPIN == 2 ) then
        write(*,*)'MAGNETIZATION ON'
@@ -419,219 +358,66 @@ write(*,*)'a0/Dz',a0/Dz,Dz
     else
        nspin=1
     END IF
-
-do is=1,nspin
+    write(*,*)
+    nnpw=maxval(N_PW(:))
+    write(*,*)'nnpw =',nnpw
+    write(*,*)
+    
+do is=1,nspin ! LOOP OVER THE SPIN INDEX IN CASE NSPIN==2 (collinear magnetic system)   
 do iyz=1,Nkyz  ! Loops over the transverse k vectors
-
-
-   nn=maxval(N_PW(1+(iyz-1)*nkx+(is-1)*nkx*nkyz:iyz*nkx+(is-1)*nkx*nkyz))
-
-   write(*,*)'size of Hk',dble((nn*(nn+1))/2)*dble(npol*npol)*dble(nkx)*16.0d-9
-   write(*,*)'estimated memory',&
-        dble((nn*(nn+1))/2)*dble(npol*npol)*dble(nkx)*16.0d-9+&
-        dble(nkx*nrx*npol)*dble(nkx*nrx*Ngt*npol)*Nomp*16.0d-9
-   if(.not. refine)then
-      allocate(Hk(nn*(nn+1)/2,nkx*npol*npol))
-      Hk=0.0_dp
-      allocate(i_h(nn,nkx))
-      i_h=0
+    
+do ikx=1,Nkx
+   write(*,*)'ikx =',ikx,'is =',is
+   read(10,'(a)') comment
+   if(NSPIN==2) then
+      read(10,*) i
+      write(*,*) 'Collinear magnetic system, current_spin = ', i
+      if (i < 1 .or. i > 2 ) then
+         write(*,*)'Error: mismatch in spin index'
+         stop
+      end if
    end if
-   
-do ikx=1,Nkx !N_k_pts
-write(*,*)'ikx',ikx,'is',is
-   read(10,*) comment
    read(10,*) k_vec(:,ikx+(iyz-1)*nkx)
    k_vec(:,ikx+(iyz-1)*nkx)=k_vec(:,ikx+(iyz-1)*nkx)/bohr/(2.0_dp*pi/a0)
    write(*,*) k_vec(:,ikx+(iyz-1)*nkx)
 
-   read(10,*) comment
-   !write(*,*) comment
+   read(10,'(a)') comment
    read(10,*) N_PW(ikx+(iyz-1)*nkx)
    npw=N_PW(ikx+(iyz-1)*nkx)
-   write(*,*) 'N_PW',N_PW(ikx+(iyz-1)*nkx),npw
-
-   read(10,*) comment
-   !write(*,*) comment
+   
+   read(10,'(a)') comment
+   
    do i=1,npw
       read(10,*)ind_kG(i,ikx+(iyz-1)*nkx)
    end do
-
-   allocate(beta_fun(npw,N_beta))
+   if(.not.(allocated(beta_fun)))then
+      allocate(beta_fun(nnpw,N_beta*nkx))
+   end if
    do l=1,N_beta
-         read(10,*) comment
-         READ(10,'(2e25.15)') beta_fun(1:npw,l)
+      read(10,'(a)') comment
+      READ(10,'(2e25.15)') beta_fun(1:npw,l+(ikx-1)*N_beta)
    end do
 
-if(.not. refine)then
-
-   n=0
-   do i=1,npw
-      i_h(i,ikx)=n
-      n=n+npw-i+1
-   end do
-
-   IF (N_SPIN /= 4)THEN
-      allocate(B(1,1:npw))
-      ikb=0
-      DO nt=1,N_typ_at
-         write(*,*)nt
-         allocate(C(1:npw,N_projs(nt)))
-         DO na=1,n_at
-            IF ( nt == ityp(na) ) THEN
-               t1=SECNDS(0.0)
-
-               call zgemm('n','n',npw,N_projs(nt),N_projs(nt),alpha,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,&
-                    Deeq(1:N_projs(nt),1:N_projs(nt),nt),N_projs(nt),beta,C,npw)
-                    
-               t2=SECNDS(t1)
-               write(*,*)'zg time',t2
-               t1=SECNDS(0.0)
-               !$omp parallel default(none) private(i,B) shared(npw,C,beta_fun,ikb,N_projs,nt,Hk,i_h,ikx)
-               !$omp do
-               do i=1,npw
-                  call zgemm('n','c',1,npw,N_projs(nt),alpha,C(i,1:N_projs(nt)),1,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,beta,B(1,1:npw),1)
-                  Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx) = Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx)+ryd*((B(1,i:npw)))
-               end do
-               !$omp end do
-               !$omp end parallel
-               
-               t2=SECNDS(t1)
-               write(*,*)'hk time',t2
-!               stop
-
-               ikb=ikb+N_projs(nt)
-            end IF
-         end do
-         deallocate(C)
-      end DO
-      deallocate(B)
-   ELSE
-      allocate(B(1,npw))
-      ikb=0
-      DO nt=1,N_typ_at
-         write(*,*)1,nt
-         allocate(C(1:npw,N_projs(nt)))
-         DO na=1,n_at
-            IF ( nt == ityp(na) ) THEN
-               call zgemm('n','n',npw,N_projs(nt),N_projs(nt),alpha,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,&
-                    Deeq_so(1:N_projs(nt),1:N_projs(nt),1,nt),N_projs(nt),beta,C,npw)
-                                    
-               !$omp parallel default(none) private(i,B) shared(npw,C,beta_fun,ikb,N_projs,nt,Hk,i_h,ikx)
-               !$omp do
-               do i=1,npw
-                  call zgemm('n','c',1,npw,N_projs(nt),alpha,C(i,1:N_projs(nt)),1,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,beta,B(1,1:npw),1)
-                  Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx)=Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx)+ryd*((B(1,i:npw)))
-               end do
-               !$omp end do
-               !$omp end parallel
-
-               ikb=ikb+N_projs(nt)
-            end IF
-         end do
-         deallocate(C)
-      end DO
-      write(*,*)'nbeta',ikb,1
-
-      ikb=0
-      DO nt=1,N_typ_at
-         write(*,*)1,nt
-         allocate(C(1:npw,N_projs(nt)))
-         DO na=1,n_at
-            IF ( nt == ityp(na) ) THEN
-               call zgemm('n','n',npw,N_projs(nt),N_projs(nt),alpha,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,&
-                    Deeq_so(1:N_projs(nt),1:N_projs(nt),2,nt),N_projs(nt),beta,C,npw)
-                            
-               !$omp parallel default(none) private(i,B) shared(npw,C,beta_fun,ikb,N_projs,nt,nkx,Hk,i_h,ikx)
-               !$omp do
-               do i=1,npw
-                  call zgemm('n','c',1,npw,N_projs(nt),alpha,C(i,1:N_projs(nt)),1,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,beta,B(1,1:npw),1)
-                  Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx+(2-1)*nkx)=Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx+(2-1)*nkx)+&
-                       ryd*((B(1,i:npw)))
-               end do
-               !$omp end do
-               !$omp end parallel
-
-              ikb=ikb+N_projs(nt)
-            end IF
-         end do
-         deallocate(C)
-      end DO
-      write(*,*)'nbeta',ikb,2
-
-      ikb=0
-      DO nt=1,N_typ_at
-         write(*,*)1,nt
-         allocate(C(1:npw,N_projs(nt)))
-         DO na=1,n_at
-            IF ( nt == ityp(na) ) THEN
-               call zgemm('n','n',npw,N_projs(nt),N_projs(nt),alpha,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,&
-                    Deeq_so(1:N_projs(nt),1:N_projs(nt),3,nt),N_projs(nt),beta,C,npw)
-
-               !$omp parallel default(none) private(i,B) shared(npw,C,beta_fun,ikb,N_projs,nt,nkx,Hk,i_h,ikx)
-               !$omp do
-               do i=1,npw
-                  call zgemm('n','c',1,npw,N_projs(nt),alpha,C(i,1:N_projs(nt)),1,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,beta,B(1,1:npw),1)
-                  Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx+(3-1)*nkx)=Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx+(3-1)*nkx)+&
-                       ryd*((B(1,i:npw)))
-               end do
-               !$omp end do
-               !$omp end parallel
-
-              ikb=ikb+N_projs(nt)
-            end IF
-         end do
-         deallocate(C)
-      end DO
-      write(*,*)'nbeta',ikb,3
-
-      ikb=0
-      DO nt=1,N_typ_at
-         write(*,*)1,nt
-         allocate(C(1:npw,N_projs(nt)))
-         DO na=1,n_at
-            IF ( nt == ityp(na) ) THEN
-               call zgemm('n','n',npw,N_projs(nt),N_projs(nt),alpha,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,&
-                    Deeq_so(1:N_projs(nt),1:N_projs(nt),4,nt),N_projs(nt),beta,C,npw)
-                              
-               !$omp parallel default(none) private(i,B) shared(npw,C,beta_fun,ikb,N_projs,nt,nkx,Hk,i_h,ikx)
-               !$omp do
-               do i=1,npw
-                 call zgemm('n','c',1,npw,N_projs(nt),alpha,C(i,1:N_projs(nt)),1,beta_fun(1:npw,ikb+1:ikb+N_projs(nt)),npw,beta,B(1,1:npw),1)
-                  Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx+(4-1)*nkx)=Hk(i_h(i,ikx)+1:i_h(i,ikx)+npw-i+1,ikx+(4-1)*nkx)+&
-                       ryd*((B(1,i:npw)))
-               end do
-               !$omp end do
-               !$omp end parallel
-
-               ikb=ikb+N_projs(nt)
-            end IF
-         end do
-         deallocate(C)
-      end DO
-      write(*,*)'nbeta',ikb,4
-
-      deallocate(B)
-
-   END IF
-   
-end if
-
-   deallocate(beta_fun)
-
-   read(10,*) comment
+   read(10,'(a)') comment
    read(10,*) N_bands
-   write(*,*) 'N_bands from the DFT simulation',N_bands
+   write(*,'(a, i4, a)')' Using',N_bands,' bands from the DFT simulation'
 
 
  ! KS EIGEN-FUNCTIONS
-   if(.not.(allocated(KS_fun)))&
-   allocate(KS_fun(nn*npol,N_bands*nkx))
+   if(.not.(allocated(KS_fun)))then
+      allocate(KS_fun(nnpw*npol,N_bands*nkx))
+      KS_FUN=0.0_dp
+   end if
    do j=1,N_bands
-      read(10,*) comment
-      read(10,*) comment
-      read(10,'(2e25.15)') KS_fun(1:npw*npol,j+(ikx-1)*N_bands)
+      read(10,'(a)') comment
+      read(10,'(a)') comment
+      IF ( n_spin /= 4 ) THEN
+         read(10,'(2e25.15)') KS_fun(1:npw,j+(ikx-1)*N_bands)
+      ELSE
+         read(10,'(2e25.15)') KS_fun(1:npw,j+(ikx-1)*N_bands)
+         read(10,'(2e25.15)') KS_fun(1+nnpw:npw+nnpw,j+(ikx-1)*N_bands)
+      END IF
    end do
-   write(*,*)'fine kx'
 
 end do
 
@@ -642,7 +428,7 @@ allocate(A(nkx*nrx*Ngt*npol,N_bands*nkx))
 A=0.0_dp
 do ikx=1,nkx
    npw=N_PW(ikx+(iyz-1)*nkx)
-   write(*,*)'ikx',ikx,npw
+   
    allocate(B(Nrx*Ngt,N_bands))
    B=0.0_dp
    do jp=1,npol
@@ -658,7 +444,7 @@ do ikx=1,nkx
             end if
             jgt=ind_miller_2D(miller(2,ind_kG(j,ikx+(iyz-1)*nkx)),miller(3,ind_kG(j,ikx+(iyz-1)*nkx)))
             if(jgt.ne.0)then
-               B(m1+(jgt-1)*nrx,1:N_bands)=KS_fun(j+(jp-1)*npw,1+(ikx-1)*N_bands:ikx*N_bands)
+               B(m1+(jgt-1)*nrx,1:N_bands)=KS_fun(j+(jp-1)*nnpw,1+(ikx-1)*N_bands:ikx*N_bands)
             end if
          end if
       end do
@@ -674,7 +460,7 @@ end do
 
 allocate(Uh(Nkx*nrx,Nkx*nrx))
 do ikx=1,nkx
-   write(*,*)ikx,k_vec(1,ikx+(iyz-1)*nkx)
+   
    do m1=1,nrx
       do n=1,Nkx*nrx
          Uh(m1+(ikx-1)*nrx,n)=&
@@ -694,12 +480,31 @@ do jp=1,npol
 end do
 deallocate(A,B)
 
-
 M=N_bands
 NM=nkx*N_bands
 NMODES=NM
-write(*,*)'NMODES=',NMODES
-!write(*,*)'N_bot=',N_bot,'N_top=',N_top
+write(*,*)'Total number of bands from DFT simulation =',NM
+
+if(.not. refine)then
+write(*,*)
+write(*,'(a,I3,a)')' WARNING: by using Nomp = ',Nomp,' the required memory is approximatively '
+write(*,'(F8.1,a)')     dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
+     dble(Nomp*nkx*nrx*npol)*dble(nkx*nrx*Ngt*npol)*16.0d-9+&  ! HCC
+     dble(Nomp*2*Nrx*npol)*dble(nrx*Ngt*npol)*16.0d-9+&  ! HLL,TLL
+     dble(Nomp*nrx)*dble(nrx*ngt)*16.0d-9+&  ! Q
+     dble(Nomp*2*nkx*nrx)*dble(nkx*nrx)*16.0d-9+&  ! B, U
+     dble(2*nm)*dble(nrx*Ngt*npol)*16.0d-9, ' Gb'
+write(*,*)
+write(*,'(a)')' PLEASE CHECK THAT YOUR SYSTEM CAN MANAGE THIS SIMULATION!'
+write(*,'(a)')' Also note that, by decreasing Nomp, the allocated memory can be reduced up to '
+write(*,'(F8.1,a)')    dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
+     dble(nkx*nrx*npol)*dble(nkx*nrx*Ngt*npol)*16.0d-9+&  ! HCC
+     dble(2*Nrx*npol)*dble(nrx*Ngt*npol)*16.0d-9+&  ! HLL,TLL
+     dble(nrx)*dble(nrx*ngt)*16.0d-9+&  ! Q
+     dble(2*nkx*nrx)*dble(nkx*nrx)*16.0d-9+&  ! B, U
+     dble(2*nm)*dble(nrx*Ngt*npol)*16.0d-9, ' Gb'
+end if
+
 allocate(C(Nrx*Ngt*npol,NM))
 C=0.0_dp
 do ikx=1,nkx
@@ -707,12 +512,8 @@ do ikx=1,nkx
       do jgt=1,Ngt
          C(1+(jgt-1)*nrx+(jp-1)*nrx*ngt:jgt*nrx+(jp-1)*nrx*ngt,1+(ikx-1)*M:ikx*M)=&
               Psi_mod(1+(jgt-1)*nkx*nrx+(jp-1)*nkx*nrx*ngt:nrx+(jgt-1)*nkx*nrx+(jp-1)*nkx*nrx*ngt,1+(ikx-1)*N_bands:ikx*N_bands)
-!!!         do n=1,nrx
-!!!            C(jgt+(n-1)*ngt+(jp-1)*nrx*ngt,1+(ikx-1)*M:ikx*M)=Psi_mod(n+(jgt-1)*nkx*nrx+(jp-1)*nkx*nrx*ngt,n_bot+1+(ikx-1)*N_bands:ikx*N_bands-n_top)
-!!!         end do
       end do
    end do
-   write(*,*)'ikx',ikx,1+(ikx-1)*M,ikx*M
 end do
 
 !!!!!
@@ -772,6 +573,9 @@ allocate(PSI_MOD(Nrx*Ngt*npol,NM))
 Psi_mod=0.0_dp
 
 if(.not. refine)then
+write(*,*)
+t1=SECNDS(0.0)
+write(*,*)'Starting the orthonormalization...'
 ic=1
 call MGS(nrx0*Ngt*npol,NM,C(1:nrx0*ngt*npol,1:NM))
 do jp=1,npol
@@ -791,55 +595,13 @@ do j=1,NM
       end if
    end do
 end do
-write(*,*)'Orthonormalization done!'
+t2=SECNDS(t1)
+write(*,'(a,F7.3,a)')' Orthonormalization done in ',t2,' s'
+write(*,*)
 end if
-!end do
-!deallocate(A)
-
-!!!!
-!!$allocate(U(NGt*npol,(nry)*(nrz)))
-!!$do iy=1,NRY
-!!$   do iz=1,NRZ
-!!$      j=iy+(iz-1)*(NRY)
-!!$      do jp=1,npol
-!!$      U(1+(jp-1)*NGt:jp*NGt,j)=exp( cmplx(0.0_dp,-1.0_dp)*KGt(2,1:NGt)*2.0_dp*pi/a0*dble(iy)*Dy+&
-!!$           cmplx(0.0_dp,-1.0_dp)*KGt(3,1:NGt)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
-!!$   end do
-!!$   end do
-!!$end do
-!!$allocate(A(NM,(nry)*(nrz)))
-!!$allocate(B(NM,ngt*npol))
-!!$do ix=1,nrx 
-!!$write(*,*)'ix',ix
-!!$   do ip=1,npol
-!!$      do jgt=1,Ngt
-!!$         do i=1,NM
-!!$            B(i,jgt+(ip-1)*ngt)=conjg(C(ix+(jgt-1)*NRX+(ip-1)*nrx*ngt,i))
-!!$         end do
-!!$      end do
-!!$   end do
-!!$!!!   B(1:NM,1:ngt)=transpose(conjg(C(1+(ix-1)*NGt:ix*NGt,1:NM)))
-!!$   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,U,NGt*npol,beta,A,NM)
-!!$   do iy=1,nry
-!!$      do iz=1,nrz
-!!$         tmp=0.0d0
-!!$         do i=nband_v,nband_v
-!!$            tmp=tmp+(A(i,iy+(iz-1)*(nry))*dconjg( A(i,iy+(iz-1)*(nry)) ))
-!!$         end do
-!!$         write(1000+ix,*)(iy-1)*dy*1e8,(iz-1)*dz*1e8,dble(tmp)
-!!$      end do
-!!$      write(1000+ix,*)
-!!$   end do
-!!$end do
-!!$deallocate(A,B,U)
-!!$!stop
-!!!
-
-
 
 deallocate(C)
 deallocate(ks_fun)
-
 
 
 if(ncell==1)then
@@ -851,22 +613,27 @@ if(is==1)   open(unit=13,file=TRIM(outdir)//'PPsi_Bloch_up_nkyz_'//TRIM(STRINGA(
 if(is==2)   open(unit=13,file=TRIM(outdir)//'PPsi_Bloch_dw_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat',status='unknown')
 end if
 if(.not. refine)then
+   write(*,*)
+   write(*,*)'Writing PPSI files...'
    do j=1,NM
       do i=1,Nrx*Ngt*npol
          write(13,*)PSI_MOD(i,j)
       end do
    end do
+   write(*,*)'done'
 else if(refine)then
-   write(*,*)'reading PPSI'
+   write(*,*)
+   write(*,*)'reading PPSI files...'
    do j=1,NM
       do i=1,Nrx*Ngt*npol
          read(13,*)PSI_MOD(i,j)
       end do
    end do
+   write(*,*)'done'
 end if
 close(13)
 end if
-
+write(*,*)
 
 if(ncell==2)then
    ic=1 
@@ -887,8 +654,6 @@ if(ncell==2)then
    close(13)
 end if
 
-
-write(*,*)'NM',NM
 
 if(.not. refine)then
    
@@ -912,103 +677,167 @@ do ikx=1,nkx
    end do
 end do
 
+allocate(betafunc(nrx*Ngt,N_beta*nkx))
+betafunc=0.0_dp
+do igt=1,Ngt
    do ikx=1,nkx
-      npw=N_PW(ikx+(iyz-1)*nkx)
-      write(*,*)'ikx',ikx,npw
-      do i=1,npw 
-         DO j=i,npw
-         ivec=miller(:,ind_kG(i,ikx+(iyz-1)*nkx))-miller(:,ind_kG(j,ikx+(iyz-1)*nkx))
-         n=ind_miller(ivec(1),ivec(2),ivec(3))
-!         Hk(i,j,ikx)=Hk(i,j,ikx)+ryd*Vloc(n,1)
-         Hk(i_h(i,ikx)+j-i+1,ikx)=Hk(i_h(i,ikx)+j-i+1,ikx)+ryd*Vloc(n,is)
-         IF (N_SPIN ==4)THEN
-!            Hk(i,j,ikx+(4-1)*nkx)=Hk(i,j,ikx+(4-1)*nkx)+ryd*Vloc(n,1)
-            Hk(i_h(i,ikx)+j-i+1,ikx+(4-1)*nkx)=Hk(i_h(i,ikx)+j-i+1,ikx+(4-1)*nkx)+ryd*Vloc(n,1)
-         END IF
-         if(ivec(1) > 0 )then
-            if(ivec(1)-nrx>=min_mill_1 .and. ivec(1)-nrx<=max_mill_1 )then
-               n=ind_miller(ivec(1)-nrx,ivec(2),ivec(3))
-               if( n /= 0 ) Hk(i_h(i,ikx)+j-i+1,ikx)=Hk(i_h(i,ikx)+j-i+1,ikx)+ryd*Vloc(n,is)!Hk(i,j,ikx)=Hk(i,j,ikx)+ryd*Vloc(n,1)
-               IF (N_SPIN ==4)THEN
-                  if( n /= 0 ) Hk(i_h(i,ikx)+j-i+1,ikx+(4-1)*Nkx)=Hk(i_h(i,ikx)+j-i+1,ikx+(4-1)*Nkx)+&
-                       ryd*Vloc(n,1)!Hk(i,j,ikx+(4-1)*nkx)=Hk(i,j,ikx+(4-1)*nkx)+ryd*Vloc(n,1)
-               END IF
-            end if
+      do n1=1,nrx
+         i=ind_cube(n1+(ikx-1)*nrx+(igt-1)*nrx*nkx)
+         if(i/=0)then
+            betafunc(n1+(igt-1)*nrx,1+(ikx-1)*N_beta:ikx*N_beta)=beta_fun(i,1+(ikx-1)*N_beta:ikx*N_beta)
          end if
-         if(ivec(1) < 0 )then
-            if(ivec(1)+nrx>=min_mill_1 .and. ivec(1)+nrx<=max_mill_1 ) then
-               n=ind_miller(ivec(1)+nrx,ivec(2),ivec(3))
-              if( n /= 0 )  Hk(i_h(i,ikx)+j-i+1,ikx)=Hk(i_h(i,ikx)+j-i+1,ikx)+ryd*Vloc(n,is)!Hk(i,j,ikx)=Hk(i,j,ikx)+ryd*Vloc(n,1)
-              IF (N_SPIN ==4)THEN
-                 if( n /= 0 ) Hk(i_h(i,ikx)+j-i+1,ikx+(4-1)*Nkx)=Hk(i_h(i,ikx)+j-i+1,ikx+(4-1)*Nkx)+ryd*Vloc(n,1)
-                 !Hk(i,j,ikx+(4-1)*nkx)=Hk(i,j,ikx+(4-1)*nkx)+ryd*Vloc(n,1)
-               END IF
-            end if
-         end if
-!         IF ( i > j )  Hk(j,i,ikx) = DCONJG(Hk(i,j,ikx))
-!         IF (N_SPIN ==4)THEN
-!            IF ( i > j )  Hk(j,i,ikx+(4-1)*nkx) = DCONJG(Hk(i,j,ikx+(4-1)*nkx))
-!         END IF
-      END DO
+      end do
    end do
 end do
-
-write(*,*)'size of HCC',dble(nkx*nrx*npol)*dble(nkx*nrx*Ngt*npol)*16.0d-9
-
-write(*,*)'size of auxilary matrices A and C',2*NM*Nomp*dble(nrx*Ngt*npol)*16.0d-9
+deallocate(beta_fun)
 
 allocate(A(nrx*Ngt*npol,NM))
 allocate(C(nrx*Ngt*npol,NM))
-
 A=0.0_dp
 C=0.0_dp
 
-!$omp parallel default(none) private(igt,jgt,ikx,m1,n1,n,nn,i,j,ip,jp,npw,tmp,vec,B,U,HLL,TLL,HCC) &
-!$omp shared(i_h,nkx,nrx,iyz,npol,nm,ngt,ncf,N_spin,N_PW,ind_cube,miller_2D,b_2,b_3,a0,t0,Dx,Dy,Dz,coeff,k_vec,Uh,PSI_MOD,Hk,A,C)
+write(*,*)
+write(*,*)'Transforming H in the reduced basis (this can be long) ...'
+write(*,*)
+t1=SECNDS(0.0)
+!$omp parallel default(none) private(igt,jgt,ikx,ikb,nt,na,m1,n1,n,nn,l,ivec,&
+!$omp i,j,ip,jp,tmp,vec,B,U,HLL,TLL,HCC,Q,D)&
+!$omp shared(nomp,is,ind_kg,nkx,nrx,iyz,npol,nm,ngt,ncf,N_projs,ityp,N_typ_at,N_spin,&
+!$omp N_at,N_beta,ind_cube,ind_miller,miller,miller_2D,min_mill_1,max_mill_1,b_2,b_3,&
+!$omp a0,t0,Dx,Dy,Dz,coeff,k_vec,Uh,betafunc,Deeq,Deeq_so,PSI_MOD,A,C,vloc)
 
+allocate(HCC(nkx*nrx*npol,nkx*nrx*Ngt*npol))
 allocate(B(nkx*nrx,nkx*nrx),U(nkx*nrx,nkx*nrx))
+allocate(Q(nrx,nrx*ngt))
 allocate(HLL(Nrx*npol,nrx*Ngt*npol))
 allocate(TLL(Nrx*npol,nrx*Ngt*npol))
-allocate(HCC(nkx*nrx*npol,nkx*nrx*Ngt*npol))
 
 !$omp do
 do igt=1,Ngt
- HCC=0.0_dp
+HCC=0.0_dp
 
-   do ikx=1,nkx
-      npw=N_PW(ikx+(iyz-1)*nkx)
-      do m1=1,nrx
-         do jgt=1,Ngt
-            j=ind_cube(m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)
-            if(j/=0)then
-               do n1=1,nrx
-                  i=ind_cube(n1+(ikx-1)*nrx+(igt-1)*nrx*nkx)
-                  if(i/=0)then
-!                     HCC(n1+(ikx-1)*nrx,         m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx            ) = Hk(i,j,ikx)
-                     if( i < j )then
-                        HCC(n1+(ikx-1)*nrx,         m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx            ) = Hk(i_h(i,ikx)+j-i+1,ikx)
-                        IF (N_SPIN ==4)THEN
- HCC(n1+(ikx-1)*nrx+nkx*nrx, m1+(ikx-1)*nrx+(jgt-1)*nkx*nrx+nkx*nrx*ngt) = Hk(i_h(i,ikx)+j-i+1,ikx+(4-1)*Nkx)!Hk(i+npw,j+npw,ikx)
- HCC(n1+(ikx-1)*nrx        , m1+(ikx-1)*nrx+(jgt-1)*nkx*nrx+nkx*nrx*ngt) = Hk(i_h(i,ikx)+j-i+1,ikx+(2-1)*Nkx)!Hk(i,j+npw,ikx)
- HCC(n1+(ikx-1)*nrx+nkx*nrx, m1+(ikx-1)*nrx+(jgt-1)*nkx*nrx            ) = Hk(i_h(i,ikx)+j-i+1,ikx+(3-1)*Nkx)!Hk(i+npw,j,ikx)
-                        END IF
-                     else
-                        HCC(n1+(ikx-1)*nrx,         m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx            ) = dconjg(Hk(i_h(j,ikx)+i-j+1,ikx))
-                        IF (N_SPIN ==4)THEN
- HCC(n1+(ikx-1)*nrx+nkx*nrx, m1+(ikx-1)*nrx+(jgt-1)*nkx*nrx+nkx*nrx*ngt) = dconjg(Hk(i_h(j,ikx)+i-j+1,ikx+(4-1)*Nkx))!Hk(i+npw,j+npw,ikx)
- HCC(n1+(ikx-1)*nrx        , m1+(ikx-1)*nrx+(jgt-1)*nkx*nrx+nkx*nrx*ngt) = dconjg(Hk(i_h(j,ikx)+i-j+1,ikx+(3-1)*Nkx))!Hk(i,j+npw,ikx)
- HCC(n1+(ikx-1)*nrx+nkx*nrx, m1+(ikx-1)*nrx+(jgt-1)*nkx*nrx            ) = dconjg(Hk(i_h(j,ikx)+i-j+1,ikx+(2-1)*Nkx))!Hk(i+npw,j,ikx)
-                        END IF
-                     end if
-                  end if
-               end do
-            end if
-         end do
+do ikx=1,nkx
+
+IF (N_SPIN /= 4)THEN
+   ikb=0
+   DO nt=1,N_typ_at
+      allocate(D(nrx,N_projs(nt)))
+      DO na=1,n_at
+         IF ( nt == ityp(na) ) THEN
+            call zgemm('n','n',nrx,N_projs(nt),N_projs(nt),alpha,&
+                 betafunc(1+(igt-1)*nrx:igt*nrx,ikb+1+(ikx-1)*N_beta:ikb+N_projs(nt)+(ikx-1)*N_beta),&
+                 nrx,Deeq(1:N_projs(nt),1:N_projs(nt),nt),N_projs(nt),beta,D,nrx)
+            call zgemm('n','c',nrx,nrx*ngt,N_projs(nt),alpha,D(1:nrx,1:N_projs(nt)),nrx,&
+                 betafunc(1:nrx*ngt,ikb+1+(ikx-1)*N_beta:ikb+N_projs(nt)+(ikx-1)*N_beta),&
+                 nrx*ngt,beta,Q(1:nrx,1:nrx*ngt),nrx)
+            !Hkk(1:nrx,1:nrx*ngt,ikx) = Hkk(1:nrx,1:nrx*ngt,ikx)+ryd*(Q(1:nrx,1:nrx*ngt))
+            do jgt=1,ngt
+               HCC(1+(ikx-1)*nrx:ikx*nrx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=&
+               HCC(1+(ikx-1)*nrx:ikx*nrx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*(Q(1:nrx,1+(jgt-1)*nrx:jgt*nrx))
+            end do
+            ikb=ikb+N_projs(nt)
+         end IF
       end do
+      deallocate(D)
    end do
+ELSE
+do l=1,4
+      ikb=0
+   DO nt=1,N_typ_at
+      allocate(D(nrx,N_projs(nt)))
+      DO na=1,n_at
+         IF ( nt == ityp(na) ) THEN
+            call zgemm('n','n',nrx,N_projs(nt),N_projs(nt),alpha,&
+                 betafunc(1+(igt-1)*nrx:igt*nrx,ikb+1+(ikx-1)*N_beta:ikb+N_projs(nt)+(ikx-1)*N_beta),&
+                 nrx,Deeq_so(1:N_projs(nt),1:N_projs(nt),l,nt),N_projs(nt),beta,D,nrx)
+            call zgemm('n','c',nrx,nrx*ngt,N_projs(nt),alpha,D(1:nrx,1:N_projs(nt)),nrx,&
+                 betafunc(1:nrx*ngt,ikb+1+(ikx-1)*N_beta:ikb+N_projs(nt)+(ikx-1)*N_beta),&
+                 nrx*ngt,beta,Q(1:nrx,1:nrx*ngt),nrx)
+            ! Hkk(1:nrx,1:nrx*ngt,ikx+(l-1)*nkx) = Hkk(1:nrx,1:nrx*ngt,ikx+(l-1)*nkx)+ryd*(Q(1:nrx,1:nrx*ngt))
+            do jgt=1,ngt
+               if(l==1)   HCC(1+(ikx-1)*nrx:ikx*nrx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=&
+                    HCC(1+(ikx-1)*nrx:ikx*nrx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*(Q(1:nrx,1+(jgt-1)*nrx:jgt*nrx))
+               if(l==2)   HCC(1+(ikx-1)*nrx:ikx*nrx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)=&
+                    HCC(1+(ikx-1)*nrx:ikx*nrx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)+ryd*(Q(1:nrx,1+(jgt-1)*nrx:jgt*nrx))
+               if(l==3)   HCC(1+(ikx-1)*nrx+nrx*nkx:ikx*nrx+nrx*nkx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=&
+                    HCC(1+(ikx-1)*nrx+nrx*nkx:ikx*nrx+nrx*nkx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*(Q(1:nrx,1+(jgt-1)*nrx:jgt*nrx))
+               if(l==4)   HCC(1+(ikx-1)*nrx+nrx*nkx:ikx*nrx+nrx*nkx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)=&
+                    HCC(1+(ikx-1)*nrx+nrx*nkx:ikx*nrx+nrx*nkx,1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt:nrx+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)+ryd*(Q(1:nrx,1+(jgt-1)*nrx:jgt*nrx))
+            end do
+            ikb=ikb+N_projs(nt)
+         end IF
+      end do
+      deallocate(D)
+   end do
+end do
+END IF
 
-write(*,*)mod(igt,10)
+do m1=1,nrx
+   do jgt=1,Ngt
+      j=ind_cube(m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)
+      if(j/=0)then
+         do n1=1,nrx
+            i=ind_cube(n1+(ikx-1)*nrx+(igt-1)*nrx*nkx)
+            if(i/=0)then
+               ivec=miller(:,ind_kG(i,ikx+(iyz-1)*nkx))-miller(:,ind_kG(j,ikx+(iyz-1)*nkx))
+               n=ind_miller(ivec(1),ivec(2),ivec(3))
 
+IF (N_SPIN /=4) THEN
+  if( n /= 0 ) Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*Vloc(n,is)
+ELSE
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*(Vloc(n,1)+Vloc(n,4))
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)=&
+        Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)+ryd*(Vloc(n,2)-im*Vloc(n,3))
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=&
+        Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*(Vloc(n,2)+im*Vloc(n,3))
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)=&
+        Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)+ryd*(Vloc(n,1)-Vloc(n,4))
+END IF
+if(ivec(1) > 0 )then
+   if(ivec(1)-nrx>=min_mill_1 .and. ivec(1)-nrx<=max_mill_1 )then
+      n=ind_miller(ivec(1)-nrx,ivec(2),ivec(3))
+IF (N_SPIN /=4) THEN
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*Vloc(n,is)
+ELSE
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*(Vloc(n,1)+Vloc(n,4))
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)=&
+        Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)+ryd*(Vloc(n,2)-im*Vloc(n,3))
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=&
+        Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*(Vloc(n,2)+im*Vloc(n,3))
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)=&
+        Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)+ryd*(Vloc(n,1)-Vloc(n,4))
+END IF
+end if
+end if
+if(ivec(1) < 0 )then
+   if(ivec(1)+nrx>=min_mill_1 .and. ivec(1)+nrx<=max_mill_1 ) then
+      n=ind_miller(ivec(1)+nrx,ivec(2),ivec(3))
+IF (N_SPIN /=4) THEN
+   if( n /= 0 )  Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*Vloc(n,is)
+ELSE
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*(Vloc(n,1)+Vloc(n,4))
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)=&
+        Hcc(n1+(ikx-1)*nrx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)+ryd*(Vloc(n,2)-im*Vloc(n,3))
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)=&
+        Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx)+ryd*(Vloc(n,2)+im*Vloc(n,3))
+   if( n /= 0 ) Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)=&
+        Hcc(n1+(ikx-1)*nrx+nrx*nkx,m1+(ikx-1)*nrx+(jgt-1)*nrx*nkx+nrx*nkx*ngt)+ryd*(Vloc(n,1)-Vloc(n,4))
+END IF
+end if
+end if
+end if
+end do
+end if
+end do
+end do
+
+
+end do
+
+HLL=0.0_dp
+TLL=0.0_dp
+
+   
 do ip=1,npol
    do jp=1,npol
       do jgt=1,Ngt
@@ -1021,8 +850,7 @@ do ip=1,npol
 end do
 
 
-HLL=0.0_dp
-TLL=0.0_dp
+if(igt <= (Ngt/nomp) .and. mod(igt,10)==0) write(*,*)floor(dble(igt-1)/dble(Ngt/nomp)*100), '% done'
 
 do ip=1,npol
 do jp=1,npol
@@ -1102,15 +930,16 @@ end do
 end do
 !$omp end do
 
-deallocate(B,U)
+deallocate(B,U,Q)
 deallocate(HLL,TLL)
 deallocate(HCC)
 !$omp end parallel
 
-deallocate(Hk)
-deallocate(i_h)
 deallocate(ind_cube)
+deallocate(betafunc)
 
+t2=SECNDS(t1)
+write(*,'(a,F7.3,a)')'100% done in ',t2,' s'
 
 allocate(HLLL(NM,NM),TLLL(NM,NM))
 call ZGEMM('c','n',NM,NM,nrx*Ngt*npol,alpha,PSI_MOD,nrx*Ngt*npol,A,nrx*Ngt*npol,beta,HLLL,NM)
@@ -1121,7 +950,7 @@ if(ncell==2)then
 end if
 deallocate(A,C)
 
-
+write(*,*)'Computing the Hamiltonian blocks...'
 
 
 if(iyz==1)then
@@ -1244,7 +1073,7 @@ deallocate(Uh)
 
 n=40
 M=min(12*nband_v/10,NM)
-write(*,*)'M',M
+!write(*,*)'M',M
 allocate(hkl(n+1,M))
 allocate(E(M))
 allocate(A(NM,NM))
@@ -1260,7 +1089,7 @@ deallocate(A)
 deallocate(E)
 do k=1,M!1,min(10,M)
    ii=k!nband_v-min(10,M)/2+k
-   write(*,*)k,ii  
+   !write(*,*)k,ii  
    if(nspin == 1)then
       open(unit=300+k,file=TRIM(outdir)//'Evdisp_'//TRIM(STRINGA(ii))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
    else
@@ -1295,7 +1124,7 @@ nn=nplus*nnn
 !!!!! inizio
 mm1=nf-ni+1
 mmm=nk1*mm1+nn
-write(*,*)'reduced basis size=',nk1*mm1,nn,mmm
+!write(*,*)'reduced basis size=',nk1*mm1,nn,mmm
 allocate(B(NM,mmm))
 allocate(A(NM,NM))
 allocate(E(nf-ni+1))
@@ -1316,12 +1145,12 @@ if(nplus>0)then
            transpose(dconjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*kx2(ikx)*2.0_dp*pi)
       call SUB_DEF_Z(nf+1,nf+nplus,NM,A,E,C)
       B(:,nk1*mm1+1+(ikx-1)*nplus:nk1*mm1+ikx*nplus)=C(:,1:nplus)
-      write(*,*)ikx,nf+1,nf+nplus,nk1*mm1+1+(ikx-1)*nplus,nk1*mm1+ikx*nplus
+      write(*,*)nf+1,nf+nplus,nk1*mm1+1+(ikx-1)*nplus,nk1*mm1+ikx*nplus
    end do
    deallocate(C,E)
 end if
 deallocate(A)
-write(*,*)'reduced basis size=',mmm
+write(*,*)'Reduced basis order =',mmm
 call MGS(NM,mmm,B) !!! Modified Gram-Schmidt to orthonormalize the Psi functions at different kx
 
 !!!! MY CHANGE
@@ -1646,15 +1475,16 @@ deallocate(HLLL,TLLL)
 
 deallocate(HLL,TLL)
 
-
-write(*,*)' FINE Kyz',iyz
-!end if
+write(*,*)
+write(*,*)'END Kyz',iyz
+write(*,*)
+write(*,*)
 end do !end do iyz
 end do ! fine end do is
-read(10,*) comment
+read(10,'(a)') comment
 
 close(10)
-write(*,*)' FINE LETTURA FILE DFT'
+write(*,*)' END of DFT INPUT FILE'
 
 write(*,*)'reduced basis size=',nmodes
 IF(N_SPIN/=4)THEN

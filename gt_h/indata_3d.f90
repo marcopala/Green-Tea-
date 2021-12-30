@@ -137,7 +137,7 @@ MODULE indata
   REAL(DP) :: E_GAP,ref,ref_ev,ref_ec,ac,ac1,ac2,ac3,g_spin,Ecut,omega,zeta,R0_a,R0_c,A0_a,B0_a,A2_a,R2_a,A0_c,B0_c,A2_c,R2_c,mu,eta,delta_gap
   LOGICAL :: refine, gap_corr
 
-  CHARACTER :: domag, lspinorb, okvan
+  LOGICAL :: domag, lspinorb, okvan
 
 !!! ROUGHNESS
   REAL(DP) :: rms
