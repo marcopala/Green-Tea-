@@ -223,7 +223,6 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   CALL map_potential(pot3D,-POT_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
 
   write(*,*)'negf starts'
-
   
   call negf_mixed(POT3D,rho_n,rho_p,ISDcurrent,IDScurrent,IDScurrentb,ss,gg,phonon,transport_iter)
 

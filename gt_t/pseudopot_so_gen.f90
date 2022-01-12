@@ -229,6 +229,7 @@ write(*,*)'a0/Dz',a0/Dz,Dz
 !!stop
 
 do iyz=1,Nkyz  ! Loops over the transverse k vectors
+!if(k_selec(iyz))then
 
 !   nn=maxval(N_PW(1+(iyz-1)*nkx:iyz*nkx))
 !write(*,*)'size of Hk',dble(nn*npol)**2*nkx*16.0d-9   
@@ -243,11 +244,13 @@ write(*,*)'ikyz',iyz
    write(*,*)'iky',iyz-((iyz-1)/nky),ky(iyz-((iyz-1)/nky))    !!!! iyz = iy + (iz-1)*nky
    kz(1+((iyz-1)/nky))=k_vec(3,iyz)
    write(*,*)'ikz',1+((iyz-1)/nky),kz(1+((iyz-1)/nky)) !!!! iyz = iy + (iz-1)*nky
-
+!end if
 end do
 
 
 do iyz=1,Nkyz
+if(k_selec(iyz))then
+   
 do im=1,num_mat
    nm=NM_mat(im)
    write(*,*)iyz,'im',im,nm
@@ -265,7 +268,7 @@ do im=1,num_mat
 
    allocate(TL(iyz,im)%H(NM_mat(im),NM_mat(im)))
    nm=NM_mat(im)
-   write(*,*)iyz,'im',im,nm
+   !write(*,*)iyz,'im',im,nm
    open(unit=13,file=TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
    write(*,*)'reading ',TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
    do i=1,nm
@@ -283,7 +286,7 @@ if(num_mat>=2)then
    do im=1,num_het
       l=l+1
       allocate(TL(iyz,l)%H(NM_mat(mat_1(im)),NM_mat(mat_0(im))))
-      write(*,*)iyz,'ihl',l,NM_mat(mat_1(im)),NM_mat(mat_0(im))
+      !write(*,*)iyz,'ihl',l,NM_mat(mat_1(im)),NM_mat(mat_0(im))
       
       open(unit=13,file=TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nhet_'//TRIM(STRINGA(im))//'.dat',status='unknown')
       if(htype(im) .eq. 'n')then
@@ -342,7 +345,7 @@ if( nband_val(im)>0)     bb_ev(ikx)=E(nband_val(im))
       else
          ii=nband_val((im))+k
       end if
-      write(*,*)k,nband_val((im)),ii
+      !write(*,*)k,nband_val((im)),ii
       open(unit=300+k,file='Edisp_'//TRIM(STRINGA(ii))//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
       do i=1,nm
          do ikx=1,n+1
@@ -395,6 +398,7 @@ end if
 
 KGt_kyz(1:4,1:Ngt,iyz)=KGt(1:4,1:1*Ngt)
 
+end if
 end do ! endo do iyz
 
 
@@ -404,10 +408,11 @@ if(.not. onlyT)then
 do im=1,num_mat
 !if(schottky_type(im)==0)then      
 do iyz=1,Nkyz
+if(k_selec(iyz))then
 
    allocate(ULCBB(iyz,im)%H(Nrx*NGt*npol,NM_mat(im)))
    NM=NM_mat(im)
-   write(*,*)Nrx*NGt*npol,NM_mat(im),Nrx*NGt*npol*NM_mat(im)
+!   write(*,*)Nrx*NGt*npol,NM_mat(im),Nrx*NGt*npol*NM_mat(im)
 
    open(unit=13,file=TRIM(inputdir)//'Psi_Bloch_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
    write(*,*)'reading ',TRIM(inputdir)//'Psi_Bloch_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
@@ -424,7 +429,8 @@ do iyz=1,Nkyz
    close(13)
 
    allocate(form_factor(iyz,im)%F(NM_mat(im),NM_mat(im)))
- 
+
+   end if
 end do
 !end if
 end do
@@ -435,10 +441,11 @@ do im=1,num_mat
 !if(schottky_type(im)==0)then
    
    NM=NM_mat(im)
-   write(*,*)im,NM_mat(im),NM_mat(im)
+   !write(*,*)im,NM_mat(im),NM_mat(im)
 
 
    do iyz=1,Nkyz
+if(k_selec(iyz))then
       
       allocate(U_psi(iyz,im)%K(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))
       
@@ -596,6 +603,7 @@ end if
 end if
 
 write(*,*)'fine ikyz',iyz
+end if
 end do ! end do iyz
 
 end do ! end do im
@@ -656,7 +664,7 @@ deallocate(work)
 deallocate(rwork)
 deallocate(supp)
 deallocate(iwork)
-!write(*,*)'info=',info
+
 if (INFO.ne.0)then
    write(*,*)'SEVERE WARNING: SUB_DEF HAS FAILED. INFO=',INFO
    stop

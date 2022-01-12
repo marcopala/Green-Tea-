@@ -154,6 +154,7 @@ Hi=0.0_dp
 
 allocate(degeneracy(nkyz))
 do iyz=1,NKYZ !!! loop over transverse k-vectors
+   if(k_selec(iyz))then
    t1=SECNDS(0.0)
    
    degeneracy(iyz)=deg_kyz(iyz)*g_spin 
@@ -245,6 +246,7 @@ end if
 t2=SECNDS(t1)
 write(*,*)'potential transformed in ',t2,'s'
 
+end if
 end do !fine loop kyz
 
 nsol=nsolv+nsolc
@@ -252,7 +254,7 @@ allocate(subband(nsol,ncx_d,nkyz))
 allocate(emin_yz(NKYZ),emax_yz(NKYZ))
 
 do iyz=1,NKYZ
-
+if(k_selec(iyz))then
 call omp_set_num_threads(NCX_D) 
 !$omp parallel default(none) private(xx,ref_index,kappax,A) &
 !$omp shared(NCX_D,iyz,NM,imat,ihet,nband_val,Hi,HL,TL,nsolv,nsolc,subband,kc_min,kv_max,chtype)
@@ -337,6 +339,7 @@ enddo
      enddo
   enddo
 
+  end if
 end do  ! fine loop kyz
 
   emax=maxval(emax_yz(:))
@@ -426,7 +429,7 @@ if(phonon)then!(dac > 0.0_dp .or. dop_g > 0.0_dp)then
         g_greater= 0.0d0
 
         do iyz=1,NKYZ !loop over kyz    
-
+if(k_selec(iyz))then
            !$omp parallel default(none)  private(nee,xx,pp,nn,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local) &
            !$omp shared(ee,iyz,Nop,nm,imat,ncx_d,ncy,ncz,nmax,emin,emin_local,Eop,mus,mud,hi,&
            !$omp sigma_lesser_ph_prev,sigma_greater_ph_prev,sigma_r_ph_prev,cur,ldos,ndos,pdos,zdos,chtype,neutr,&
@@ -468,6 +471,7 @@ if(phonon)then!(dac > 0.0_dp .or. dop_g > 0.0_dp)then
 
   !$omp end parallel
 
+  end if
 end do !End of the loop over kyz
      
 
@@ -643,7 +647,7 @@ Nph=4
 end if !fine endif
 
   do iyz=1,NKYZ !loop over kyz
-
+if(k_selec(iyz))then
      !$omp parallel default(none)  private(nee,xx,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local) &
      !$omp shared(ee,iyz,Nop,ncx_d,nkyz,nmax,emin,emin_local,Eop,mus,mud,hi,sigma_lesser_ph_prev,sigma_greater_ph_prev,sigma_r_ph_prev, &
      !$omp cur,ldos,ndos,pdos,zdos,chtype,neutr,degeneracy,w,temp,con,cone,conb,trans,dosn,dosp,flag,phonon)
@@ -733,8 +737,9 @@ end if !fine endif
 
   !$omp end parallel
      
-     write(*,*)ee,con(iyz),cone(iyz)
-     end do !end loop kyz
+  write(*,*)ee,con(iyz),cone(iyz)
+  end if
+  end do !end loop kyz
      
   enddo     ! Nsub
   
@@ -749,7 +754,7 @@ end if !fine endif
   deallocate(flag)
 
   do iyz=1,NKYZ  
-  
+if(k_selec(iyz))then
   ! ==========  End of parallel resolution ===========================
 if(iyz < 10)then
 write(*,*)'Writing files'
@@ -844,7 +849,6 @@ Write(*,*) 'Transforming the carrier density',', ikyz',iyz
     t1=SECNDS(0.0)
 
 call omp_set_num_threads(Nomp)!NCX_D) !!! this set the environement variable OMP_NUM_THREADS = NCX_D
-  write(*,*)'TRANSFORMING THE CHARGE: ','loop for',Nomp,'threads'
   !$omp parallel default(none) private(xx,n,i,j,ix,iy,iz,dens_yz,dens_z) &
   !$omp shared(chtype,iyz,imat,NCX_D,Nrx,Ndeltax,Ndeltay,Ndeltaz,NM,Ny,Nz,ac,Ry,Rz,dosn,dosp, &
   !$omp U_PSI,DX,DY,DZ,charge_n,charge_p,Ney,Nez,NTOT_Y,NTOT_Z,to2_lft,to2_bot)
@@ -906,6 +910,7 @@ end do
 
 end if
 
+end if
 end do ! end do iyz
 
 if(phonon)then
@@ -926,14 +931,14 @@ do nee=1,Nop
      do xx=1,ncx_d
      sumt=0.0_dp
      do iyz=1,nkyz
-        sumt=sumt+ldos(ee,nee,xx,iyz)
+if(k_selec(iyz))   sumt=sumt+ldos(ee,nee,xx,iyz)
      end do
      write(30,*)(xx-1)*ac1*1.0d7,EN,sumt
      end do
      do xx=1,ncx_d-1
      sumt=0.0_dp
      do iyz=1,nkyz
-        sumt=sumt+cur(ee,nee,xx,iyz)
+if(k_selec(iyz))     sumt=sumt+cur(ee,nee,xx,iyz)
      end do        
      write(40,*)(xx-1)*ac1*1.0d7,EN,sumt
      end do
@@ -945,6 +950,7 @@ end do
 do xx=1,ncx_d-1
    ttr=0.0_dp
    do iyz=1,NKYZ
+if(k_selec(iyz))then
       do ee=1,Nsub
          do nee=1,Nop
             emin_local=en_global(ee) !minimo locale
@@ -954,6 +960,7 @@ do xx=1,ncx_d-1
             ! end if
           end do
        end do
+end if
     end do
     write(41,*)(xx-1)*ac1*1.0d7,ttr
  end do
@@ -1056,7 +1063,7 @@ deallocate(NM)
 
   deallocate(con,cone,conb)
 
-!!!stop
+!!!!stop
 END SUBROUTINE negf_mixed
 
 
@@ -1264,12 +1271,12 @@ if(ff == 0)then
 
 !-------------------------
    
-     if( abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))) > 1.0d-3 )then
-        !write(*,*)'possbl pb w en',E
-        !write(*,*) l,abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ) ) )
-        !write(*,*) traccia(dimag( pdens(:,:,l) )),  traccia(dimag(-ndens(:,:,l) )),  2.0_dp*traccia(dimag(-ldos(:,:,l) ))
-!        ff=l  
-!     write(*,*)E,'traccia',traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))
+     if( abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))) > 1.0d-1 )then
+        write(*,*)'possbl pb w en',E
+        write(*,*) l,abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ) ) )
+        write(*,*) traccia(dimag( pdens(:,:,l) )),  traccia(dimag(-ndens(:,:,l) )),  2.0_dp*traccia(dimag(-ldos(:,:,l) ))
+        ff=l  
+        write(*,*)E,'traccia',traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))
 !     tre=0.0_dp
 !     do i=1,nm(l)
 !        tre=tre+dimag( pdens(i,i,l) - ndens(i,i,l) - 2.0_dp*ldos(i,i,l)  )
@@ -1344,12 +1351,12 @@ if(ff == 0)then
      ldos(1:nm(l),1:nm(l),l)=G00(1:nm(l),1:nm(l))
   
      
-     if( abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))) > 1.0d-3 )then
-        !write(*,*)'possbl pb w en',E
-        !write(*,*) l,abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ) ) )
-        !write(*,*) traccia(dimag( pdens(:,:,l) )),  traccia(dimag(-ndens(:,:,l) )),  2.0_dp*traccia(dimag(-ldos(:,:,l) ))
-!        ff=l
-!        write(*,*)E,'traccia',traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))
+     if( abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))) > 1.0d-1 )then
+        write(*,*)'possbl pb w en',E
+        write(*,*) l,abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ) ) )
+        write(*,*) traccia(dimag( pdens(:,:,l) )),  traccia(dimag(-ndens(:,:,l) )),  2.0_dp*traccia(dimag(-ldos(:,:,l) ))
+        ff=l
+        write(*,*)E,'traccia',traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))
 !        tre=0.0_dp
 !        do i=1,nm(l)
 !           tre=tre+dimag( pdens(i,i,l) - ndens(i,i,l) - 2.0_dp*ldos(i,i,l)  )

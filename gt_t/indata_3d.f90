@@ -121,6 +121,9 @@ MODULE indata
   REAL(DP), ALLOCATABLE :: kx(:), kx_d(:), ky(:), kz(:), Kyz(:),  KGt(:,:), hkl(:,:), hklv(:,:), G(:,:), Gv(:,:), k_vec(:,:)
   REAL(DP), ALLOCATABLE :: deg_ky(:), deg_kz(:), deg_kyz(:), kv_max(:,:), kc_min(:,:), KGt_kyz(:,:,:) ,off_set(:)
 
+  LOGICAL, ALLOCATABLE :: k_selec(:)
+
+  
   type H_blocks
      complex(dp), allocatable :: H(:,:)
   end type H_blocks
@@ -467,11 +470,12 @@ CONTAINS
     write(*,*)'Kkyz',Nkyz
     allocate(k_vec(3,Nkyz))
     allocate(off_k_nvb(Nkyz))
+    allocate(k_selec(NKyz))
     off_k_nvb=0
     do iz=1,nkz
        do iy=1,nky
           l = iy + (iz-1)*nky
-          read(*,*) k_vec(2,l), k_vec(3,l)!!!!!, off_k_nvb(l)
+          read(*,*) k_vec(2,l), k_vec(3,l), k_selec(l)  !!!!!, off_k_nvb(l)
        end do
     end do
     READ(*,NML=indata_basis)
@@ -519,23 +523,23 @@ CONTAINS
     READ(*,NML=indata_stimulus)
     READ(*,NML=indata_inout)
 
-    write(*,*) 'Channel width  (no ox)=',tsc_h*deltaz
-    write(*,*) 'Channel height (no ox)=',tsc_w*deltay 
+    write(*,*) 'Channel height  (no ox)=',tsc_h*deltaz
+    write(*,*) 'Channel width (no ox)=',tsc_w*deltay 
     write(*,*) 'Channel length =',gate_len*deltax
      
-    write(*,*) 'Drain width  (no ox)=',tsc_h*deltaz
-    write(*,*) 'Drain height (no ox)=',tsc_w*deltay 
+    write(*,*) 'Drain height  (no ox)=',tsc_h*deltaz
+    write(*,*) 'Drain width (no ox)=',tsc_w*deltay 
     write(*,*) 'Drain lenght  =',drain_len*deltax    
  
-    write(*,*) 'Source width  (no ox)=',tsc_h*deltaz
-    write(*,*) 'Source height (no ox)=',tsc_w*deltay 
+    write(*,*) 'Source height  (no ox)=',tsc_h*deltaz
+    write(*,*) 'Source width (no ox)=',tsc_w*deltay 
     write(*,*) 'Source length =',source_len*deltax    
 
     write(*,*) 'Spacer length =',spacer*deltax
 
     write(*,*) 'Total length =', (gate_len+source_len+drain_len+2*spacer)*Ndeltax*deltax 
-    write(*,*) 'Total height =', ac2+(to2_top+to2_bot)*deltaz
-    write(*,*) 'Total widthh =', ac3+(to2_lft+to2_rgt)*deltay
+    write(*,*) 'Total height =', ac3+(to2_top+to2_bot)*deltaz
+    write(*,*) 'Total width =', ac2+(to2_lft+to2_rgt)*deltay
 
     write(*,*) 'Damping factor= ', alphapot
     write(*,*) 'NKT', NKT

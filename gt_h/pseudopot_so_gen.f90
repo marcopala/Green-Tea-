@@ -487,6 +487,8 @@ write(*,*)'Total number of bands from DFT simulation =',NM
 
 if(.not. refine)then
 write(*,*)
+write(*,*)'*************************************************************'
+write(*,*)'*************************************************************'
 write(*,'(a,I3,a)')' WARNING: by using Nomp = ',Nomp,' the required memory is approximatively '
 write(*,'(F8.1,a)')     dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(Nomp*nkx*nrx*npol)*dble(nkx*nrx*Ngt*npol)*16.0d-9+&  ! HCC
@@ -494,7 +496,11 @@ write(*,'(F8.1,a)')     dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(Nomp*nrx)*dble(nrx*ngt)*16.0d-9+&  ! Q
      dble(Nomp*2*nkx*nrx)*dble(nkx*nrx)*16.0d-9+&  ! B, U
      dble(2*nm)*dble(nrx*Ngt*npol)*16.0d-9, ' Gb'
+write(*,*)'*************************************************************'
+write(*,*)'*************************************************************'
 write(*,*)
+write(*,*)'*************************************************************'
+write(*,*)'*************************************************************'
 write(*,'(a)')' PLEASE CHECK THAT YOUR SYSTEM CAN MANAGE THIS SIMULATION!'
 write(*,'(a)')' Also note that, by decreasing Nomp, the allocated memory can be reduced up to '
 write(*,'(F8.1,a)')    dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
@@ -503,6 +509,8 @@ write(*,'(F8.1,a)')    dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(nrx)*dble(nrx*ngt)*16.0d-9+&  ! Q
      dble(2*nkx*nrx)*dble(nkx*nrx)*16.0d-9+&  ! B, U
      dble(2*nm)*dble(nrx*Ngt*npol)*16.0d-9, ' Gb'
+write(*,*)'*************************************************************'
+write(*,*)'*************************************************************'
 end if
 
 allocate(C(Nrx*Ngt*npol,NM))
