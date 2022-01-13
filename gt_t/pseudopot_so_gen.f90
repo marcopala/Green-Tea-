@@ -68,13 +68,11 @@ write(*,*) 'b3', b_3
 
 
 
-if(g_spin==1) npol = 2
-if(g_spin==2) npol = 1
+!!if(g_spin==1) npol = 2
+!!if(g_spin==2) npol = 1
 write(*,*) 'NPOL =',NPOL
 
-
 write(*,*) 'NKyz points=',Nkyz
-
 
 Ecutoff=ryd*Ecut!/3.0_dp
 

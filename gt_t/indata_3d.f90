@@ -247,6 +247,7 @@ MODULE indata
   NAMELIST /indata_basis/                      &
        &  nsolv,                               &
        &  nsolc,                               &
+       &  npol,                                &
        &  g_spin,                              &
        &  Ecut
   NAMELIST /indata_cell/                       &
