@@ -487,8 +487,8 @@ write(*,*)'Total number of bands from DFT simulation =',NM
 
 if(.not. refine)then
 write(*,*)
-write(*,*)'*************************************************************'
-write(*,*)'*************************************************************'
+write(*,*)'************************************************************************************'
+write(*,*)'************************************************************************************'
 write(*,'(a,I3,a)')' WARNING: by using Nomp = ',Nomp,' the required memory is approximatively '
 write(*,'(F8.1,a)')     dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(Nomp*nkx*nrx*npol)*dble(nkx*nrx*Ngt*npol)*16.0d-9+&  ! HCC
@@ -496,12 +496,12 @@ write(*,'(F8.1,a)')     dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(Nomp*nrx)*dble(nrx*ngt)*16.0d-9+&  ! Q
      dble(Nomp*2*nkx*nrx)*dble(nkx*nrx)*16.0d-9+&  ! B, U
      dble(2*nm)*dble(nrx*Ngt*npol)*16.0d-9, ' Gb'
-write(*,*)'*************************************************************'
-write(*,*)'*************************************************************'
+write(*,*)'************************************************************************************'
+write(*,*)'************************************************************************************'
 write(*,*)
-write(*,*)'*************************************************************'
-write(*,*)'*************************************************************'
-write(*,'(a)')' PLEASE CHECK THAT YOUR SYSTEM CAN MANAGE THIS SIMULATION!'
+write(*,*)'************************************************************************************'
+write(*,*)'************************************************************************************'
+write(*,'(a)')' PLEASE CHECK THAT YOUR SYSTEM CAN HANDLE THIS SIMULATION!'
 write(*,'(a)')' Also note that, by decreasing Nomp, the allocated memory can be reduced up to '
 write(*,'(F8.1,a)')    dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(nkx*nrx*npol)*dble(nkx*nrx*Ngt*npol)*16.0d-9+&  ! HCC
@@ -509,8 +509,8 @@ write(*,'(F8.1,a)')    dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(nrx)*dble(nrx*ngt)*16.0d-9+&  ! Q
      dble(2*nkx*nrx)*dble(nkx*nrx)*16.0d-9+&  ! B, U
      dble(2*nm)*dble(nrx*Ngt*npol)*16.0d-9, ' Gb'
-write(*,*)'*************************************************************'
-write(*,*)'*************************************************************'
+write(*,*)'************************************************************************************'
+write(*,*)'************************************************************************************'
 end if
 
 allocate(C(Nrx*Ngt*npol,NM))
@@ -986,7 +986,7 @@ if(gap_corr)then
       stop
    end if
    
-   n=1000
+   n=5000
    allocate(A(NM,NM),B(NM,NM),C(NM,NM))
    allocate(E(NM))
    allocate(TLL(NM,NM),HLL(NM,NM))
@@ -999,19 +999,14 @@ if(gap_corr)then
            transpose(dconjg(TLLL))*exp(dcmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
       call SUB_DEF_Z(1,NM,NM,A,E,B)
       
-      A=HLLL+TLLL*exp(dcmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
-           transpose(dconjg(TLLL))*exp(dcmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-      call ZGEMM('c','n',NM,NM,NM,alpha,B,NM,A,NM,beta,C,NM)
-      call ZGEMM('n','n',NM,NM,NM,alpha,C,NM,B,NM,beta,A,NM)
+!      A=HLLL+TLLL*exp(dcmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
+!           transpose(dconjg(TLLL))*exp(dcmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+!      call ZGEMM('c','n',NM,NM,NM,alpha,B,NM,A,NM,beta,C,NM)
+!      call ZGEMM('n','n',NM,NM,NM,alpha,C,NM,B,NM,beta,A,NM)
 
-      forall (i = nband_v+1:NM) A(i,i)=A(i,i)+delta_gap
-!      A=0.0_dp
-!      do k=1,nband_v
-!         A(k,k)=E(k)
-!      end do
-!      do k=nband_v+1,NM
-!         A(k,k)=E(k)+delta_gap
-      !      end do
+      A=0.0_dp
+      forall ( i = 1 : nband_v ) A(i,i)=E(i)
+      forall ( i = nband_v+1 : NM ) A(i,i)=E(i)+delta_gap
       
       call ZGEMM('n','n',NM,NM,NM,alpha,B,NM,A,NM,beta,C,NM)
       call ZGEMM('n','c',NM,NM,NM,alpha,C,NM,B,NM,beta,A,NM)
@@ -1020,7 +1015,7 @@ if(gap_corr)then
       TLL=TLL+A/dble(n+1)*exp(dcmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
       
    end do
-   
+     
    HLLL=HLL
    TLLL=TLL
 
