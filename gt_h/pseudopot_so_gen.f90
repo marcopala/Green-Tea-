@@ -22,8 +22,8 @@ real(dp), allocatable :: x_at(:), y_at(:), z_at(:), Gvec(:,:), R_at(:,:)
 character(len=6), allocatable :: specie(:)
 real(dp), allocatable :: k_vec(:,:),coeff(:),kx1(:),kx2(:)
 character(len=80) :: comment
-integer(k15) :: i,j,n,nnpw,npw,N_bands
-integer :: ikx,l,k,m,nn,nnn,mmm,ivec(3),nrx,nrx0,nry,nrz,n1,n2,n3,m1,igt,jgt,ix,iy,iz,N_spin, nspin
+integer(k15) :: i,j,n,nnpw,npw
+integer :: ikx,l,k,m,nn,nnn,mmm,ivec(3),nrx,nrx0,nry,nrz,n1,n2,n3,m1,igt,jgt,ix,iy,iz,N_spin,n_bands, nspin
 integer(k15) :: N_at, N_typ_at, N_Gvec, N_k_pts, N_beta, max_mill_1,max_mill_2,max_mill_3, min_mill_1,min_mill_2,min_mill_3
 real(dp) :: aux1,aux2,vec(3),t0,a0
 real(dp) :: Ecutoff,ref
@@ -369,13 +369,14 @@ do iyz=1,Nkyz  ! Loops over the transverse k vectors
 do ikx=1,Nkx
    write(*,*)'ikx =',ikx,'is =',is
    read(10,'(a)') comment
+   write(*,'(a)') comment
    if(NSPIN==2) then
-      read(10,*) i
-      write(*,*) 'Collinear magnetic system, current_spin = ', i
-      if (i < 1 .or. i > 2 ) then
-         write(*,*)'Error: mismatch in spin index'
-         stop
-      end if
+!      read(10,*) i
+      write(*,*) 'Collinear magnetic system, current_spin = '
+ !     if (i < 1 .or. i > 2 ) then
+ !        write(*,*)'Error: mismatch in spin index'
+ !        stop
+ !     end if
    end if
    read(10,*) k_vec(:,ikx+(iyz-1)*nkx)
    k_vec(:,ikx+(iyz-1)*nkx)=k_vec(:,ikx+(iyz-1)*nkx)/bohr/(2.0_dp*pi/a0)
@@ -487,8 +488,8 @@ write(*,*)'Total number of bands from DFT simulation =',NM
 
 if(.not. refine)then
 write(*,*)
-write(*,*)'************************************************************************************'
-write(*,*)'************************************************************************************'
+write(*,*)'*******************************************************************************'
+write(*,*)'*******************************************************************************'
 write(*,'(a,I3,a)')' WARNING: by using Nomp = ',Nomp,' the required memory is approximatively '
 write(*,'(F8.1,a)')     dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(Nomp*nkx*nrx*npol)*dble(nkx*nrx*Ngt*npol)*16.0d-9+&  ! HCC
@@ -496,11 +497,11 @@ write(*,'(F8.1,a)')     dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(Nomp*nrx)*dble(nrx*ngt)*16.0d-9+&  ! Q
      dble(Nomp*2*nkx*nrx)*dble(nkx*nrx)*16.0d-9+&  ! B, U
      dble(2*nm)*dble(nrx*Ngt*npol)*16.0d-9, ' Gb'
-write(*,*)'************************************************************************************'
-write(*,*)'************************************************************************************'
+write(*,*)'*******************************************************************************'
+write(*,*)'*******************************************************************************'
 write(*,*)
-write(*,*)'************************************************************************************'
-write(*,*)'************************************************************************************'
+write(*,*)'*******************************************************************************'
+write(*,*)'*******************************************************************************'
 write(*,'(a)')' PLEASE CHECK THAT YOUR SYSTEM CAN HANDLE THIS SIMULATION!'
 write(*,'(a)')' Also note that, by decreasing Nomp, the allocated memory can be reduced up to '
 write(*,'(F8.1,a)')    dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
@@ -509,8 +510,8 @@ write(*,'(F8.1,a)')    dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(nrx)*dble(nrx*ngt)*16.0d-9+&  ! Q
      dble(2*nkx*nrx)*dble(nkx*nrx)*16.0d-9+&  ! B, U
      dble(2*nm)*dble(nrx*Ngt*npol)*16.0d-9, ' Gb'
-write(*,*)'************************************************************************************'
-write(*,*)'************************************************************************************'
+write(*,*)'*******************************************************************************'
+write(*,*)'*******************************************************************************'
 end if
 
 allocate(C(Nrx*Ngt*npol,NM))
@@ -947,7 +948,7 @@ deallocate(ind_cube)
 deallocate(betafunc)
 
 t2=SECNDS(t1)
-write(*,'(a,F7.3,a)')'100% done in ',t2,' s'
+write(*,'(a,F8.4,a)')'100% done in ',t2,' s'
 
 allocate(HLLL(NM,NM),TLLL(NM,NM))
 call ZGEMM('c','n',NM,NM,nrx*Ngt*npol,alpha,PSI_MOD,nrx*Ngt*npol,A,nrx*Ngt*npol,beta,HLLL,NM)
@@ -979,53 +980,6 @@ end if
 forall (i = 1:NM) HLLL(i,i)=HLLL(i,i)-ref !!! THIS sets the zero energy point at the top of EV(Gamma)
 
 
-if(gap_corr)then
-
-   if(nm <= nband_v)then
-      write(*,*)'errore in gap_corr'
-      stop
-   end if
-   
-   n=5000
-   allocate(A(NM,NM),B(NM,NM),C(NM,NM))
-   allocate(E(NM))
-   allocate(TLL(NM,NM),HLL(NM,NM))
-   HLL=0.0_dp
-   TLL=0.0_dp
-
-   do ikx=1,n+1
-      write(*,*)'ikx',ikx,dble(ikx-1)/dble(n)*2.0_dp*pi
-      A=HLLL+TLLL*exp(dcmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
-           transpose(dconjg(TLLL))*exp(dcmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-      call SUB_DEF_Z(1,NM,NM,A,E,B)
-      
-!      A=HLLL+TLLL*exp(dcmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
-!           transpose(dconjg(TLLL))*exp(dcmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-!      call ZGEMM('c','n',NM,NM,NM,alpha,B,NM,A,NM,beta,C,NM)
-!      call ZGEMM('n','n',NM,NM,NM,alpha,C,NM,B,NM,beta,A,NM)
-
-      A=0.0_dp
-      forall ( i = 1 : nband_v ) A(i,i)=E(i)
-      forall ( i = nband_v+1 : NM ) A(i,i)=E(i)+delta_gap
-      
-      call ZGEMM('n','n',NM,NM,NM,alpha,B,NM,A,NM,beta,C,NM)
-      call ZGEMM('n','c',NM,NM,NM,alpha,C,NM,B,NM,beta,A,NM)
-      
-      HLL=HLL+A/dble(n+1)
-      TLL=TLL+A/dble(n+1)*exp(dcmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-      
-   end do
-     
-   HLLL=HLL
-   TLLL=TLL
-
-   deallocate(TLL,HLL)
-   deallocate(A,B,C)
-   deallocate(E)  
-   
-end if
-
-
 end if
 if(refine)then
    allocate(HLLL(NM,NM),TLLL(NM,NM))
@@ -1050,9 +1004,7 @@ end if
 close(13)
 
 
-!allocate(A(nm,nm))
-!A=transpose(dconjg(TLLL))
-!ic=1
+
 open(unit=13,file=TRIM(outdir)//'HH01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat',status='unknown')
 if(.not. refine)then
 do i=1,nm
@@ -1068,15 +1020,108 @@ do i=1,nm
 end do
 end if
 close(13)
-!deallocate(A)
-
 
 deallocate(Uh)
 
+if(gap_corr)then
+
+   if(nm <= nband_v)then
+      write(*,*)'errore in gap_corr'
+      stop
+   end if
+   
+   n=40000
+   allocate(A(NM,NM),B(NM,NM),C(NM,NM))
+   allocate(E(NM))
+   allocate(TLL(NM,NM),HLL(NM,NM))
+   HLL=0.0_dp
+   TLL=0.0_dp
+
+   do ikx=1,n+1
+      
+      if(mod(ikx-1,1000)==0) write(*,*)'ikx',ikx-1,dble(ikx-1)/dble(n)*2.0_dp*pi
+      A=HLLL+TLLL*exp(im*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
+           transpose(dconjg(TLLL))*exp(-im*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+      call SUB_DEF_Z(1,NM,NM,A,E,B)
+
+      A=0.0_dp
+      forall ( i = 1 : nband_v ) A(i,i)=E(i)
+      forall ( i = nband_v+1:nm) A(i,i)=E(i)+delta_gap
+      
+   call ZGEMM('n','n',NM,NM,NM,alpha,B,NM,A,NM,beta,C,NM)
+   call ZGEMM('n','c',NM,NM,NM,alpha,C,NM,B,NM,beta,A,NM)
+   
+      HLL=HLL+A/dble(n+1)
+      TLL=TLL+A/dble(n+1)*exp(-im*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+      
+   end do
+
+   
+!!!! RECONSTRUCTING THE BLOCH FUNCTIONS BASIS
+!!$   n=40
+!!$   M=min(12*nband_v/10,NM)
+!!$   allocate(hkl(n+1,M))
+!!$   do ikx=1,n+1
+!!$      A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
+!!$           transpose(dconjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+!!$      call SUB_DEF_Z0(1,M,NM,A,E(1:M))
+!!$      do k=1,M
+!!$         hkl(ikx,k)=e(k)
+!!$      end do
+!!$   end do
+!!$do k=1,M
+!!$   ii=k
+!!$   if(nspin == 1)then
+!!$      open(unit=300+k,file=TRIM(outdir)//'EEvdisp_'//TRIM(STRINGA(ii))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
+!!$   else
+!!$      if(is==1)open(unit=300+k,file=TRIM(outdir)//'EEvdisp_up_'//TRIM(STRINGA(ii))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
+!!$      if(is==2)open(unit=300+k,file=TRIM(outdir)//'EEvdisp_dw_'//TRIM(STRINGA(ii))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
+!!$   end if
+!!$   do ikx=1,n+1
+!!$      write(300+k,*)dble(ikx-1-n/2)/dble(n),hkl(ikx,ii)
+!!$   end do
+!!$   close(300+k)
+!!$end do
+!!$deallocate(hkl)
+
+   deallocate(E,B)
+   allocate(E(N_bands),B(NM,N_bands))
+   allocate(U(NM,NM))
+   if(NM .ne. nkx*n_bands)then
+      write(*,*)'error',NM,n_bands,nkx
+      stop
+   end if
+!!$   do ikx=1,nkx
+!!$      A=HLL+TLL*exp(im*k_vec(1,ikx+(iyz-1)*nkx)*(2.0_dp*pi))+&
+!!$           transpose(dconjg(TLL))*exp(-im*k_vec(1,ikx+(iyz-1)*nkx)*(2.0_dp*pi))
+!!$      write(*,*)'check kvec',exp(im*k_vec(1,ikx+(iyz-1)*nkx)*(2.0_dp*pi))
+!!$      write(*,*)'check kvec',exp(-im*k_vec(1,ikx+(iyz-1)*nkx)*(2.0_dp*pi))
+!!$      write(*,*)ikx,'prima'
+!!$      call SUB_DEF_Z(1,n_bands,NM,A,E,B)
+!!$      write(*,*)ikx,'dopo'
+!!$      U(1:NM,1+(ikx-1)*n_bands:ikx*n_bands)=B(1:NM,1:n_bands)
+!!$   end do
+!!$
+!!$   call MGS(NM,NM,U(1:NM,1:NM))
+!!$
+!!$   
+!!$   
+!!$   call ZGEMM('n','n',NM,NM,NM,alpha,U,NM,HLL,NM,beta,C,NM)
+!!$   call ZGEMM('n','c',NM,NM,NM,alpha,C,NM,U,NM,beta,HLLL,NM)
+!!$   call ZGEMM('n','n',NM,NM,NM,alpha,U,NM,TLL,NM,beta,C,NM)
+!!$   call ZGEMM('n','c',NM,NM,NM,alpha,C,NM,U,NM,beta,TLLL,NM)
+
+
+   deallocate(TLL,HLL)
+   deallocate(A,B,C)
+   deallocate(E)  
+   deallocate(U)  
+   
+end if
 
 n=40
 M=min(12*nband_v/10,NM)
-!write(*,*)'M',M
+write(*,*)'M',M
 allocate(hkl(n+1,M))
 allocate(E(M))
 allocate(A(NM,NM))
@@ -1090,9 +1135,8 @@ do ikx=1,n+1
 end do
 deallocate(A)
 deallocate(E)
-do k=1,M!1,min(10,M)
-   ii=k!nband_v-min(10,M)/2+k
-   !write(*,*)k,ii  
+do k=1,M
+   ii=k
    if(nspin == 1)then
       open(unit=300+k,file=TRIM(outdir)//'Evdisp_'//TRIM(STRINGA(ii))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
    else
@@ -1105,6 +1149,7 @@ do k=1,M!1,min(10,M)
    close(300+k)
 end do
 deallocate(hkl)
+
 
 !!!!! STARTING the REFINEMENT
 

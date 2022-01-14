@@ -253,8 +253,13 @@ do im=1,num_mat
    nm=NM_mat(im)
    write(*,*)iyz,'im',im,nm
    allocate(HL(iyz,im)%H(NM_mat(im),NM_mat(im)))
+   if(magnetic)then
+   open(unit=13,file=TRIM(inputdir)//'H00_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+   write(*,*)'reading ',TRIM(inputdir)//'H00_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
+   else
    open(unit=13,file=TRIM(inputdir)//'H00_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
    write(*,*)'reading ',TRIM(inputdir)//'H00_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
+   end if
    do i=1,nm
       do j=1,nm
          read(13,*)tmp
@@ -266,9 +271,13 @@ do im=1,num_mat
 
    allocate(TL(iyz,im)%H(NM_mat(im),NM_mat(im)))
    nm=NM_mat(im)
-   !write(*,*)iyz,'im',im,nm
+   if(magnetic)then
+   open(unit=13,file=TRIM(inputdir)//'H01_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+   write(*,*)'reading ',TRIM(inputdir)//'H01_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
+   else
    open(unit=13,file=TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
    write(*,*)'reading ',TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
+   endif
    do i=1,nm
       do j=1,nm
          read(13,*)tmp
@@ -412,8 +421,13 @@ if(k_selec(iyz))then
    NM=NM_mat(im)
 !   write(*,*)Nrx*NGt*npol,NM_mat(im),Nrx*NGt*npol*NM_mat(im)
 
+   if(magnetic)then
+   open(unit=13,file=TRIM(inputdir)//'Psi_Bloch_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+   write(*,*)'reading ',TRIM(inputdir)//'Psi_Bloch_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
+   else
    open(unit=13,file=TRIM(inputdir)//'Psi_Bloch_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
    write(*,*)'reading ',TRIM(inputdir)//'Psi_Bloch_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
+   endif
    do j=1,NM
       do ip=1,npol
          do jgt=1,Ngt

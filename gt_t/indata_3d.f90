@@ -8,7 +8,7 @@ MODULE indata
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Energy integral parameters!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   REAL(DP), ALLOCATABLE :: en_global(:) !Energy vector in the interval [0 Eop]
   REAL(DP), ALLOCATABLE :: w(:)  !weights
@@ -86,7 +86,9 @@ MODULE indata
   LOGICAL :: rgt_gate
   LOGICAL :: schottky_source
   LOGICAL :: onlyT
+  LOGICAL :: magnetic
 
+  CHARACTER(2) :: updw
   CHARACTER(3) :: Tdir
   CHARACTER(1) :: chtype  
   INTEGER :: Ndeltax, Ndeltay, Ndeltaz
@@ -247,6 +249,8 @@ MODULE indata
   NAMELIST /indata_basis/                      &
        &  nsolv,                               &
        &  nsolc,                               &
+       &  magnetic,                            &
+       &  updw,                                &  
        &  npol,                                &
        &  g_spin,                              &
        &  Ecut
@@ -479,7 +483,20 @@ CONTAINS
           read(*,*) k_vec(2,l), k_vec(3,l), k_selec(l)  !!!!!, off_k_nvb(l)
        end do
     end do
+    magnetic='F'
+    updw='ni'
     READ(*,NML=indata_basis)
+    if(magnetic)then
+       select case (updw)
+       case( 'ni')
+          write(*,*)'error: magnetization direction must be either up or dw'
+          stop
+       case('up')
+           write(*,*)'magnetic polarization is up'
+       case('dw')
+           write(*,*)'magnetic polarization is dw'
+       end select
+    end if
     READ(*,*)comment
     write(*,*)comment
     allocate(nm_mat(num_mat),nband_val(num_mat),off_set(num_mat))
