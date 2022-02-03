@@ -17,7 +17,7 @@ call read_QE_output()
 
 write(*,*)
 write(*,*)
-write(*,*) ' This program is an open-source code; please cite  '
+write(*,*) ' This program is an open-source code; please consider citing  '
 write(*,*) ' M. G. Pala, P. Giannozzi, and D. Esseni, Phys. Rev. B 102, 045410 (2020)'
 write(*,*)
 write(*,*)

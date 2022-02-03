@@ -39,7 +39,7 @@ REAL(DP)              :: n_bose_g
 
 REAL(DP), ALLOCATABLE :: trans(:,:,:,:),cur(:,:,:,:),ldos(:,:,:,:),zdos(:,:,:,:),ndos(:,:,:,:),pdos(:,:,:,:)
 
-INTEGER :: i, j, l, n, xx, ix, iy, iz, ip, ii, pp, nn, nsol, SCBA_iter,nph
+INTEGER :: i, j, l, n, xx, ix, iy, iz, ip, ii, pp, nn, nsol, SCBA_iter
 
 REAL(DP) :: en, epsilon, emin_local
 INTEGER ::  ref_index, nmax, ee, nee 
@@ -137,7 +137,6 @@ allocate(con(NKYZ),cone(NKYZ),conb(NKYZ))
 
   write(*,*)'NKGt=',Ngt*npol
   write(*,*)'NKGt*Nrx=',Ngt*npol*Nrx
-  write(*,*)'Nrx=',Nrx
 
   allocate(NM(ncx_d))
   
@@ -475,13 +474,13 @@ if(k_selec(iyz))then
 end do !End of the loop over kyz
      
 
-Nph=4
+
      !  self-energies calculation
   sigma_lesser_ph=0.0d0
   sigma_greater_ph=0.0d0
   sigma_r_ph=0.0d0
 
-  !$omp parallel default(none)  private(nee,ii,pp,l) shared(Nph,Nop,Nop_g,sigma_lesser_ph,sigma_greater_ph,sigma_r_ph, &
+  !$omp parallel default(none)  private(nee,ii,pp,l) shared(Nop,Nop_g,sigma_lesser_ph,sigma_greater_ph,sigma_r_ph, &
   !$omp g_lesser,g_greater,Dop_g,n_bose_g,Dac,ncx_d,nm,eop,temp)
 
   !$omp do
@@ -490,8 +489,8 @@ Nph=4
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!Ottico g-type!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     do l=1,Nph
-          n_bose_g=1.0_dp/(EXP((l*Nop_g*Eop)/(BOLTZ*TEMP))-1.0_dp)
+
+     n_bose_g=1.0_dp/(EXP((Nop_g*Eop)/(BOLTZ*TEMP))-1.0_dp)
      IF(nee.le.l*Nop_g)THEN
         IF(nee.le.Nop-l*Nop_g)THEN
            !Ottico con E+Eop_g
@@ -500,10 +499,10 @@ Nph=4
               DO pp=1,NM(ii)  
 
                  sigma_lesser_ph(nee,pp,ii)=sigma_lesser_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g+1.0d0)*g_lesser(nee+l*Nop_g,pp,ii)
+                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+l*Nop_g,pp,ii)
 
                  sigma_greater_ph(nee,pp,ii)=sigma_greater_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g)*(g_greater(nee+l*Nop_g,pp,ii))
+                      Dop_g*(n_bose_g)*(g_greater(nee+l*Nop_g,pp,ii))
               END DO
            END DO
            
@@ -518,12 +517,12 @@ Nph=4
               DO pp=1,NM(ii)
       
                  sigma_lesser_ph(nee,pp,ii)= sigma_lesser_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g+1.0d0)*g_lesser(nee+l*Nop_g,pp,ii)+&   
-                      Dop_g*exp(dble(1-l))*(n_bose_g)*g_lesser(nee-l*Nop_g,pp,ii) 
+                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+l*Nop_g,pp,ii)+&   
+                      Dop_g*(n_bose_g)*g_lesser(nee-l*Nop_g,pp,ii) 
       
                  sigma_greater_ph(nee,pp,ii)=sigma_greater_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g)*(g_greater(nee+l*Nop_g,pp,ii))+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g+1.0d0)*(g_greater(nee-l*Nop_g,pp,ii))
+                      Dop_g*(n_bose_g)*(g_greater(nee+l*Nop_g,pp,ii))+&
+                      Dop_g*(n_bose_g+1.0d0)*(g_greater(nee-l*Nop_g,pp,ii))
               END DO
            END DO
            
@@ -533,16 +532,15 @@ Nph=4
               DO pp=1,NM(ii)       
       
                  sigma_lesser_ph(nee,pp,ii)=sigma_lesser_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g)*g_lesser(nee-l*Nop_g,pp,ii)  
+                      Dop_g*(n_bose_g)*g_lesser(nee-l*Nop_g,pp,ii)  
       
                  sigma_greater_ph(nee,pp,ii)=sigma_greater_ph(nee,pp,ii)+&
-                      Dop_g*exp(dble(1-l))*(n_bose_g+1.0d0)*(g_greater(nee-l*Nop_g,pp,ii))
+                      Dop_g*(n_bose_g+1.0d0)*(g_greater(nee-l*Nop_g,pp,ii))
               END DO
            END DO
            
         END IF
      END IF
-  end do !end do l
         
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!Elastic Acoustic!!!!!!!!!!!!!!!!!
@@ -1272,11 +1270,11 @@ if(ff == 0)then
 !-------------------------
    
      if( abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))) > 1.0d-1 )then
-        write(*,*)'possbl pb w en',E
-        write(*,*) l,abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ) ) )
-        write(*,*) traccia(dimag( pdens(:,:,l) )),  traccia(dimag(-ndens(:,:,l) )),  2.0_dp*traccia(dimag(-ldos(:,:,l) ))
+        write(*,*)'pssbl pb w en',E
+        !write(*,*) l,abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ) ) )
+        !write(*,*) traccia(dimag( pdens(:,:,l) )),  traccia(dimag(-ndens(:,:,l) )),  2.0_dp*traccia(dimag(-ldos(:,:,l) ))
         ff=l  
-        write(*,*)E,'traccia',traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))
+        !write(*,*)E,'traccia',traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))
 !     tre=0.0_dp
 !     do i=1,nm(l)
 !        tre=tre+dimag( pdens(i,i,l) - ndens(i,i,l) - 2.0_dp*ldos(i,i,l)  )
@@ -1352,11 +1350,11 @@ if(ff == 0)then
   
      
      if( abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))) > 1.0d-1 )then
-        write(*,*)'possbl pb w en',E
-        write(*,*) l,abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ) ) )
-        write(*,*) traccia(dimag( pdens(:,:,l) )),  traccia(dimag(-ndens(:,:,l) )),  2.0_dp*traccia(dimag(-ldos(:,:,l) ))
+        write(*,*)'pssbl pb w en',E
+        !write(*,*) l,abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ) ) )
+        !write(*,*) traccia(dimag( pdens(:,:,l) )),  traccia(dimag(-ndens(:,:,l) )),  2.0_dp*traccia(dimag(-ldos(:,:,l) ))
         ff=l
-        write(*,*)E,'traccia',traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))
+        !write(*,*)E,'traccia',traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))
 !        tre=0.0_dp
 !        do i=1,nm(l)
 !           tre=tre+dimag( pdens(i,i,l) - ndens(i,i,l) - 2.0_dp*ldos(i,i,l)  )
