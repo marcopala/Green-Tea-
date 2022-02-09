@@ -10,14 +10,9 @@ use negf
 
 implicit none 
 
-!integer :: i,j,l
-INTEGER :: gg, ss, bb, ii, jj, transport_iter, MAXITER
-REAL(DP) :: vg, bz, transport_error!, car, carp
-LOGICAL :: init, sweepbz, phonon
-
-!real(dp) :: E, tr, trr
-
-!complex(8), allocatable :: G00(:,:),GBB(:,:),Gcc(:,:),Sigma_S(:,:),Sigma_D(:,:),Gamma_S(:,:),Gamma_D(:,:),Id(:,:),tau2(:,:)
+INTEGER               :: gg, ss, bb, ii, jj, transport_iter, MAXITER
+REAL(DP)              :: vg, bz, transport_error!, car, carp
+LOGICAL               :: init, sweepbz
 
 REAL(DP), ALLOCATABLE :: POT_3D(:)
 REAL(DP), ALLOCATABLE :: EC_3D(:)
@@ -34,8 +29,9 @@ REAL(DP), ALLOCATABLE :: drho_3D_p(:)
 REAL(DP), ALLOCATABLE :: Fn(:)
 REAL(DP), ALLOCATABLE :: Fp(:)
 REAL(DP), ALLOCATABLE :: Hz(:) ! vertical magnetic field
+REAL(DP)              :: conductance, conductanceb, ISDcurrent, IDScurrent, IDScurrentb
 
-REAL(DP) :: conductance, conductanceb, ISDcurrent, IDScurrent, IDScurrentb
+real(4) :: t1,t2
 
 gg=0
 
@@ -49,7 +45,8 @@ call indata_readinput()
 call indata_grid()
 
 call indata_structure_init()
-call indata_build_doping(dop_vec,coul,source_dop_val,drain_dop_val,channel_dop_val,NUMN_3D,LWORK_3D) 
+call indata_build_doping(dop_vec,coul,source_dop_val,drain_dop_val,channel_dop_val,&
+     NUMN_3D,LWORK_3D) 
 
 call read_QE_output()
 !stop
@@ -84,10 +81,7 @@ END IF
 !END DO
 
   
-  phonon=.FALSE.
-  if(dac > 0.0_dp .or. dop_g > 0.0_dp) phonon=.TRUE.
-  
-if(phonon)then
+if(phonons)then
 !DO bb=0, NUMBZ
    DO ss=0, NUMVD
       open(23,file=TRIM(outdir)//'scat_current_vg_'//TRIM(STRINGA(ss))//'.dat',status='replace')
@@ -197,7 +191,7 @@ DO gg=0, NUMVG
   END IF
 
 
-tt1=SECNDS(0.0)
+t1=SECNDS(0.0)
 
 DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   transport_iter=transport_iter+1
@@ -213,25 +207,27 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   rho_p=0.0d0
   drho_3D_p=0.0d0
 
-  CALL shift_potential(EC_3D,-POT_3D, 3.0d0,E_GAP,whichkind_3D,map_3D,lista_3D_ord,whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
-  CALL shift_potential(EV_3D,-POT_3D,-3.0d0,0.0d0,whichkind_3D,map_3D,lista_3D_ord,whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
+  CALL shift_potential(EC_3D,-POT_3D, 3.0d0,E_GAP,whichkind_3D,map_3D,list_3D_ord,&
+       whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
+  CALL shift_potential(EV_3D,-POT_3D,-3.0d0,0.0d0,whichkind_3D,map_3D,list_3D_ord,&
+       whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
 
   write(*,*)'e_gap',E_GAP
   write(*,*)'diel_sc',diel_sc
-  
 
   CALL map_potential(pot3D,-POT_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
 
   write(*,*)'negf starts'
-  
-  call negf_mixed(POT3D,rho_n,rho_p,ISDcurrent,IDScurrent,IDScurrentb,ss,gg,phonon,transport_iter)
+
+  call negf_mixed(POT3D,rho_n,rho_p,ISDcurrent,IDScurrent,IDScurrentb,ss,gg,transport_iter)
 
   if(onlyT)then
      write(*,*)'Simulation ended. Only transmission in the flat-band configuration was computed. '
+     write(*,*)'IDScurrent =',IDScurrent,'(A)'
      stop
   end if
 
-
+  
   OPEN(UNIT=22,FILE='charge_y'//TRIM(STRINGA(transport_iter))//'.dat',STATUS='UNKNOWN')
   OPEN(UNIT=23,FILE='charge_x'//TRIM(STRINGA(transport_iter))//'.dat',STATUS='UNKNOWN')
   OPEN(UNIT=24,FILE='charge_z'//TRIM(STRINGA(transport_iter))//'.dat',STATUS='UNKNOWN')
@@ -267,29 +263,10 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
 
   
 
-  CALL map_charge(rho_3D_n,rho_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D) !mappa la densità n da un vettore 3D ad uno 1D
-  CALL map_charge(rho_3D_p,rho_p,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D) !mappa la densità p da un vettore 3D ad uno 1D
+  CALL map_charge(rho_3D_n,rho_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D) 
+  CALL map_charge(rho_3D_p,rho_p,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D) 
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-!  OPEN(UNIT=22,FILE='chargen.dat',STATUS='UNKNOWN')
-!  DO ii=0,LWORK_3D-1
-!     write(22,*)rho_3D_n(ii)
-!  end DO
-!  CLOSE(22)
-
-!  OPEN(UNIT=22,FILE='fn.dat',STATUS='UNKNOWN')
-!  DO ii=0,LWORK_3D-1
-!     write(22,*)fn(ii)
-!  end DO
-!  CLOSE(22)
-!  OPEN(UNIT=22,FILE='ec.dat',STATUS='UNKNOWN')
-!  DO ii=0,LWORK_3D-1
-!     write(22,*)EC_3D(ii)
-!  end DO
-!  CLOSE(22)
-
 
 
   CALL map_potential(plotpot,Fn,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
@@ -360,7 +337,7 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   write(*,*)'////////////////////////////////////////////////////////'
   write(*,*)'                      POISSON SOLVED                    '
   write(*,*)'////////////////////////////////////////////////////////'
-!stop
+
 
   transport_error=0.d0
   DO ii=0,LWORK_3D-1
@@ -371,7 +348,6 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   write(*,*)'AlphaPot=',alphapot
 
   POT_3D(:)=outer_pot3D_OLD(:) + alphapot*(POT_3D(:)-outer_pot3D_OLD(:))
-
   outer_pot3D_OLD(:)=POT_3D(:)
 
 
@@ -416,12 +392,10 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   CLOSE(22)
   CLOSE(23)
 
-  !stop
 END DO
 
-tt2=SECNDS(tt1)
-write(*,*)tt2,'SECs SPENT FOR THE BIAS POINT','VG=',vg,'VD=',-mud
-
+t2=SECNDS(t1)
+write(*,*)t2,'SECs SPENT FOR THE BIAS POINT','VG=',vg,'VD=',-mud
 
 IF(NUMBZ.gt.0)sweepbz=.FALSE.
 
@@ -439,9 +413,6 @@ write(23,*) 'Conductance=',conductance
 close(23)
 
 
-
-
-
 open(23,file=TRIM(outdir)//'bal_current_vg_'//TRIM(STRINGA(ss))//'.dat',status='old',POSITION='append')
 write(23,*) vg, ISDcurrent, IDScurrentB
 close(23)
@@ -451,7 +422,7 @@ close(23)
 
 
 
-if(phonon)then
+if(phonons)then
 open(23,file=TRIM(outdir)//'scat_current_vg_'//TRIM(STRINGA(ss))//'.dat',status='old',POSITION='append')
 write(23,*) vg, ISDcurrent, IDScurrent
 close(23)
@@ -483,8 +454,10 @@ END DO
 
 write(*,*)
 write(*,*)
-write(*,*) ' This program is an open-source code; please cite  '
+write(*,*) ' This is an open source software distributed under the CECILL-B license.' 
+write(*,*) ' Please consider citing  '
 write(*,*) ' M. G. Pala, P. Giannozzi, and D. Esseni, Phys. Rev. B 102, 045410 (2020)'
+write(*,*) ' DOI: https://doi.org/10.1103/PhysRevB.102.045410'
 write(*,*)
 write(*,*)
 

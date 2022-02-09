@@ -11,25 +11,30 @@ MODULE Pseudopot_so_gen
 CONTAINS
   
 subroutine read_QE_output
-  implicit none
+
+implicit none
   
 integer(k15), allocatable :: miller_2D(:,:)
-integer :: i,ikx,iyz,ii,j,l,k,m,n,nkx,nrx0,ncell,n2,n3,m1,jgt,ix,iy,iz,ip,im
-integer :: nm,ngmax
+integer                   :: i,ikx,iyz,jyz,ii,j,l,k,m,n,nkx,nrx0,ncell,m1,ix,iy,iz
+integer                   :: nm,ngmax,n2,n3,jgt,ip,im
 
-real(dp) :: a_1(3),a_2(3),a_3(3)
-real(dp) :: b_1(3),b_2(3),b_3(3)
-real(dp) :: vec(3),t0,a0
-real(dp) :: Ecutoff,refec,refev
-complex(dp) :: tmp
+real(dp)                  :: a_1(3),a_2(3),a_3(3)
+real(dp)                  :: b_1(3),b_2(3),b_3(3)
+real(dp)                  :: vec(3),t0,a0
+real(dp)                  :: Ecutoff,refec,refev
+real(dp),    allocatable  :: E(:), KGt(:,:), Gx(:), bb_ev(:), bb_ec(:), hkl(:,:)
+
+complex(dp), allocatable  :: A(:,:),B(:,:),C(:,:),Uk(:,:,:)
+complex(dp), allocatable  :: HLL(:,:),TLL(:,:),HLLL(:,:),TLLL(:,:) 
+complex(dp), allocatable  :: dens_z(:,:,:), dens_yz(:,:,:)
+complex(dp)               :: tmp
+
 real(4) :: t1,t2
-real(dp), allocatable :: E(:), KGt(:,:), Gx(:), bb_ev(:), bb_ec(:), hkl(:,:)
-complex(dp), allocatable :: A(:,:),B(:,:),C(:,:),U(:,:)
-complex(dp), allocatable :: HLL(:,:),TLL(:,:),HLLL(:,:),TLLL(:,:) 
-complex(dp), allocatable :: dens_z(:,:,:), dens_yz(:,:,:)
 
+!\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+!\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+!\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-if( .not. wr_ham ) write(*,*)'READING HAMILTONIANS'
 
 t0=hbareV*hbareV/2.0_dp/m0 !eV cm**2
 a0=ac ! cm
@@ -127,7 +132,7 @@ if(t0*dot_product(vec(2:3),vec(2:3))*(2.0_dp*pi/a0)**2 <= 1.0_dp*Ecutoff)then ! 
    j=j+1
    miller_2D(2,j)=n2
    miller_2D(3,j)=n3
-!   write(21,*)j,miller_2D(2,j),miller_2D(3,j)
+
 end if
 
 end do
@@ -155,7 +160,6 @@ do i=-nrx/2,nrx/2-1!maxval(miller(1,:)),maxval(miller(1,:))!-1
       m1 = m1 + 1
    end if
    Gx(m1)=dble(i)*b_1(1)
-  ! write(24,*)m1,gx(m1),int(gx(m1)/b_1(1))
 end do
 
 
@@ -182,16 +186,10 @@ write(*,*)'a0/Dz',a0/Dz,Dz
        do iz=1,NRZ
           if(dble(iz) <= dble(i)*dble(NRZ)/dble(Ndeltaz) .and. dble(iz) > dble(i-1)*dble(NRZ)/dble(Ndeltaz)) then
              nez(i)=nez(i)+1
-!             write(*,*)i,nez(i),dble(i)*dble(NRZ)/dble(Ndeltaz)
           end if
        end do
     end do
-  !  write(*,*)'nez',nez(1:Ndeltaz)
-    do i=1,Ndeltaz
-       do j=1,Nez(i)
-   !       write(*,*)i,j,j+(i-1)*nez(i)
-       end do
-    end do
+
     allocate(Ney(Ndeltay))
     Ney=0
     do i=1,Ndeltay
@@ -199,12 +197,7 @@ write(*,*)'a0/Dz',a0/Dz,Dz
           if(dble(iy) <= dble(i)*dble(NRY)/dble(Ndeltay) .and. dble(iy) > dble(i-1)*dble(NRY)/dble(Ndeltay)) ney(i)=ney(i)+1
        end do
     end do
- !   write(*,*)'ney',ney(1:Ndeltay)
-   ! do i=1,Ndeltay
-   !    do j=1,Ney(i)
-    !      write(*,*)i,j,j+(i-1)*ney(i)
-    !   end do
-    !end do
+
     allocate(Nex(Ndeltax))
     Nex=0
     do i=1,Ndeltax
@@ -212,29 +205,15 @@ write(*,*)'a0/Dz',a0/Dz,Dz
           if(dble(ix) <= dble(i)*dble(NRX)/dble(Ndeltax) .and. dble(ix) > dble(i-1)*dble(NRX)/dble(Ndeltax)) nex(i)=nex(i)+1
        end do
     end do
-!    write(*,*)'nex',nex(1:Ndeltax)
-!    do i=1,Ndeltax
-!       do j=1,Nex(i)
-!     !     write(*,*)i,j,j+(i-1)*nex(i)
-!       end do
-!    end do
-
 
     allocate(kc_min(Nkyz,num_mat))
     allocate(kv_max(Nkyz,num_mat))
     write(*,*)'NPOL=',npol
 
-!!stop
+!!!!stop
 
 do iyz=1,Nkyz  ! Loops over the transverse k vectors
 !if(k_selec(iyz))then
-
-!   nn=maxval(N_PW(1+(iyz-1)*nkx:iyz*nkx))
-!write(*,*)'size of Hk',dble(nn*npol)**2*nkx*16.0d-9   
-!   if(wr_ham == .true.)then
-!      allocate(Hk(nn*npol,nn*npol,nkx))
-!      Hk=0.0_dp
-!   end if
    
 write(*,*)'ikyz',iyz
 
@@ -293,7 +272,6 @@ if(num_mat>=2)then
    do im=1,num_het
       l=l+1
       allocate(TL(iyz,l)%H(NM_mat(mat_1(im)),NM_mat(mat_0(im))))
-      !write(*,*)iyz,'ihl',l,NM_mat(mat_1(im)),NM_mat(mat_0(im))
       
       open(unit=13,file=TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nhet_'//TRIM(STRINGA(im))//'.dat',status='unknown')
       if(htype(im) .eq. 'n')then
@@ -352,7 +330,7 @@ if( nband_val(im)>0)     bb_ev(ikx)=E(nband_val(im))
       else
          ii=nband_val((im))+k
       end if
-      !write(*,*)k,nband_val((im)),ii
+
       open(unit=300+k,file='Edisp_'//TRIM(STRINGA(ii))//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
       do i=1,nm
          do ikx=1,n+1
@@ -386,15 +364,15 @@ end do
 deallocate(bb_ec,bb_ev)
 
 write(*,*)'shape TL', shape(TL)
-!stop
+!!!!stop
 
 
 if(allocated(KGt))deallocate(KGt)
 allocate(KGt(4,1*Ngt))
 KGt=0.0_dp
 do j=1,Ngt
-   kgt(2,j)=miller_2D(2,j)*b_2(2)+miller_2D(3,j)*b_3(2) + k_vec(2,1+(iyz-1)*nkx)
-   kgt(3,j)=miller_2D(2,j)*b_2(3)+miller_2D(3,j)*b_3(3) + k_vec(3,1+(iyz-1)*nkx)
+   kgt(2,j)=miller_2D(2,j)*b_2(2)+miller_2D(3,j)*b_3(2) + k_vec(2,iyz)
+   kgt(3,j)=miller_2D(2,j)*b_2(3)+miller_2D(3,j)*b_3(3) + k_vec(3,iyz)
    kgt(4,j)=(kgt(2,j)**2+kgt(3,j)**2)
 end do
 
@@ -409,7 +387,7 @@ end if
 end do ! endo do iyz
 
 
-if(.not. onlyT)then
+if(.not. onlyT .or. phonons)then
 
 
 do im=1,num_mat
@@ -419,7 +397,6 @@ if(k_selec(iyz))then
 
    allocate(ULCBB(iyz,im)%H(Nrx*NGt*npol,NM_mat(im)))
    NM=NM_mat(im)
-!   write(*,*)Nrx*NGt*npol,NM_mat(im),Nrx*NGt*npol*NM_mat(im)
 
    if(magnetic)then
    open(unit=13,file=TRIM(inputdir)//'Psi_Bloch_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
@@ -440,28 +417,24 @@ if(k_selec(iyz))then
    end do
    close(13)
 
-   allocate(form_factor(iyz,im)%F(NM_mat(im),NM_mat(im)))
-
    end if
 end do
 !end if
 end do
 
-allocate(U(NGt*npol,(nry)*(nrz)))
+if(.not.allocated(Uk)) allocate(Uk(NGt*npol,(nry)*(nrz),NKYZ))
 
 do im=1,num_mat
 !if(schottky_type(im)==0)then
    
    NM=NM_mat(im)
-   !write(*,*)im,NM_mat(im),NM_mat(im)
-
 
    do iyz=1,Nkyz
 if(k_selec(iyz))then
       
       allocate(U_psi(iyz,im)%K(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))
       
-      write(*,*)'dimension of U_psi',iyz,im, (dble(NM_mat(im))**2)*dble(Ndeltay+1)*dble(Ndeltaz+1)*dble(nrx)*16.0d-9,'Gb'
+!      write(*,*)'Size of U_psi',iyz,im, (dble(NM_mat(im))**2)*dble(Ndeltay+1)*dble(Ndeltaz+1)*dble(nrx)*16.0d-9,'Gb'
       
 !!!! INTERPOLATION ON THE COARSE GRID
       
@@ -470,16 +443,16 @@ if(k_selec(iyz))then
       do iy=1,NRY
          do iz=1,NRZ
             j=iy+(iz-1)*(NRY)
-            U(1:NGt,j)=exp( cmplx(0.0_dp,-1.0_dp)*KGt_kyz(2,1:NGt,iyz)*2.0_dp*pi/a0*dble(iy)*Dy+&
+            Uk(1:NGt,j,iyz)=exp( cmplx(0.0_dp,-1.0_dp)*KGt_kyz(2,1:NGt,iyz)*2.0_dp*pi/a0*dble(iy)*Dy+&
                             cmplx(0.0_dp,-1.0_dp)*KGt_kyz(3,1:NGt,iyz)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
          end do
       end do
-      if(npol>1)      U(1+NGt:npol*NGt,1:NRY*NRZ)=U(1:NGt,1:NRY*NRZ)
+      if(npol>1)      Uk(1+NGt:npol*NGt,1:NRY*NRZ,iyz)=Uk(1:NGt,1:NRY*NRZ,iyz)
 
-call omp_set_num_threads(Nomp)!call omp_set_num_threads(3)
+call omp_set_num_threads(Nomp)
 
 !$omp parallel default(none) private(ix,iy,iz,ip,i,j,jgt,dens_z,dens_yz,A,B,C) &
-!$omp shared(iyz,im,ney,nez,nm,nrx,nry,nrz,ndeltay,ndeltaz,dx,dy,dz,npol,ngt,U,ULCBB,U_psi,FORM_FACTOR)
+!$omp shared(iyz,im,ney,nez,nm,nrx,nry,nrz,ndeltay,ndeltaz,dx,dy,dz,npol,ngt,Uk,ULCBB,U_psi)
 
 
 allocate(dens_z(NM*NM,(nry),Ndeltaz+1))
@@ -489,7 +462,7 @@ allocate(A(NM,(nry)*(nrz)))
 allocate(B(NM,ngt*npol))
 allocate(C(NM*NM,(nry)*(nrz)))
 
-form_factor(iyz,im)%F=0.0d0
+!!form_factor(iyz,im)%F=0.0d0
 
  !$omp do 
    do ix=1,Nrx
@@ -502,23 +475,16 @@ form_factor(iyz,im)%F=0.0d0
          end do
       end do
    end do
-   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,U,NGt*npol,beta,A,NM)
-
-!!   do iy=1,NRY
-!!      do iz=1,NRZ
-!!         do i=1,NM
-!!            A(i,iy+(iz-1)*(nry))=A(i,iy+(iz-1)*(nry))*exp(-cmplx(0.0_dp,1.0_dp)*ELCH/HBAR*Hz(ix)*1.0d-4*dx*dy*dble(iy-iz))   !!! bz is in Tesla
-!!         end do
-!!      end do
-!!   end do
+   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz,iyz),NGt*npol,beta,A,NM)
    
-   do i=1,NM
-      do j=1,NM    
-         form_factor(iyz,im)%F(i,j)=form_factor(iyz,im)%F(i,j)+&
-              sum(dconjg(A(i,:))*A(j,:)*dconjg(A(j,:))*A(i,:))/(nrx*dx*dy*dz)
-      end do
-   end do
-
+!!$!!   do iy=1,NRY
+!!$!!      do iz=1,NRZ
+!!$!!         do i=1,NM
+!!$!!            A(i,iy+(iz-1)*(nry))=A(i,iy+(iz-1)*(nry))*exp(-cmplx(0.0_dp,1.0_dp)*ELCH/HBAR*Hz(ix)*1.0d-4*dx*dy*dble(iy-iz))   !!! bz is in Tesla
+!!$!!         end do
+!!$!!      end do
+!!$!!   end do
+   
    do i=1,NM
       do j=1,NM
          C(i+(j-1)*NM,:)=dconjg(A(i,:))*A(j,:)
@@ -582,7 +548,7 @@ deallocate(dens_z,dens_yz)
 !!!! END
 
        t2=SECNDS(t1)
-        WRITE(*,*)iyz,im,'TIME SPENT TO COMPUTE the interpolation POINT (s)',t2
+        WRITE(*,*)iyz,'Time spent to compute the interpolation (s)',t2
 
 !stop
 
@@ -618,11 +584,89 @@ write(*,*)'fine ikyz',iyz
 end if
 end do ! end do iyz
 
-end do ! end do im
 
-deallocate(U)
+if(phonons)then
+write(*,*)
+write(*,*)'Computing the form factor'
+t1=SECNDS(0.0)
+
+do iyz=1,NKyz
+if( k_selec(iyz) )then
+   do jyz=1,NKyz
+      if( k_selec(jyz) )then
+
+         if (jyz >=iyz)then
+            write(*,*)iyz,jyz
+   
+   allocate(form_factor(iyz,jyz,im)%F(NM_mat(im),NM_mat(im)))
+   form_factor(iyz,jyz,im)%F=0.0d0
+      
+call omp_set_num_threads(Nomp)
+!$omp parallel default(none) private(ix,iy,iz,ip,i,j,jgt,A,B,C) &
+!$omp shared(iyz,jyz,im,nm,nrx,nry,nrz,dx,dy,dz,npol,ngt,Uk,ULCBB,form_factor)
+
+allocate(A(NM,(nry)*(nrz)))
+allocate(B(NM,ngt*npol))
+allocate(C(NM,(nry)*(nrz)))
+
+ !$omp do 
+   do ix=1,Nrx
+
+   do ip=1,npol
+      do jgt=1,Ngt
+         do i=1,NM
+            B(i,jgt+(ip-1)*ngt)=(conjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+         end do
+      end do
+   end do
+   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz,iyz),NGt*npol,beta,A,NM)
+   do ip=1,npol
+      do jgt=1,Ngt
+         do i=1,NM
+            B(i,jgt+(ip-1)*ngt)=(conjg(ULCBB(jyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+         end do
+      end do
+   end do
+   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz,jyz),NGt*npol,beta,C,NM)
+   
+   do i=1,NM
+      do j=1,NM    
+         form_factor(iyz,jyz,im)%F(i,j)=form_factor(iyz,jyz,im)%F(i,j)+&
+              sum(dconjg(A(i,:))*C(j,:)*dconjg(C(j,:))*A(i,:))/(nrx*dx*dy*dz)
+      end do
+   end do
+end do
+ !$omp end do
+
+deallocate(A,B,C)
+!$omp end parallel
+else
+   write(*,*)iyz,jyz
+   allocate(form_factor(iyz,jyz,im)%F(NM_mat(im),NM_mat(im)))
+   do i=1,NM
+      do j=1,NM 
+         form_factor(iyz,jyz,im)%F(i,j)=form_factor(jyz,iyz,im)%F(j,i)
+      end do
+   end do
+end if
 
 end if
+end do
+end if
+end do
+
+t2=SECNDS(t1)
+WRITE(*,*)'Time spent to compute the form factor (s)',t2
+write(*,*)
+
+endif
+
+end do ! end do im
+
+deallocate(Uk)
+
+end if
+
 
 do i=1,nky
    if(abs(ky(i)-0.0d0)<1.0d-3 .or. abs(ky(i)-0.5d0)<1.0d-3) deg_ky(i)=1.0_dp

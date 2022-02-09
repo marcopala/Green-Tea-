@@ -7,8 +7,8 @@ MODULE indata
   SAVE
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Energy integral parameters!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Energy integral parameters!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   REAL(DP), ALLOCATABLE :: en_global(:) !Energy vector in the interval [0 Eop]
   REAL(DP), ALLOCATABLE :: w(:)  !weights
@@ -25,106 +25,86 @@ MODULE indata
   INTEGER :: NUMBOUND_3D  !number of diricleth boundary nodes
   INTEGER :: NUMELECT_3D  !number of electrodes
   INTEGER :: LWORK_3D     !number of unknows in Poisson solution
-  INTEGER :: nnz_3D       !number of non-zero entrues of the Poisson laplacian 
+  INTEGER :: nnz_3D       !number of non-zero entries of the laplacian
+  INTEGER :: NUMBOUNDOLD 
  
-  REAL(DP), ALLOCATABLE :: coord_3D(:,:)     !nodes coordinates (number in progressive order)
-  REAL(DP), ALLOCATABLE :: coord_3D_ord(:,:) !nodes coordinates ("unknows first" order)
-  INTEGER, ALLOCATABLE :: lista_3D(:,:)              !element nodes (number in progressive order)
-  INTEGER, ALLOCATABLE :: lista_3D_ord(:,:)          !element nodes ("unknows first" order)
-  INTEGER, ALLOCATABLE :: whichkind_3D(:)
-  INTEGER, ALLOCATABLE :: whichkind_3D_ord(:)
-  INTEGER, ALLOCATABLE :: type_3D(:,:,:)
+  REAL(DP), ALLOCATABLE :: coord_3D(:,:)      !nodes coordinates (number in progressive order)
+  REAL(DP), ALLOCATABLE :: coord_3D_ord(:,:)  !nodes coordinates ("unknows first" order)
+  INTEGER,  ALLOCATABLE :: list_3D(:,:)       !element nodes (number in progressive order)
+  INTEGER,  ALLOCATABLE :: list_3D_ord(:,:)   !element nodes ("unknows first" order)
+  INTEGER,  ALLOCATABLE :: whichkind_3D(:)
+  INTEGER,  ALLOCATABLE :: whichkind_3D_ord(:)
+  INTEGER,  ALLOCATABLE :: type_3D(:,:,:)
 
   REAL(DP), ALLOCATABLE :: dop_vec(:)
-  INTEGER, ALLOCATABLE :: coul(:)
-
-  REAL(DP) :: potelectr,potelectr0
-
+  INTEGER,  ALLOCATABLE :: coul(:)
+  REAL(DP)              :: potelectr, potelectr0
   REAL(DP), ALLOCATABLE ::   epsilon_3D(:)  ! dielectric constant for each element
-  CHARACTER(LEN=12), ALLOCATABLE ::  nomelectr(:)
-  INTEGER, ALLOCATABLE :: nodelectr(:) 
-  
-  INTEGER, ALLOCATABLE :: map_3D(:) !Transformation map between the two orders
-  
-  INTEGER, ALLOCATABLE :: connect_3D(:,:) !Connectivity for the unknows
+  INTEGER, ALLOCATABLE  :: nodelectr(:) 
+  INTEGER, ALLOCATABLE  :: map_3D(:) !Transformation map between the two orders
+  INTEGER, ALLOCATABLE  :: connect_3D(:,:) !Connectivity for the unknows
 
-  INTEGER, PARAMETER :: NMAX = 2048
-
-  REAL(DP) :: c0,c1,c2,c3,c4,c5
-
-  real(4) :: t1,t2,t3,t4,tt1,tt2
-
-  INTEGER :: Nop
-
-  INTEGER :: NUMVG,NUMVD,NUMBZ
+  INTEGER  :: NUMVG,NUMVD,NUMBZ
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Input parameters!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  INTEGER :: source_len
-  INTEGER :: drain_len 
-  INTEGER :: gate_len
+  INTEGER  :: source_len
+  INTEGER  :: drain_len 
+  INTEGER  :: gate_len
 
   REAL(DP) :: source_dop_val
   REAL(DP) :: channel_dop_val
   REAL(DP) :: drain_dop_val
    
-  INTEGER :: tox_lft,  to2_lft
-  INTEGER :: tox_rgt,  to2_rgt
-  INTEGER :: tox_top, to2_top
-  INTEGER :: tox_bot, to2_bot
+  INTEGER  :: tox_lft, to2_lft
+  INTEGER  :: tox_rgt, to2_rgt
+  INTEGER  :: tox_top, to2_top
+  INTEGER  :: tox_bot, to2_bot
 
-  INTEGER :: tsc_h
-  INTEGER :: tsc_w
+  INTEGER  :: tsc_h
+  INTEGER  :: tsc_w
 
-  INTEGER :: spacer
+  INTEGER  :: spacer
 
-  LOGICAL :: top_gate
-  LOGICAL :: bot_gate
-  LOGICAL :: lft_gate
-  LOGICAL :: rgt_gate
-  LOGICAL :: schottky_source
-  LOGICAL :: onlyT
-  LOGICAL :: magnetic
+  LOGICAL  :: top_gate
+  LOGICAL  :: bot_gate
+  LOGICAL  :: lft_gate
+  LOGICAL  :: rgt_gate
+  LOGICAL  :: schottky_source
+  LOGICAL  :: onlyT
+  LOGICAL  :: magnetic
 
   CHARACTER(2) :: updw
-  CHARACTER(3) :: Tdir
   CHARACTER(1) :: chtype  
-  INTEGER :: Ndeltax, Ndeltay, Ndeltaz
+  INTEGER  :: Ndeltax, Ndeltay, Ndeltaz
   REAL(DP) :: deltax
   REAL(DP) :: deltay
   REAL(DP) :: deltaz
 
-  INTEGER :: nsolv,nsolc
-  CHARACTER(10), allocatable :: material(:), htype(:)
-  REAL(DP), allocatable :: mole(:)
-  INTEGER, allocatable :: NX_REG(:)
-  INTEGER :: NRG
-
+  INTEGER  :: nsolv,nsolc
+  
   REAL(DP) :: ERROR_INNER
-  INTEGER :: MAX_ITER_INNER
+  INTEGER  :: MAX_ITER_INNER
   REAL(DP) :: ERROR_OUTER
-  INTEGER :: MAX_ITER_OUTER
+  INTEGER  :: MAX_ITER_OUTER
   REAL(DP) :: alphapot       
   REAL(DP) :: TEMP
-  INTEGER :: NKT
+  INTEGER  :: NKT
 
-!!! EPM 
-  INTEGER :: nband,nband_c,nband_v,nk1,MM,ni,nf,nkx,nkx_d,Nk,nkyz,nky,nkz,nmod,Ncut,nx,ny,nz,ns,ns_d,NKGt,NMODES
-  INTEGER :: max_g,max_gx,max_gy,max_gz,Nd,Nrx,Nry,Nrz,np,ng,ngv,ngx,ngt,npol,Ncy,Ncz,Ncx_D
-  INTEGER, ALLOCATABLE :: indicione(:), indicino(:), indgv(:,:,:), ijg(:,:)!, Nijg(:,:) !,ig(:),igg(:)
+  INTEGER  :: nband,nband_c,nband_v,nk1,MM,ni,nf,nkx,nkx_d,Nk,nkyz,nky,nkz,nmod
+  INTEGER  :: nx, ny, nz, NKGt, NMODES
+  INTEGER  :: Nrx,Nry,Nrz,ngt,npol,Ncy,Ncz,Ncx_D
+  integer,  allocatable :: Nez(:), Ney(:), Nex(:), nband_val(:), off_k_nvb(:)
+  real(dp)              :: dx, dy, dz
+  REAL(DP), ALLOCATABLE :: kx(:), ky(:), kz(:), Kyz(:), KGt(:,:), k_vec(:,:), KGt_kyz(:,:,:) 
+  REAL(DP), ALLOCATABLE :: deg_ky(:), deg_kz(:), deg_kyz(:), kv_max(:,:), kc_min(:,:), off_set(:)
 
-  integer, allocatable :: iky(:),ikz(:),Nkgt_kyz(:),Nk_kyz(:), Nez(:), Ney(:), Nex(:), nband_val(:), off_k_nvb(:)
-
-  real(dp) :: dx, dy, dz, t0x, t0y, t0z, Kmax
-  REAL(DP) :: b1(3),b2(3),b3(3),T(3),R(3),A1(3),A2(3),A3(3)
-
-  REAL(DP), ALLOCATABLE :: kx(:), kx_d(:), ky(:), kz(:), Kyz(:),  KGt(:,:), hkl(:,:), hklv(:,:), G(:,:), Gv(:,:), k_vec(:,:)
-  REAL(DP), ALLOCATABLE :: deg_ky(:), deg_kz(:), deg_kyz(:), kv_max(:,:), kc_min(:,:), KGt_kyz(:,:,:) ,off_set(:)
-
-  LOGICAL, ALLOCATABLE :: k_selec(:)
-
+  LOGICAL,  ALLOCATABLE :: k_selec(:)
+  LOGICAL               :: phonons
+  
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   type H_blocks
      complex(dp), allocatable :: H(:,:)
@@ -139,35 +119,28 @@ MODULE indata
   type F_blocks
      REAL(DP), ALLOCATABLE :: F(:,:)
   end type F_blocks
-  type(F_blocks),allocatable :: form_factor(:,:)
+  type(F_blocks),allocatable :: form_factor(:,:,:)
 
-
-!!! MATERIAL
-  REAL(DP) :: E_GAP,ref,ac,ac1,ac2,ac3,g_spin,Ecut,omega,zeta,R0_a,R0_c,A0_a,B0_a,A2_a,R2_a,A0_c,B0_c,A2_c,R2_c,mu,eta
-  LOGICAL :: wr_ham
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
+  REAL(DP)  :: E_GAP,ref,ac,ac1,ac2,ac3,g_spin,Ecut,mu,eta
 
   CHARACTER :: domag, lspinorb, okvan
   
-  INTEGER :: num_mat, num_reg, num_het
-  INTEGER, ALLOCATABLE :: imat(:), ihet(:), nc_reg(:), typ_mat(:), nm_mat(:), mat_1(:), mat_0(:),ihh(:,:)
+  INTEGER               :: num_mat, num_reg, num_het
+  INTEGER,  ALLOCATABLE :: imat(:), ihet(:), nc_reg(:), typ_mat(:)
+  INTEGER,  ALLOCATABLE :: nm_mat(:), mat_1(:), mat_0(:),ihh(:,:), htype(:)
   REAL(DP), ALLOCATABLE :: ref_ev(:),ref_ec(:)
 
   REAL(DP) :: Eop
-  INTEGER :: Nop_g
-  INTEGER :: Nop_f2
-  INTEGER :: NOP_f3 
-  REAL(DP) :: Dop_f2
-  REAL(DP) :: Dop_f3
+  INTEGER  :: Nop_g
   REAL(DP) :: Dop_g
-  INTEGER :: Nsub,Nomp
+  INTEGER  :: Nsub,Nomp
   REAL(DP) :: Dac, Dac_e
   REAL(DP) :: Dac_h
   REAL(DP) :: SCBA_alpha
   REAL(DP) :: SCBA_tolerance
-  INTEGER :: SCBA_max_iter
-  REAL(DP), ALLOCATABLE :: Dop_g_mat(:)
-  REAL(DP), ALLOCATABLE :: Dac_e_mat(:)
-  REAL(DP), ALLOCATABLE :: Dac_h_mat(:)
+  INTEGER  :: SCBA_max_iter
 
   REAL(DP) :: VGMIN
   REAL(DP) :: VGMAX
@@ -184,23 +157,18 @@ MODULE indata
   REAL(DP) :: DIEL_SC
   REAL(DP) :: DIEL_OX
   REAL(DP) :: DIEL_O2
-  CHARACTER(LEN=20) :: outdir
-  CHARACTER(LEN=40) :: inputdir
-           
+  
+  CHARACTER(LEN=60) :: outdir
+  CHARACTER(LEN=60) :: inputdir
 
-
-!!!  REAL(DP), ALLOCATABLE  :: E_GAP(:), DIEL_SC(:), CHI(:)
-!  REAL(DP), ALLOCATABLE  :: ac_st(:), av_st(:), b_st(:), d_st(:)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!Auxiliary variables
-  INTEGER  :: NUMBOUNDOLD
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!All integer quantities are referred as NUMBER OF ELEMENTS!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
   NAMELIST /indata_mesh/                       &
        &  Ndeltax,                             &
        &  Ndeltay,                             &
@@ -294,48 +262,42 @@ MODULE indata
 
 
 CONTAINS
-
+  
   SUBROUTINE indata_grid()
-    IMPLICIT NONE
-
-    ac=ac1
-
-    omega=ac1*ac2*ac3
-    write(*,*)'unit cell volume',omega
-
-    ncx_d=(source_len+drain_len+gate_len+2*spacer) 
-    write(*,*)'NCX_D=',NCX_D
     
-    !ncy = tsc_w_ch
+    IMPLICIT NONE
+    
+    ac=ac1
+    
+    write(*,*)'unit cell volume',ac1*ac2*ac3
+    
+    ncx_d=(source_len+drain_len+gate_len+2*spacer)
+    
+    write(*,*)'NCX_D=',NCX_D
     write(*,*)'NCY_D=',NCY
-
-    !ncz= tsc_h_ch 
     write(*,*)'NCZ_D=',NCZ
- 
     
     write(*,*)'Ndeltax=',Ndeltax
     write(*,*)'Ndeltay=',Ndeltay
     write(*,*)'Ndeltaz=',Ndeltaz
-
-
+    
     WRITE(*,*)'NKY=',NKY
     WRITE(*,*)'NKZ=',NKZ
-
+    
     allocate(ky(1:nky))
     allocate(kz(1:nkz))
-
+    
     allocate(deg_ky(nky),deg_kz(nkz))
     deg_ky=2.0_dp    
-    deg_kz=2.0_dp
-
-
+    deg_kz=2.0_dp  
+    
   END SUBROUTINE indata_grid
 
 
   SUBROUTINE indata_readinput()
 
     IMPLICIT NONE    
-    INTEGER :: i,j,l,nc,iy,iz
+    INTEGER       :: i,j,l,nc,iy,iz
     CHARACTER(20) :: comment
     
 !!! DEFAULT VALUES !!!
@@ -392,7 +354,6 @@ CONTAINS
     READ(*,NML=indata_lenghts)
     READ(*,NML=indata_oxide)
     READ(*,NML=indata_channel)
-!    READ(*,NML=indata_spacer)
 
     if(tox_lft+tox_rgt+tsc_w .ne. Ndeltay)then
        write(*,*)'structure error along the lateral direction (y-axis)'
@@ -445,13 +406,12 @@ CONTAINS
        allocate(htype(num_het))
        ihh=0
        do i=1,num_het
-          read(*,*)j,mat_0(i),mat_1(i)!,htype(i)
+          read(*,*)j,mat_0(i),mat_1(i)
           htype(i)='n'
           ihh(mat_1(i),mat_0(i))=j
        end do
 
     end if
-!    write(*,*)'ihh',ihh
     ihet(1)=imat(1)
     do i=2,nc
        if(imat(i) == imat(i-1))then
@@ -472,7 +432,7 @@ CONTAINS
     READ(*,*)comment
     write(*,*)comment
     NKyz=nky*nkz
-    write(*,*)'Kkyz',Nkyz
+    write(*,*)'Nkyz',Nkyz
     allocate(k_vec(3,Nkyz))
     allocate(off_k_nvb(Nkyz))
     allocate(k_selec(NKyz))
@@ -515,19 +475,11 @@ CONTAINS
     write(*,*)  'ac2',ac2
     write(*,*)  'ac3',ac3
     
-    allocate(HL(Nkyz,num_mat))
-    
+    allocate(HL(Nkyz,num_mat))    
     allocate(TL(NKyz,num_mat+num_het))
-    
     allocate(ULCBB(NKyz,num_mat))
-
     allocate(U_PSI(NKyz,num_mat))
 
-    allocate(form_factor(NKyz,num_mat))
-
-
-
-    
 
     deltax=ac1/dble(Ndeltax)
     deltay=ac2/dble(Ndeltay)
@@ -563,6 +515,18 @@ CONTAINS
     write(*,*) 'NKT', NKT
 
     
+  
+    phonons=.FALSE.
+    if(dac > 0.0_dp .or. dop_g > 0.0_dp) phonons=.TRUE.
+
+    if(phonons) then
+       write(*,*)'PHONONS ON'
+    else
+       write(*,*)'PHONONS OFF, balistic simulation'
+    end if
+    
+    if(phonons) allocate(form_factor(NKyz,NKyz,num_mat))
+    
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   IF((mod(tsc_h-tsc_h,2).ne.0).or.(mod(tsc_w-tsc_w,2).ne.0))STOP "Error in structure declaration"
@@ -574,9 +538,9 @@ SUBROUTINE indata_structure_init()
 
 IMPLICIT NONE
 
-INTEGER :: cc,ii,jj,offset,vertical_offset,lateral_offset,plane_index,inplane_y,inplane_z,type
+INTEGER :: icc,ii,jj,offset,vertical_offset,lateral_offset,plane_index,inplane_y,inplane_z,type
 
-cc=0
+icc=0
 
 !!! THIS CONVERTS the number of unit cells along x in number of elements!!!!
 source_len=source_len*Ndeltax
@@ -613,31 +577,23 @@ IF(schottky_source)THEN
 END IF
 !!! 
 IF(lft_gate)THEN
-!lateral_offset=(((tsc_w+2*tox_w)-(tsc_w+2*tox_w_ch))/2 + 1)
 NUMBOUND_3D=NUMBOUND_3D+(gate_len)*NTOT_Z*lateral_offset
-!write(*,*)'Top gate nodes',NUMBOUND_3D
-cc=cc+1
+icc=icc+1
 END IF
 NUMBOUNDOLD=NUMBOUND_3D
 IF(rgt_gate)THEN
-!lateral_offset=(((tsc_w+2*tox_w)-(tsc_w+2*tox_w_ch))/2 + 1)
 NUMBOUND_3D=NUMBOUND_3D+(gate_len)*NTOT_Z*lateral_offset
-!write(*,*)'Bot gate nodes',NUMBOUND_3D-NUMBOUNDOLD
-cc=cc+1
+icc=icc+1
 END IF
 NUMBOUNDOLD=NUMBOUND_3D
 IF(top_gate)THEN
-!vertical_offset=(((tsc_h+2*tox_h)-(tsc_h+2*tox_h_ch))/2 + 1)
 NUMBOUND_3D=NUMBOUND_3D+(gate_len)*NTOT_Y*vertical_offset
-!write(*,*)'Sx gate nodes',NUMBOUND_3D-NUMBOUNDOLD
-cc=cc+1
+icc=icc+1
 END IF
 NUMBOUNDOLD=NUMBOUND_3D
 IF(bot_gate)THEN
-!vertical_offset=(((tsc_h+2*tox_h)-(tsc_h+2*tox_h_ch))/2 + 1)
 NUMBOUND_3D=NUMBOUND_3D+(gate_len)*NTOT_Y*vertical_offset
-!write(*,*)'Dx gate nodes',NUMBOUND_3D-NUMBOUNDOLD
-cc=cc+1
+icc=icc+1
 END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -657,27 +613,22 @@ NUMBOUND_3D=NUMBOUND_3D-vertical_offset*lateral_offset*(gate_len)
 END IF
 !!!!!!!!!!!!!!!!!!!!!!!!!
 
-NUMELECT_3D=cc
-write(*,*)'Number of gates',cc
-
-!!!NUMBOUND_3D=NTOT_Z*NTOT_Y
-
+NUMELECT_3D=icc
+write(*,*)'Number of gates',icc
 write(*,*)'Total number of gate nodes',NUMBOUND_3D
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!Allocation of arrays!!!!!!!!!!!!!!!!!!
-
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ALLOCATE(coord_3D(1:3,0:NUMN_3D-1))
     coord_3D(:,:)=0.0_dp
     ALLOCATE(whichkind_3D(0:NUMN_3D-1))
     whichkind_3D(:)=0
-    ALLOCATE(lista_3D(1:8,0:NUMEL_3D-1))
-    lista_3D(:,:)=0
+    ALLOCATE(list_3D(1:8,0:NUMEL_3D-1))
+    list_3D(:,:)=0
     ALLOCATE(epsilon_3D(0:NUMEL_3D-1))
     epsilon_3D(:)=0.0_dp 
     IF(NUMELECT_3D.gt.0)THEN
-    !ALLOCATE(potelectr(1:NUMELECT_3D))
-    !potelectr(:)=0.0_dp
     potelectr=0.0_dp
     END IF
     ALLOCATE(type_3D(1:NTOT_X-1,1:NTOT_Y-1,1:NTOT_Z-1))
@@ -712,11 +663,10 @@ IF((inplane_y.eq.0).or.(inplane_z.eq.0).or.(inplane_y.eq.NTOT_Y-1).or.(inplane_z
 !!! change june 2021
 IF(schottky_source)THEN
    IF((plane_index.le.(source_len)))THEN
-      whichkind_3D(ii)=11 !set node
+      whichkind_3D(ii)=11 !set nodes
    END IF
 END IF
 
-!The gated nodes overwrite the boundary ones and will not be considered for the Schroedinger 2D
 IF((plane_index.gt.(source_len+spacer)).and.(plane_index.le.(source_len+spacer+gate_len)))THEN
 !Gated area
 IF(rgt_gate)THEN
@@ -741,7 +691,6 @@ END IF
 END IF
 END IF
 
-
 !!!IF(plane_index.eq.0)whichkind_3D(ii)=1 !! THE DIRICHLECT NODES ARE LOCATED AT THE SOURCE (FIRST SLICE)
 
 END DO
@@ -757,14 +706,14 @@ offset=plane_index*(NUMEL_3D/(NTOT_X-1))
 inplane_y=mod(ii-offset,(NTOT_Y-1))
 inplane_z=(ii-offset)/(NTOT_Y-1)
 
-lista_3D(1,ii)=plane_index*NTOT_Y*NTOT_Z+mod(ii,(NTOT_Y-1)*(NTOT_Z-1))+inplane_z
-lista_3D(2,ii)=lista_3D(1,ii)+1
-lista_3D(3,ii)=lista_3D(1,ii)+1+NTOT_Y
-lista_3D(4,ii)=lista_3D(1,ii)+NTOT_Y
-lista_3D(5,ii)=(plane_index+1)*NTOT_Y*NTOT_Z+mod(ii,(NTOT_Y-1)*(NTOT_Z-1))+inplane_z
-lista_3D(6,ii)=lista_3D(5,ii)+1
-lista_3D(7,ii)=lista_3D(5,ii)+1+NTOT_Y
-lista_3D(8,ii)=lista_3D(5,ii)+NTOT_Y
+list_3D(1,ii)=plane_index*NTOT_Y*NTOT_Z+mod(ii,(NTOT_Y-1)*(NTOT_Z-1))+inplane_z
+list_3D(2,ii)=list_3D(1,ii)+1
+list_3D(3,ii)=list_3D(1,ii)+1+NTOT_Y
+list_3D(4,ii)=list_3D(1,ii)+NTOT_Y
+list_3D(5,ii)=(plane_index+1)*NTOT_Y*NTOT_Z+mod(ii,(NTOT_Y-1)*(NTOT_Z-1))+inplane_z
+list_3D(6,ii)=list_3D(5,ii)+1
+list_3D(7,ii)=list_3D(5,ii)+1+NTOT_Y
+list_3D(8,ii)=list_3D(5,ii)+NTOT_Y
 
 
 epsilon_3D(ii)=DIEL_0*DIEL_O2     !Default as external oxide
@@ -834,8 +783,8 @@ END DO
     coord_3D_ord(:,:)=0.0_dp
     ALLOCATE(whichkind_3D_ord(0:NUMN_3D-1))
     whichkind_3D_ord(:)=0
-    ALLOCATE(lista_3D_ord(1:8,0:NUMEL_3D-1))
-    lista_3D_ord(:,:)=0
+    ALLOCATE(list_3D_ord(1:8,0:NUMEL_3D-1))
+    list_3D_ord(:,:)=0
     ALLOCATE(map_3D(0:NUMN_3D-1))
     map_3D(:)=0
     
@@ -880,14 +829,14 @@ jj=0
        coord_3D_ord(3,map_3D(ii))=coord_3D(3,ii)
     END DO
     DO ii=0,NUMEL_3D-1
-       lista_3D_ord(1,ii)=map_3D(lista_3D(1,ii))
-       lista_3D_ord(2,ii)=map_3D(lista_3D(2,ii))
-       lista_3D_ord(3,ii)=map_3D(lista_3D(3,ii))
-       lista_3D_ord(4,ii)=map_3D(lista_3D(4,ii))
-       lista_3D_ord(5,ii)=map_3D(lista_3D(5,ii))
-       lista_3D_ord(6,ii)=map_3D(lista_3D(6,ii))
-       lista_3D_ord(7,ii)=map_3D(lista_3D(7,ii))
-       lista_3D_ord(8,ii)=map_3D(lista_3D(8,ii))
+       list_3D_ord(1,ii)=map_3D(list_3D(1,ii))
+       list_3D_ord(2,ii)=map_3D(list_3D(2,ii))
+       list_3D_ord(3,ii)=map_3D(list_3D(3,ii))
+       list_3D_ord(4,ii)=map_3D(list_3D(4,ii))
+       list_3D_ord(5,ii)=map_3D(list_3D(5,ii))
+       list_3D_ord(6,ii)=map_3D(list_3D(6,ii))
+       list_3D_ord(7,ii)=map_3D(list_3D(7,ii))
+       list_3D_ord(8,ii)=map_3D(list_3D(8,ii))
     END DO
 
 
@@ -930,92 +879,91 @@ jj=0
     
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-END SUBROUTINE indata_structure_init
 
-  SUBROUTINE indata_CONNECTIVITY()
+  END SUBROUTINE indata_structure_init
 
-    IMPLICIT NONE
-    INTEGER :: ii,jj,nel,cc,trovato
-    REAL(DP) :: xi,yi,xj,yj,zi,zj
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
 
-    INTEGER :: checked(0:NUMN_3D-1)    
+SUBROUTINE indata_CONNECTIVITY()
+  
+  IMPLICIT NONE
+  INTEGER  :: ii,jj,nel,icc,found
+  REAL(DP) :: xi,yi,xj,yj,zi,zj
+  INTEGER  :: checked(0:NUMN_3D-1)    
+  
+  ALLOCATE(connect_3D(0:LWORK_3D-1,1:7)) 
+  
+  connect_3D(:,:)=0
+  
+    !\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    !\\\\ internal nodes connectivity \\
+    !\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
-    ALLOCATE(connect_3D(0:LWORK_3D-1,1:7)) 
-
-    connect_3D(:,:)=0
-
-
-    !\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-    !\\\\ costruisco la connectivity dei nodi interni \\\\\\\\\\\\\\\\\
-    !\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-
-    cc=0
-    trovato=0
-    checked(:)=0
-
-    DO nel=0,NUMEL_3D-1
-
-       DO ii=1,8
-
-          IF ((whichkind_3D_ord(lista_3D_ord(ii,nel)).le.0)) THEN 
-         
-             xi=coord_3D_ord(1,lista_3D_ord(ii,nel))
-             yi=coord_3D_ord(2,lista_3D_ord(ii,nel))
-             zi=coord_3D_ord(3,lista_3D_ord(ii,nel))
-
-             DO jj=1,8
-
-                trovato=0
-                IF (whichkind_3D_ord(lista_3D_ord(jj,nel)).le.0) THEN 
-
-                   IF(lista_3D_ord(jj,nel).ne.lista_3D_ord(ii,nel))THEN
-                  
-                   xj=coord_3D_ord(1,lista_3D_ord(jj,nel))
-                   yj=coord_3D_ord(2,lista_3D_ord(jj,nel))
-                   zj=coord_3D_ord(3,lista_3D_ord(jj,nel))   
-                   
-                      IF (((xi.ne.xj).and.((yi.eq.yj).and.(zi.eq.zj))).or.&
-                          ((xi.eq.xj).and.((yi.ne.yj).and.(zi.eq.zj))).or.&
-                          ((xi.eq.xj).and.((yi.eq.yj).and.(zi.ne.zj))))THEN
-                      DO cc=1,connect_3D(lista_3D_ord(ii,nel),7)
-                         IF(connect_3D(lista_3D_ord(ii,nel),cc).eq.lista_3D_ord(jj,nel)) trovato=1
-                      END DO
-                      IF(trovato.ne.1) THEN
-                         connect_3D(lista_3D_ord(ii,nel),7)=connect_3D(lista_3D_ord(ii,nel),7)+1  
-                         connect_3D(lista_3D_ord(ii,nel),connect_3D(lista_3D_ord(ii,nel),7))=lista_3D_ord(jj,nel)
-                      END IF
-                   END IF
-
+  icc=0
+  found=0
+  checked(:)=0
+  
+  DO nel=0,NUMEL_3D-1
+     
+     DO ii=1,8
+        
+        IF ((whichkind_3D_ord(list_3D_ord(ii,nel)).le.0)) THEN 
+           
+           xi=coord_3D_ord(1,list_3D_ord(ii,nel))
+           yi=coord_3D_ord(2,list_3D_ord(ii,nel))
+           zi=coord_3D_ord(3,list_3D_ord(ii,nel))
+           
+           DO jj=1,8
+              
+              found=0
+              IF (whichkind_3D_ord(list_3D_ord(jj,nel)).le.0) THEN 
+                 
+                 IF(list_3D_ord(jj,nel).ne.list_3D_ord(ii,nel))THEN
+                    
+                    xj=coord_3D_ord(1,list_3D_ord(jj,nel))
+                    yj=coord_3D_ord(2,list_3D_ord(jj,nel))
+                    zj=coord_3D_ord(3,list_3D_ord(jj,nel))   
+                    
+                    IF (((xi.ne.xj).and.((yi.eq.yj).and.(zi.eq.zj))).or.&
+                         ((xi.eq.xj).and.((yi.ne.yj).and.(zi.eq.zj))).or.&
+                         ((xi.eq.xj).and.((yi.eq.yj).and.(zi.ne.zj))))THEN
+                       DO icc=1,connect_3D(list_3D_ord(ii,nel),7)
+                          IF(connect_3D(list_3D_ord(ii,nel),icc).eq.list_3D_ord(jj,nel)) found = 1
+                       END DO
+                       IF(found .ne. 1) THEN
+                          connect_3D(list_3D_ord(ii,nel),7)=connect_3D(list_3D_ord(ii,nel),7)+1  
+                          connect_3D(list_3D_ord(ii,nel),connect_3D(list_3D_ord(ii,nel),7))=list_3D_ord(jj,nel)
+                       END IF
+                    END IF
+                    
                  END IF
-
-                END IF
-             END DO
-
-          END IF
-       END DO
-    END DO
-
-  END SUBROUTINE indata_CONNECTIVITY
-
-
+                 
+              END IF
+           END DO
+           
+        END IF
+     END DO
+  END DO
+  
+END SUBROUTINE indata_CONNECTIVITY
 
 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   SUBROUTINE indata_build_doping(doping,coul,s_val,d_val,c_val,n,lwork)
 
   REAL(DP), INTENT(OUT) :: doping(0:lwork-1)
-  INTEGER, INTENT(OUT) :: coul(0:lwork-1)
+  INTEGER,  INTENT(OUT) :: coul(0:lwork-1)
 
   REAL(DP), INTENT(IN)  :: s_val
   REAL(DP), INTENT(IN)  :: d_val
   REAL(DP), INTENT(IN)  :: c_val
-  INTEGER, INTENT(IN) :: lwork
-  INTEGER, INTENT(IN) :: n
+  INTEGER,  INTENT(IN)  :: lwork
+  INTEGER,  INTENT(IN)  :: n
 
   INTEGER :: ii, plane_index, inplane_y, inplane_z
   REAL(DP) :: dop
-
-  !Loop over all the nodes to indentify source/drain silicon nodes supposed doped
    
   doping=0.0_dp
   coul=0
@@ -1032,11 +980,12 @@ END SUBROUTINE indata_structure_init
 
      dop=0.0_dp
 
-     IF((inplane_y.ge.tox_lft +to2_lft) .and.(inplane_y.le.(tox_lft +to2_lft +tsc_w)).and.  &
-     &  (inplane_z.ge.tox_bot+to2_bot).and.(inplane_z.le.(tox_bot+to2_bot+tsc_h)) )THEN
-        IF(plane_index.le.source_len)                                                       dop = s_val !Source  doped node
-        IF(plane_index.ge.(source_len+gate_len+2*spacer))                                   dop = d_val !Drain   doped node
-        IF((plane_index.gt.source_len).and.(plane_index.lt.(source_len+gate_len+2*spacer))) dop = c_val !Channel doped node
+     IF((inplane_y .ge.tox_lft +to2_lft) .and.(inplane_y.le.(tox_lft +to2_lft +tsc_w)).and.  &
+     &  (inplane_z .ge.tox_bot+to2_bot).and.(inplane_z.le.(tox_bot+to2_bot+tsc_h)) )THEN
+        IF( plane_index .le.  source_len)                     dop = s_val !Source  doped node
+        IF( plane_index .ge. (source_len+gate_len+2*spacer))  dop = d_val !Drain   doped node
+        IF((plane_index .gt.  source_len) .and. &
+           (plane_index .lt. (source_len+gate_len+2*spacer))) dop = c_val !Channel doped node
         
         if(whichkind_3D(ii).le.0) doping(map_3D(ii))=ELCH*dop
 
@@ -1053,15 +1002,14 @@ END SUBROUTINE indata_structure_init
  
  REAL(DP), INTENT(OUT) :: potA(1:nx,1:ny,1:nz)
 
- REAL(DP), INTENT(IN) :: potB(0:lwork-1)
- INTEGER, INTENT(IN) :: which(0:nx*ny*nz-1)
- INTEGER, INTENT(IN) :: map(0:nx*ny*nz-1)
- INTEGER, INTENT(IN) :: nx
- INTEGER, INTENT(IN) :: ny
- INTEGER, INTENT(IN) :: nz
- INTEGER, INTENT(IN) :: lwork
-
- INTEGER :: ii,x_index,y_index,z_index
+ REAL(DP), INTENT(IN)  :: potB(0:lwork-1)
+ INTEGER,  INTENT(IN)  :: which(0:nx*ny*nz-1)
+ INTEGER,  INTENT(IN)  :: map(0:nx*ny*nz-1)
+ INTEGER,  INTENT(IN)  :: nx
+ INTEGER,  INTENT(IN)  :: ny
+ INTEGER,  INTENT(IN)  :: nz
+ INTEGER,  INTENT(IN)  :: lwork
+ INTEGER               :: ii,x_index,y_index,z_index
 
  potA=0.0_dp
  
@@ -1072,8 +1020,7 @@ END SUBROUTINE indata_structure_init
  z_index=mod(ii,ny*nz)/ny +1
  
  IF(which(ii).ge.1)THEN
- !Gated region added to the potential defined on the workspace only
- potA(x_index,y_index,z_index)=potelectr!(1)
+ potA(x_index,y_index,z_index)=potelectr
  ELSE
  potA(x_index,y_index,z_index)=potB(map(ii))
  END IF
@@ -1083,7 +1030,6 @@ END SUBROUTINE indata_structure_init
   pota(1:NX,NY,1:NZ) = pota(1:NX,NY-1,1:NZ)
   pota(1:NX,1:NY,1)  = pota(1:NX,1:NY,2)
   pota(1:NX,1:NY,NZ) = pota(1:NX,1:NY,NZ-1)
-!!!! FINISHED
 
  END DO
 
@@ -1093,15 +1039,14 @@ END SUBROUTINE indata_structure_init
  
  REAL(DP), INTENT(OUT) :: rhoA(1:nx,1:ny,1:nz)
 
- REAL(DP), INTENT(IN) :: rhoB(0:lwork-1)
- INTEGER, INTENT(IN) :: which(0:nx*ny*nz-1)
- INTEGER, INTENT(IN) :: map(0:nx*ny*nz-1)
- INTEGER, INTENT(IN) :: nx
- INTEGER, INTENT(IN) :: ny
- INTEGER, INTENT(IN) :: nz
- INTEGER, INTENT(IN) :: lwork
-
- INTEGER :: ii,x_index,y_index,z_index
+ REAL(DP), INTENT(IN)  :: rhoB(0:lwork-1)
+ INTEGER,  INTENT(IN)  :: which(0:nx*ny*nz-1)
+ INTEGER,  INTENT(IN)  :: map(0:nx*ny*nz-1)
+ INTEGER,  INTENT(IN)  :: nx
+ INTEGER,  INTENT(IN)  :: ny
+ INTEGER,  INTENT(IN)  :: nz
+ INTEGER,  INTENT(IN)  :: lwork
+ INTEGER               :: ii,x_index,y_index,z_index
 
  rhoA=0.0_dp
  
@@ -1121,17 +1066,15 @@ END SUBROUTINE indata_structure_init
 
  SUBROUTINE map_charge(rhoA,rhoB,which,map,nx,ny,nz,lwork)
  
- REAL(DP), INTENT(OUT) :: rhoA(0:lwork-1)
-
- REAL(DP), INTENT(IN) :: rhoB(1:nx,1:ny,1:nz)
- INTEGER, INTENT(IN) :: which(0:nx*ny*nz-1)
- INTEGER, INTENT(IN) :: map(0:nx*ny*nz-1) 
- INTEGER, INTENT(IN) :: nx
- INTEGER, INTENT(IN) :: ny
- INTEGER, INTENT(IN) :: nz
- INTEGER, INTENT(IN) :: lwork
-
- INTEGER :: ii,x_index,y_index,z_index
+ REAL(DP), INTENT(OUT)  :: rhoA(0:lwork-1)
+ REAL(DP), INTENT(IN)   :: rhoB(1:nx,1:ny,1:nz)
+ INTEGER,  INTENT(IN)   :: which(0:nx*ny*nz-1)
+ INTEGER,  INTENT(IN)   :: map(0:nx*ny*nz-1) 
+ INTEGER,  INTENT(IN)   :: nx
+ INTEGER,  INTENT(IN)   :: ny
+ INTEGER,  INTENT(IN)   :: nz
+ INTEGER,  INTENT(IN)   :: lwork
+ INTEGER                :: ii,x_index,y_index,z_index
 
  rhoA=0.0_dp
 
@@ -1142,7 +1085,7 @@ END SUBROUTINE indata_structure_init
  z_index=mod(ii,ny*nz)/ny +1
  
  IF(which(ii).le.0)THEN
- rhoA(map(ii))=rhoB(x_index,y_index,z_index)
+    rhoA(map(ii))=rhoB(x_index,y_index,z_index)
  END IF
  
  END DO
@@ -1150,47 +1093,44 @@ END SUBROUTINE indata_structure_init
  END SUBROUTINE map_charge
 
 
-SUBROUTINE shift_potential(potA,potB,shift,econd,which,map,lista_ord,which_ord,epsilon3D,nx,ny,nz,numel,lwork)
+ SUBROUTINE shift_potential(potA,potB,shift,econd,which,map,list_ord,which_ord,&
+      epsilon3D,nx,ny,nz,numel,lwork)
 
- REAL(DP), INTENT(OUT) :: potA(0:lwork-1)
-
- REAL(DP), INTENT(IN) :: potB(0:lwork-1)
- REAL(DP), INTENT(IN) :: shift
- REAL(DP), INTENT(IN) :: econd
- INTEGER, INTENT(IN) :: which(0:nx*ny*nz-1)
- INTEGER, INTENT(IN) :: map(0:nx*ny*nz-1)
- INTEGER, INTENT(IN) :: lista_ord(1:8,0:numel-1)
- INTEGER, INTENT(IN) :: which_ord(0:nx*ny*nz-1)
- REAL(DP), INTENT(IN) :: epsilon3D(0:numel-1)
- INTEGER, INTENT(IN) :: nx
- INTEGER, INTENT(IN) :: ny
- INTEGER, INTENT(IN) :: nz
- INTEGER, INTENT(IN) :: lwork
- INTEGER, INTENT(IN) :: numel
- 
-
- INTEGER :: ll, nn, ii
- INTEGER :: checked(0:lwork-1)
+ REAL(DP), INTENT(OUT)  :: potA(0:lwork-1)
+ REAL(DP), INTENT(IN)   :: potB(0:lwork-1)
+ REAL(DP), INTENT(IN)   :: shift
+ REAL(DP), INTENT(IN)   :: econd
+ INTEGER,  INTENT(IN)   :: which(0:nx*ny*nz-1)
+ INTEGER,  INTENT(IN)   :: map(0:nx*ny*nz-1)
+ INTEGER,  INTENT(IN)   :: list_ord(1:8,0:numel-1)
+ INTEGER,  INTENT(IN)   :: which_ord(0:nx*ny*nz-1)
+ REAL(DP), INTENT(IN)   :: epsilon3D(0:numel-1)
+ INTEGER,  INTENT(IN)   :: nx
+ INTEGER,  INTENT(IN)   :: ny
+ INTEGER,  INTENT(IN)   :: nz
+ INTEGER,  INTENT(IN)   :: lwork
+ INTEGER,  INTENT(IN)   :: numel
+ INTEGER                :: ll, nn, ii
+ INTEGER                :: checked(0:lwork-1)
 
  checked=0
 
  DO ii=0, nx*ny*nz-1
- IF(which(ii).le.0)THEN
-    potA(map(ii))=potB(map(ii))+econd !(1+ii/(NY*NZ))
- endif
+    IF(which(ii).le.0)THEN
+       potA(map(ii))=potB(map(ii))+econd 
+    endif
  enddo
-
 
  DO ll=0, numel-1
     
     IF((epsilon3D(ll).eq.DIEL_0*DIEL_OX).or.(epsilon3D(ll).eq.DIEL_0*DIEL_O2))THEN
        DO nn=1,8
           
-          IF(which_ord(lista_ord(nn,ll)).le.0)THEN
+          IF(which_ord(list_ord(nn,ll)).le.0)THEN
              
-             IF(checked(lista_ord(nn,ll)).ne.1)THEN
-                potA(lista_ord(nn,ll))=potA(lista_ord(nn,ll))+shift
-                checked(lista_ord(nn,ll))=1
+             IF(checked(list_ord(nn,ll)).ne.1)THEN
+                potA(list_ord(nn,ll))=potA(list_ord(nn,ll))+shift
+                checked(list_ord(nn,ll))=1
              END IF
              
           END IF
@@ -1202,15 +1142,18 @@ SUBROUTINE shift_potential(potA,potB,shift,econd,which,map,lista_ord,which_ord,e
 END SUBROUTINE shift_potential
 
  
-!!!!! Gauss-Legendre integrals
-subroutine gaussianlegendre(x1, x2, x, w, n)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+subroutine gaussianlegendre(x1, x2, x, w, n) ! Gauss-Legendre integrals
+
   implicit none
-  integer, intent(in) :: n
-  double precision, intent(in) :: x1, x2
-  double precision, dimension(n), intent(out) :: x, w
-  integer :: i, j, m
-  double precision :: p1, p2, p3, pp, xl, xm, z, z1
-  double precision, parameter :: eps=3.d-14
+  
+  INTEGER,  intent(in)  :: n
+  REAL(DP), intent(in)  :: x1, x2
+  REAL(DP), intent(out) :: x(n), w(n)
+  INTEGER               :: i, j, m
+  REAL(DP)              :: p1, p2, p3, pp, xl, xm, z, z1
+  REAL(DP), parameter   :: eps=3.0d-14
       
   m = (n+1)/2
   xm = 0.5_dp*(x2+x1)
@@ -1235,10 +1178,12 @@ subroutine gaussianlegendre(x1, x2, x, w, n)
     w(i) = (2.0_dp*xl)/((1.0_dp-z*z)*pp*pp)
     w(n+1-i) = w(i)
   end do
+
 end subroutine gaussianlegendre
 
   
 SUBROUTINE invertR(A,n,np)
+
   IMPLICIT NONE
   
   INTEGER :: info,n,np
@@ -1253,65 +1198,51 @@ END SUBROUTINE invertR
 
 
 SUBROUTINE SUB_DEF_Z0(Mi,Mf,ny,A,subband)
-implicit none
-integer :: ny,mi,mf
-real(dp) :: subband(1:(Mf-Mi+1))
-complex(dp) :: A(1:NY,1:NY),Uii(1:NY,1:Mf-Mi+1)
-integer :: INFO
-integer, allocatable :: iwork(:), supp(:)
-complex(dp), allocatable :: work(:)
-real(dp), allocatable :: rwork(:)
-REAL(DP), EXTERNAL :: DLAMCH
+
+  implicit none
+  integer                  :: ny,mi,mf
+  real(dp)                 :: subband(1:(Mf-Mi+1))
+  complex(dp)              :: A(1:NY,1:NY),Uii(1:NY,1:Mf-Mi+1)
+  integer                  :: INFO
+  integer, allocatable     :: iwork(:), supp(:)
+  complex(dp), allocatable :: work(:)
+  real(dp), allocatable    :: rwork(:)
+  REAL(DP), EXTERNAL       :: DLAMCH
 
 
-allocate(WORK(20*ny))
-allocate(RWORK(24*ny))
-allocate(IWORK(10*ny))
-allocate(Supp(2*ny))
-
-call ZHEEVR('N','I','U',ny,A,ny,0.0,0.0,mi,mf,2*DLAMCH('S'),Mf-Mi+1,subband,Uii,ny,SUPP,WORK,20*ny,RWORK,24*ny,IWORK,10*ny,INFO)
-
-deallocate(work)
-deallocate(rwork)
-deallocate(supp)
-deallocate(iwork)
-!write(*,*)'info=',info
-if (INFO.ne.0)then
-   write(*,*)'SEVERE WARNING: SUB_DEF HAS FAILED. INFO=',INFO
-   stop
-endif
+  allocate(WORK(20*ny))
+  allocate(RWORK(24*ny))
+  allocate(IWORK(10*ny))
+  allocate(Supp(2*ny))
+  
+  call ZHEEVR('N','I','U',ny,A,ny,0.0,0.0,mi,mf,2*DLAMCH('S'),&
+       Mf-Mi+1,subband,Uii,ny,SUPP,WORK,20*ny,RWORK,24*ny,IWORK,10*ny,INFO)
+  
+  deallocate(work)
+  deallocate(rwork)
+  deallocate(supp)
+  deallocate(iwork)
+  
+  if (INFO.ne.0)then
+     write(*,*)'SEVERE WARNING: SUB_DEF HAS FAILED. INFO=',INFO
+     stop
+  endif
 
 END SUBROUTINE SUB_DEF_Z0
 
   
-!!$FUNCTION STRING(inn)
-!!$  IMPLICIT NONE
-!!$  !  converte l'INTEGER "inn" in una stringa ascii di POS caratteri 
-!!$  INTEGER, PARAMETER :: POS= 4
-!!$  INTEGER, INTENT(IN) :: inn
-!!$  CHARACTER(LEN=POS) :: STRING
-!!$  !............................................................Tipi locali
-!!$  INTEGER :: cifra, np, mm, num
-!!$  
-!!$  IF (inn > (10**POS)-1) stop "ERRORE: (inn > (10**3)-1)  in STRING"
-!!$  num= inn
-!!$  DO np= 1, POS
-!!$     mm= pos-np
-!!$     cifra= num/(10**mm)            ! divisione fra interi
-!!$     STRING(np:np)= ACHAR(48+cifra)
-!!$     num= num - cifra*(10**mm)
-!!$  END DO
-!!$END FUNCTION STRING
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  function stringa(ii) result(rr)
-    integer, intent(in) :: ii
-    character(:), allocatable :: rr
-    character(range(ii)+2) :: tt
-    write(tt,'(i0)') ii
-    rr = trim(tt)
-  end function stringa
+function stringa(ii) result(rr)
+  integer,       intent(in) :: ii
+  character(:), allocatable :: rr
+  character(range(ii)+2)    :: tt
+  
+  write(tt,'(i0)') ii
+  rr = trim(tt)
+
+end function stringa
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
 END MODULE indata
