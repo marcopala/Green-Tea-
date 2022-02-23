@@ -163,11 +163,11 @@ end do
 
 call omp_set_num_threads(Nomp) !!! this sets the environment variable
 
-!$omp parallel default(none) private(xx,ix,iy,iz,i,j,n,ip,pt,pot,Gcc,GBB,A,B,CR,t1,t2) &
+!$omp parallel default(none) private(xx,ix,iy,iz,i,j,n,ip,pt,Gcc,GBB,A,B,CR,t1,t2) &
 !$omp shared(NCX_D,Nrx,Ndeltax,Ndeltay,Ndeltaz,Ny,Nz,NMAX,NM,NGT,npol,iyz,imat,ac,&
 !$omp ULCBB,pot3D,KGt_kyz,Ry,Rz,Hi,U,deltay,deltaz,dy,dz,to2_lft,to2_bot )
 
-allocate(pot(Ngt,Ngt))
+!allocate(pot(Ngt,Ngt))
 allocate(Gcc(Ngt,Ngt))
 allocate(pt((Ny+1)*(Nz+1)))
 allocate(A(Ngt,(Ny+1)*(Nz+1)))
@@ -175,15 +175,44 @@ allocate(CR(2,2))
 
   !$omp do
 do xx=1,Ncx_D
-!   write(*,*)'xx',xx
+
 do ip=1,npol
-   Gcc=0.0_dp
+!   Gcc=0.0_dp
+!   do ix=1,Ndeltax
+!      pt=0.0_dp
+!      do iy=1,Ny+1  
+!      do iz=1,Nz+1  
+!         CR(1,1)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3),  to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3))
+!         CR(2,1)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3+1),to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3))
+!         CR(1,2)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3),  to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3+1))
+!         CR(2,2)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3+1),to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3+1))
+!         call surf_interp(iy,iz,CR,pt(iy+(iz-1)*(NY+1)))
+!      end do
+!      end do
+!      forall (i = 1:Ngt, j = 1:(Ny+1)*(Nz+1) ) A(i,j) = U(i,j) * pt(j)
+!      
+!      call zgemm('n','c',Ngt,ngt,(Ny+1)*(Nz+1),alpha,A,ngt,U(1:ngt,1:(Ny+1)*(Nz+1)),ngt,beta,pot,ngt)
+!      
+!      Gcc(1:ngt,1:Ngt)=Gcc(1:Ngt,1:Ngt)+pot(1:Ngt,1:Ngt)/dble(Ndeltax)
+!      
+!   end do
+   
+   !!!! TRANSFORMING INTO THE Bloch states BASIS
 
-   do ix=1,Ndeltax
-
+   allocate(GBB(Ngt,NM(xx)))
+   allocate(B(NM(xx),NM(xx)))
+   do n=1,Nrx
+      
+      if( mod(n,ceiling(dble(Nrx)/dble(Ndeltax))) == 1)then
+         ix=ceiling(dble(n)/dble(Nrx)*dble(Ndeltax))
+         if(ix > Ndeltax)then
+            write(*,*)'error in the interpolation',ix,Ndeltax
+            stop
+         end if
+         
       pt=0.0_dp
-      do iy=1,Ny+1  
-      do iz=1,Nz+1  
+      do iy=1,Ny+1
+      do iz=1,Nz+1
          CR(1,1)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3),  to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3))
          CR(2,1)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3+1),to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3))
          CR(1,2)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3),  to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3+1))
@@ -193,18 +222,12 @@ do ip=1,npol
       end do
 
       forall (i = 1:Ngt, j = 1:(Ny+1)*(Nz+1) ) A(i,j) = U(i,j) * pt(j)
-      
-      call zgemm('n','c',Ngt,ngt,(Ny+1)*(Nz+1),alpha,A,ngt,U(1:ngt,1:(Ny+1)*(Nz+1)),ngt,beta,pot,ngt)
-      
-      Gcc(1:ngt,1:Ngt)=Gcc(1:Ngt,1:Ngt)+pot(1:Ngt,1:Ngt)/dble(Ndeltax)
-      
-   end do
-   
-   !!!! TRANSFORMING INTO THE Bloch states BASIS
 
-   allocate(GBB(Ngt,NM(xx)))
-   allocate(B(NM(xx),NM(xx)))
-   do n=1,Nrx
+      call zgemm('n','c',Ngt,ngt,(Ny+1)*(Nz+1),alpha,A,ngt,U(1:ngt,1:(Ny+1)*(Nz+1)),ngt,beta,Gcc,ngt)
+
+      end if
+
+      
       call ZGEMM('n','n',ngt,NM(xx),ngt,alpha,Gcc(1:ngt,1:ngt),ngt,&
            ULCBB(iyz,imat(xx))%H(1+(n-1)*Ngt+(ip-1)*ngt*nrx:n*Ngt+(ip-1)*ngt*nrx,1:NM(xx)),Ngt,beta,GBB(1:ngt,1:NM(xx)),Ngt)      
       call ZGEMM('c','n',NM(xx),NM(xx),Ngt,alpha,ULCBB(iyz,imat(xx))%H(1+(n-1)*Ngt+(ip-1)*ngt*nrx:n*Ngt+(ip-1)*ngt*nrx,1:NM(xx)),&
@@ -221,7 +244,7 @@ end do
 !$omp end do
 
 deallocate(pt)
-deallocate(pot)
+!deallocate(pot)
 deallocate(Gcc)
 deallocate(A)
 deallocate(CR)
@@ -233,7 +256,7 @@ if(allocated(U))deallocate(U)
 end if
 
 t2=SECNDS(t1)
-write(*,*)'potential transformed in ',t2,'s'
+if(.not.onlyT) write(*,*)'potential transformed in ',t2,'s'
 
 end if
 end do !fine loop kyz
@@ -332,12 +355,14 @@ end do  ! fine loop kyz
 
   emax=maxval(emax_yz(:))
   emin=minval(emin_yz(:))
-  deallocate(emin_yz,emax_yz)
 
   if(onlyT)then
-     emin=min(mus,mud)-NKT*(BOLTZ*TEMP)
-     emax=max(mus,mud)+NKT*(BOLTZ*TEMP)
+     emin=min(emin,min(mus,mud))-NKT*(BOLTZ*TEMP)
+     emax=max(emax,max(mus,mud))+NKT*(BOLTZ*TEMP)
   end if
+  
+  deallocate(emin_yz,emax_yz)
+
   Nop=FLOOR((emax-emin)/Eop+0.5_dp)
 
   write(*,*)'GLOBAL ENERGY RANGE'
@@ -413,7 +438,7 @@ if(k_selec(iyz))then
            !$omp parallel default(none)  private(jyz,nee,xx,pp,nn,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local) &
            !$omp shared(ee,iyz,Nop,nm,imat,ncx_d,ncy,ncz,nmax,nkyz,emin,emin_local,Eop,mus,mud,hi,&
            !$omp sigma_lesser_ph_prev,sigma_greater_ph_prev,sigma_r_ph_prev,cur,ldos,ndos,pdos,zdos,chtype,neutr,&
-           !$omp degeneracy,w,temp,trans,g_lesser,g_greater,form_factor,flag,k_selec)
+           !$omp degeneracy,g_spin,w,temp,trans,g_lesser,g_greater,form_factor,flag,k_selec)
 
         ALLOCATE(g_lesser_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
         ALLOCATE(g_greater_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
@@ -437,10 +462,10 @@ if(k_selec(iyz))then
                  do jyz = 1,NKYZ
               if(k_selec(jyz))then
                  g_lesser (nee,1:nm(xx),xx,jyz)=g_lesser (nee,1:nm(xx),xx,jyz)+&
-                      degeneracy(iyz)/dble(NCY*NCZ)*g_lesser_diag_local(nn,nn,xx) * form_factor(jyz,iyz,imat(xx))%F(1:nm(xx),nn)
+                      degeneracy(iyz)/g_spin/dble(NCY*NCZ)*g_lesser_diag_local(nn,nn,xx) * form_factor(jyz,iyz,imat(xx))%F(1:nm(xx),nn)
                  
                  g_greater(nee,1:nm(xx),xx,jyz)=g_greater(nee,1:nm(xx),xx,jyz)+&
-                      degeneracy(iyz)/dble(NCY*NCZ)*g_greater_diag_local(nn,nn,xx)* form_factor(jyz,iyz,imat(xx))%F(1:nm(xx),nn)
+                      degeneracy(iyz)/g_spin/dble(NCY*NCZ)*g_greater_diag_local(nn,nn,xx)* form_factor(jyz,iyz,imat(xx))%F(1:nm(xx),nn)
               end if
               end do
               
@@ -1024,8 +1049,7 @@ deallocate(KGt)
 deallocate(NM)
         t2=SECNDS(t1)
         WRITE(*,*)'TIME SPENT TO COMPUTE THE CHARGE (s)',t2
-     
-  write(*,*)'con=',con
+        WRITE(*,*)     
 
   IDScurrent=sum(con(1:NKYZ))/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
   ISDcurrent=sum(cone(1:NKYZ))/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
@@ -1035,12 +1059,12 @@ deallocate(NM)
       IDScurrentb=IDScurrent
    end if
   
-  write(*,*)'IDScurrent=',IDScurrent,ISDcurrent
+  write(*,*)'IDScurrent =',IDScurrent,ISDcurrent
 
   Gcon=sum(con(1:NKYZ))/abs(mud-mus)
 
   write(*,*)'Gcon=',Gcon,sum(cone(1:nkyz))/abs(mud-mus)
-
+  write(*,*)
 
   deallocate(con,cone,conb)
 
@@ -1094,8 +1118,8 @@ if(ff == 0)then
   do i=1,nm(l)
      do j=1,nm(l)
         if ( G00(i,j) /= G00(i,j) )then
-           !flag=l
-           write(*,*)'NaN warning! Pb w lft sncho',E
+           ff=l
+           write(*,*)'NaN warning! Pb w lft snch. Eliminating E=',E
            G00=0.0_dp
            exit
         end if
@@ -1103,7 +1127,7 @@ if(ff == 0)then
   end do
   if( traccia(dimag(- G00(:,:))) < 0.0d0 )then 
      ff=l
-     write(*,*)'pb w sncho l',E,traccia(dimag(- G00(:,:)))
+     write(*,*)'pb w snch l',E,traccia(dimag(- G00(:,:)))
   end if
 
   
@@ -1184,8 +1208,8 @@ if(ff == 0)then
   do i=1,nm(l)
      do j=1,nm(l)
         if ( G00(i,j) /= G00(i,j) )then
-           !flag=l
-           write(*,*)'NaN warning! Pb w rht sncho',E
+           ff=l
+           write(*,*)'NaN warning! Pb w rht snch. Eliminating E=',E
            G00=0.0_dp
            exit
         end if
@@ -1193,7 +1217,7 @@ if(ff == 0)then
   end do
   if( traccia(dimag(- G00(:,:))) < 0.0d0 )then 
      ff=l
-     write(*,*)'pb w sncho r',E,traccia(dimag(- G00(:,:)))
+     write(*,*)'pb w snch r',E,traccia(dimag(- G00(:,:)))
   end if
 
   call zgemm('c','n',nm(l),nm(l),nm(l),alpha,H10(1:nm(l),1:nm(l)),nm(l),G00(1:nm(l),1:nm(l)),nm(l),beta,A(1:nm(l),1:nm(l)),nm(l)) 
@@ -1240,8 +1264,8 @@ if(ff == 0)then
 !-------------------------
    
      if( abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))) > 1.0d-1 )then
-        write(*,*)'pssbl pb w en',E
-        ff=l  
+!        write(*,*)'pssbl pb w E =',E
+        !ff=l  
      end if
 
   
@@ -1307,8 +1331,8 @@ if(ff == 0)then
   
      
      if( abs(traccia(dimag( pdens(:,:,l) - ndens(:,:,l) - 2.0_dp*ldos(:,:,l)  ))) > 1.0d-1 )then
-        write(*,*)'pssbl pb w en',E
-        ff=l
+!        write(*,*)'pssbl pb w E =',E
+        !ff=l
      end if
 
   enddo
@@ -1320,7 +1344,7 @@ if(ff == 0)then
   tre=-traccia(dble(B(1:nm(l),1:nm(l))-C(1:nm(l),1:nm(l))))
 
  if ( ff /= 0 ) then
-     write(*,*)'flag',E,ff
+     write(*,*)'pssbl pb w E =',E,ff
      tr=0.0_dp
      tre=0.0_dp
      ndens=0.0_dp
@@ -1329,7 +1353,7 @@ if(ff == 0)then
      cur=0.0_dp
   end if
 elseif ( ff /= 0 ) then
-     write(*,*)'flag',E,ff
+     write(*,*)'ignoring E =',E
      tr=0.0_dp
      tre=0.0_dp
      ndens=0.0_dp

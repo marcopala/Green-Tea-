@@ -71,15 +71,11 @@ write(*,*) 'b1', b_1
 write(*,*) 'b2', b_2
 write(*,*) 'b3', b_3
 
-
-
-!!if(g_spin==1) npol = 2
-!!if(g_spin==2) npol = 1
 write(*,*) 'NPOL =',NPOL
 
 write(*,*) 'NKyz points=',Nkyz
 
-Ecutoff=ryd*Ecut!/3.0_dp
+Ecutoff=ryd*Ecut
 
 ngmax=1000
 nrx=0
@@ -363,7 +359,6 @@ end do
 
 deallocate(bb_ec,bb_ev)
 
-write(*,*)'shape TL', shape(TL)
 !!!!stop
 
 
@@ -545,13 +540,11 @@ deallocate(A,B,C)
 deallocate(dens_z,dens_yz)
 !$omp end parallel
 
-!!!! END
-
        t2=SECNDS(t1)
-        WRITE(*,*)iyz,'Time spent to compute the interpolation (s)',t2
-
+!        WRITE(*,*)'Time spent to compute the interpolation (s)',t2
+       
 !stop
-
+ 
 if(iyz==1)then
    allocate(E(NM))
    allocate(B(NM,NM))
@@ -580,7 +573,7 @@ end if
    deallocate(E)
 end if
 
-write(*,*)'fine ikyz',iyz
+write(*,*)'End ikyz =',iyz
 end if
 end do ! end do iyz
 

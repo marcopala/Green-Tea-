@@ -217,13 +217,24 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
 
   CALL map_potential(pot3D,-POT_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
 
-  write(*,*)'negf starts'
-
+  write(*,*)
+  write(*,*)' negf starts'
   call negf_mixed(POT3D,rho_n,rho_p,ISDcurrent,IDScurrent,IDScurrentb,ss,gg,transport_iter)
+  write(*,*)
 
   if(onlyT)then
-     write(*,*)'Simulation ended. Only transmission in the flat-band configuration was computed. '
-     write(*,*)'IDScurrent =',IDScurrent,'(A)'
+     write(*,*)
+     write(*,*)
+     write(*,*) ' Simulation ended. &
+          Only transmission and current in the flat-band configuration were computed. '
+     write(*,*)
+     write(*,*)
+     write(*,*) ' This is an open source software distributed under the CECILL-B license.'
+     write(*,*) ' Please consider citing  '
+     write(*,*) ' M. G. Pala, P. Giannozzi, and D. Esseni, Phys. Rev. B 102, 045410 (2020)'
+     write(*,*) ' DOI: https://doi.org/10.1103/PhysRevB.102.045410'
+     write(*,*)
+     write(*,*)
      stop
   end if
 

@@ -533,8 +533,7 @@ END SUBROUTINE pot_init
 
   N_c=6.2d17
   N3D=N_c*(TEMP)**(1.5) 
-  write(*,*)'poisson_imref N3D=',N3D
-
+  
   TOLERANCE=1.0d-15
   nn=0
 
@@ -584,10 +583,9 @@ END SUBROUTINE poisson_imref_n
   
   Fp=-3.0_dp
 
-  N_v=6.5d17
+  N_v=6.5d19
   N3D=N_v*(TEMP)**(1.5) 
-  write(*,*)'poisson_imref N3D=',N3D
-
+  
   TOLERANCE=1.0d-15
   nn=0
 
@@ -653,7 +651,7 @@ SUBROUTINE poisson_charge_from_imref_p(rho, Ev, Fp, lwork)
   REAL(DP) :: N_v, N3D
   INTEGER :: ii
     
-  N_v=6.5d17
+  N_v=6.5d19
   N3D=N_v*(TEMP)**(1.5) 
 
   rho=0.0_dp
@@ -700,7 +698,7 @@ SUBROUTINE poisson_deriv_from_imref_p(drho, Ev, Fp, lwork)
     REAL(DP) :: N_v, N3D
     INTEGER :: ii
      
-    N_v=6.5d17
+    N_v=6.5d19
     N3D=N_v*(TEMP)**(1.5) 
    
     drho=0.0_dp

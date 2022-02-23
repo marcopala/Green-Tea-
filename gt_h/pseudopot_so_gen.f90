@@ -67,6 +67,12 @@ open(unit=10,file=TRIM(input_file_DFT),status='unknown')
 read(10,'(a)') comment
 read(10,*) a_1(:), a_2(:), a_3(:)
 
+ a0=a_1(1)*bohr
+
+write(*,*)
+write(*,*)' Lattice parameter a0 = ', a0, 'cm'
+write(*,*)
+
 read(10,'(a)') comment
 write(*,*) comment
 read(10,*) b_1(:), b_2(:), b_3(:)
@@ -263,11 +269,9 @@ ncf=min((nrx/2-2),8)
 allocate(coeff(0:ncf))
 
 call coefficienti (2*ncf,coeff)
+write(*,*)
 write(*,*)'Discretization order =',ncf
-do i=0,ncf
-   write(*,*)i,coeff(i)
-end do
-!stop
+write(*,*)
 
 Ngt=0
 do n2=-nry/2,nry/2!-maxval(miller(2,:)),maxval(miller(2,:))
@@ -367,7 +371,7 @@ do ikx=1,Nkx
    write(*,'(a)') comment
    if(NSPIN==2) then
 !      read(10,*) i
-      write(*,*) 'Collinear magnetic system, current_spin = '
+      write(*,*) 'Collinear magnetic system, current_spin = ',is
    end if
    read(10,*) k_vec(:,ikx+(iyz-1)*nkx)
    k_vec(:,ikx+(iyz-1)*nkx)=k_vec(:,ikx+(iyz-1)*nkx)/bohr/(2.0_dp*pi/a0)
@@ -392,7 +396,7 @@ do ikx=1,Nkx
 
    read(10,'(a)') comment
    read(10,*) N_bands
-   write(*,'(a, i4, a)')' Using',N_bands,' bands from the DFT simulation'
+   write(*,'(a, i4, a)')' Using',N_bands,' KS solutions from the DFT simulation'
 
 
  ! KS EIGEN-FUNCTIONS
@@ -413,22 +417,23 @@ do ikx=1,Nkx
 
 end do
 
-!! check on the ordering of k_vec
+!! check of the ordering of k_vec
 do ikx=1,nkx-1
    if(k_vec(1,ikx+(iyz-1)*nkx) .eq. k_vec(1,ikx+1+(iyz-1)*nkx))then
-      write(*,*)'problem with kvec definition or ordering, please check the manual'
+      write(*,*)'problem with kvec(1) definition or ordering, please check the manual'
       write(*,*)1,k_vec(1,ikx+(iyz-1)*nkx), k_vec(1,ikx+1+(iyz-1)*nkx)
+      write(*,*)'Simulation aborted'
       stop
    end if
    if(k_vec(2,ikx+(iyz-1)*nkx) .ne. k_vec(2,ikx+1+(iyz-1)*nkx))then
-      write(*,*)'problem with kvec definition or ordering, please check the manual'
+      write(*,*)'WARNING : pssbl pb  with kvec(2) definition or ordering, please check the manual'
       write(*,*)2,k_vec(2,ikx+(iyz-1)*nkx), k_vec(2,ikx+1+(iyz-1)*nkx)
-      stop
+      write(*,*)'Simulation continues at your own risk'
    end if
    if(k_vec(3,ikx+(iyz-1)*nkx) .ne. k_vec(3,ikx+1+(iyz-1)*nkx))then
-      write(*,*)'problem with kvec definition or ordering, please check the manual'
+      write(*,*)'WARNING : pssbl pb  with kvec(3) definition or ordering, please check the manual'
       write(*,*)3,k_vec(3,ikx+(iyz-1)*nkx), k_vec(3,ikx+1+(iyz-1)*nkx)
-      stop
+      write(*,*)'Simulation continues at your own risk'
    end if
 end do
 
@@ -493,7 +498,7 @@ deallocate(A,B)
 M=N_bands
 NM=nkx*N_bands
 NMODES=NM
-write(*,*)'Total number of bands from DFT simulation =',NM
+write(*,*)'Total number of KS solutions from the DFT simulation =',NM
 
 if(.not. refine)then
 write(*,*)
@@ -506,12 +511,11 @@ write(*,'(F8.1,a)')     dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(Nomp*nrx)*dble(nrx*ngt)*16.0d-9+&  ! Q
      dble(Nomp*2*nkx*nrx)*dble(nkx*nrx)*16.0d-9+&  ! B, U
      dble(2*nm)*dble(nrx*Ngt*npol)*16.0d-9, ' Gb'
-write(*,*)'*******************************************************************************'
-write(*,*)'*******************************************************************************'
+write(*,*)
+write(*,'(a)')' BE SURE THAT YOUR SYSTEM CAN HANDLE THIS SIMULATION!'
 write(*,*)
 write(*,*)'*******************************************************************************'
 write(*,*)'*******************************************************************************'
-write(*,'(a)')' PLEASE CHECK THAT YOUR SYSTEM CAN HANDLE THIS SIMULATION!'
 write(*,'(a)')' Also note that, by decreasing Nomp, the allocated memory can be reduced up to '
 write(*,'(F8.1,a)')    dble(nrx*Ngt)*dble(N_beta*nkx)*16.0d-9+& !betafunc
      dble(nkx*nrx*npol)*dble(nkx*nrx*Ngt*npol)*16.0d-9+&  ! HCC
@@ -956,7 +960,7 @@ deallocate(ind_cube)
 deallocate(betafunc)
 
 t2=SECNDS(t1)
-write(*,'(a,F8.4,a)')'100% done in ',t2,' s'
+write(*,*)'100% done in ',t2,' s'
 
 allocate(HLLL(NM,NM),TLLL(NM,NM))
 call ZGEMM('c','n',NM,NM,nrx*Ngt*npol,alpha,PSI_MOD,nrx*Ngt*npol,A,nrx*Ngt*npol,beta,HLLL,NM)
@@ -1081,7 +1085,7 @@ end if
 
 n=40
 M=min(12*nband_v/10,NM)
-write(*,*)'M',M
+
 allocate(hkl(n+1,M))
 allocate(E(M))
 allocate(A(NM,NM))
@@ -1112,6 +1116,17 @@ deallocate(hkl)
 
 
 !!!!! STARTING the REFINEMENT
+
+if(nk1 > nkx)then
+   write(*,*) 'ERROR: inconsistency of selected Bloch states, nkx is too large'
+   write(*,*) nk1, nkx
+   stop
+end if
+if(nkplus > nkx)then
+   write(*,*) 'ERROR: inconsistency of selected Bloch states, nkplus is too large'
+   write(*,*) nkplus, nkx
+   stop
+end if
 
 allocate(kx1(nk1))
 if(nk1==6)kx1=(/-3.0_dp/6.0_dp, -2.0_dp/6.0_dp, -1.0_dp/6.0_dp, 0.0_dp, 1.0_dp/6.0_dp,  2.0_dp/6.0_dp, 3.0_dp/6.0_dp/)
@@ -1147,17 +1162,19 @@ if(nplus>0)then
    allocate(E(nplus))
    allocate(C(NM,nplus))
    do ikx=1,nnn
-      write(*,*)'adding kx',kx2(ikx)
+!!!      write(*,*)'adding kx',kx2(ikx)
       A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*kx2(ikx)*2.0_dp*pi)+&
            transpose(dconjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*kx2(ikx)*2.0_dp*pi)
       call SUB_DEF_Z(nf+1,nf+nplus,NM,A,E,C)
       B(:,nk1*mm1+1+(ikx-1)*nplus:nk1*mm1+ikx*nplus)=C(:,1:nplus)
-      write(*,*)nf+1,nf+nplus,nk1*mm1+1+(ikx-1)*nplus,nk1*mm1+ikx*nplus
+!!!      write(*,*)nf+1,nf+nplus,nk1*mm1+1+(ikx-1)*nplus,nk1*mm1+ikx*nplus
    end do
    deallocate(C,E)
 end if
 deallocate(A)
-write(*,*)'Reduced basis order =',mmm
+write(*,*)
+write(*,*)' Reduced basis order =',mmm
+write(*,*)
 call MGS(NM,mmm,B) !!! Modified Gram-Schmidt to orthonormalize the Psi functions at different kx
 
 NMODES=mmm
@@ -1249,7 +1266,7 @@ do ikx=1,n+1
 end do
 deallocate(A)
 deallocate(E)
-do k=1,nf-ni+nplus+10
+do k=1,mmm
    if( nspin == 1 )then
       open(unit=300,file=TRIM(outdir)//'Edisp_'//TRIM(STRINGA(k))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
    else
@@ -1417,7 +1434,6 @@ if(ncell==2)then
    deallocate(HV)
 end if
 
-
 !!!stop
 
 if(allocated(KGt))deallocate(KGt)
@@ -1452,8 +1468,9 @@ end if
 
 HL(:,:,iyz)=HLL(:,:)
 TL(:,:,iyz)=TLL(:,:)
+
 allocate(A(Nrx*NGt*npol,NM))
-call zgemm('n','n',Nrx*NGt*npol,NM,nkx*M,alpha,PSI_MOD,Nrx*NGt*npol,B,nkx*M,beta,A,Nrx*NGt*npol)
+call zgemm('n','n',Nrx*NGt*npol,NM,mmm,alpha,PSI_MOD,Nrx*NGt*npol,B,mmm,beta,A,Nrx*NGt*npol)
 U_LCBB(:,:,iyz)=A(:,:)
 
 deallocate(A,B)
