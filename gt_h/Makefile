@@ -8,7 +8,7 @@ FC90 = ifort                                                                    
 #F90_FLAGS =  -O3 -traceback -qopenmp -fpp -I$(MODDIR) -module $(MODDIR)                           # uncomment this line if you use ifort
 #F90_FLAGS =  -check all  -warn unused -fstack-protector -assume protect_parens -implicitnone -qopenmp -fpp -I$(MODDIR) -module $(MODDIR)
 
-F90_FLAGS =  -traceback -check bounds -qopenmp -fpp -I$(MODDIR) -module $(MODDIR)
+F90_FLAGS =  -traceback -O3 -qopenmp -fpp -I$(MODDIR) -module $(MODDIR)
 
 # Library options in general
 MKL_IFORT=/opt/intel/oneapi/mkl/latest/lib/intel64  
@@ -29,7 +29,7 @@ vpath %.mod $(MODDIR)
 
 # Targets
 all : gt_h.x
-gt_h.x : main_3d.f90 static_3d.o indata_3d.o pseudopot_so_gen.o 
+gt_h.x : main_h.f90 static_h.o indata_h.o pseudopot_h.o 
 	$(FC90) -o $@ $< $(MODDIR)/*.o $(F90_FLAGS) $(LIBS) 
 
 .PHONY : clean;

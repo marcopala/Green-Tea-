@@ -24,7 +24,7 @@ vpath %.o $(MODDIR)
 
 # Targets
 all : gt_t.x
-gt_t.x : main_3d.f90 static_3d.o indata_3d.o pseudopot_so_gen.o fermi.o poisson_rect_3d.o negf_3d_LCBB.o 
+gt_t.x : main_t.f90 static_t.o indata_t.o pseudopot_t.o fermi.o poisson_t.o negf_t.o 
 	$(FC90) -o $@ $< $(MODDIR)/*.o $(F90_FLAGS) $(LIBS) 
 
 .PHONY : clean;
