@@ -1,3 +1,36 @@
+! Copyright or © or Copr. Marco Pala (February 24, 2022)
+
+! e-mail: marco.pala@cnrs.fr
+
+! This software is a computer program whose purpose is 
+! to perform self-consistent simulations of nanosystems with a full ab initio approach
+! by using the density functional theory and the non-equilibrium Green's function method.
+
+! This software is governed by the CeCILL-B license under French law and
+! abiding by the rules of distribution of free software.  You can use, 
+! modify and/ or redistribute the software under the terms of the CeCILL-B
+! license as circulated by CEA, CNRS and INRIA at the following URL
+! "http://www.cecill.info". 
+
+! As a counterpart to the access to the source code and rights to copy,
+! modify and redistribute granted by the license, users are provided only
+! with a limited warranty and the software's author, the holder of the
+! economic rights, and the successive licensors have only limited liability. 
+
+! In this respect, the user's attention is drawn to the risks associated
+! with loading,  using,  modifying and/or developing or reproducing the
+! software by the user in light of its specific status of free software,
+! that may mean  that it is complicated to manipulate,  and  that  also
+! therefore means  that it is reserved for developers  and  experienced
+! professionals having in-depth computer knowledge. Users are therefore
+! encouraged to load and test the software's suitability as regards their
+! requirements in conditions enabling the security of their systems and/or 
+! data to be ensured and,  more generally, to use and operate it in the 
+! same conditions as regards security. 
+
+! The fact that you are presently reading this means that you have had
+! knowledge of the CeCILL-B license and that you accept its terms.
+
 MODULE Pseudopot_so_gen
 
   USE static
@@ -233,7 +266,7 @@ do im=1,num_mat
    write(*,*)'reading ',TRIM(inputdir)//'H00_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
    else
    open(unit=13,file=TRIM(inputdir)//'H00_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-   write(*,*)'reading ',TRIM(inputdir)//'H00_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
+   write(*,*)'reading ',TRIM(inputdir)//'H00_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'  
    end if
    do i=1,nm
       do j=1,nm
@@ -243,7 +276,8 @@ do im=1,num_mat
       HL(iyz,im)%H(i,i)=HL(iyz,im)%H(i,i)+off_set(im)
    end do
    close(13)
-
+   HL(iyz,im)%H=(HL(iyz,im)%H+transpose(dconjg(HL(iyz,im)%H)))/2.0_dp
+   
    allocate(TL(iyz,im)%H(NM_mat(im),NM_mat(im)))
    nm=NM_mat(im)
    if(magnetic)then
@@ -457,8 +491,6 @@ allocate(A(NM,(nry)*(nrz)))
 allocate(B(NM,ngt*npol))
 allocate(C(NM*NM,(nry)*(nrz)))
 
-!!form_factor(iyz,im)%F=0.0d0
-
  !$omp do 
    do ix=1,Nrx
 !   write(*,*)'ix',ix
@@ -625,7 +657,7 @@ allocate(C(NM,(nry)*(nrz)))
    do i=1,NM
       do j=1,NM    
          form_factor(iyz,jyz,im)%F(i,j)=form_factor(iyz,jyz,im)%F(i,j)+&
-              sum(dconjg(A(i,:))*C(j,:)*dconjg(C(j,:))*A(i,:))/(nrx*dx*dy*dz)
+              sum(dconjg(A(i,:))*C(j,:)*dconjg(C(j,:))*A(i,:))/(dble(nrx)*dx*dy*dz)
       end do
    end do
 end do

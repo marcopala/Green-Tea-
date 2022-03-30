@@ -1,3 +1,36 @@
+! Copyright or © or Copr. Marco Pala (February 24, 2022)
+
+! e-mail: marco.pala@cnrs.fr
+
+! This software is a computer program whose purpose is 
+! to perform self-consistent simulations of nanosystems with a full ab initio approach
+! by using the density functional theory and the non-equilibrium Green's function method.
+
+! This software is governed by the CeCILL-B license under French law and
+! abiding by the rules of distribution of free software.  You can use, 
+! modify and/ or redistribute the software under the terms of the CeCILL-B
+! license as circulated by CEA, CNRS and INRIA at the following URL
+! "http://www.cecill.info". 
+
+! As a counterpart to the access to the source code and rights to copy,
+! modify and redistribute granted by the license, users are provided only
+! with a limited warranty and the software's author, the holder of the
+! economic rights, and the successive licensors have only limited liability. 
+
+! In this respect, the user's attention is drawn to the risks associated
+! with loading,  using,  modifying and/or developing or reproducing the
+! software by the user in light of its specific status of free software,
+! that may mean  that it is complicated to manipulate,  and  that  also
+! therefore means  that it is reserved for developers  and  experienced
+! professionals having in-depth computer knowledge. Users are therefore
+! encouraged to load and test the software's suitability as regards their
+! requirements in conditions enabling the security of their systems and/or 
+! data to be ensured and,  more generally, to use and operate it in the 
+! same conditions as regards security. 
+
+! The fact that you are presently reading this means that you have had
+! knowledge of the CeCILL-B license and that you accept its terms.
+
 MODULE negf
 
 USE static
@@ -143,9 +176,10 @@ do iyz=1,NKYZ !!! loop over transverse k-vectors
    if(k_selec(iyz))then
    t1=SECNDS(0.0)
    
-   degeneracy(iyz)=deg_kyz(iyz)*g_spin 
+   degeneracy(iyz)=deg_kyz(iyz)*g_spin
+   write(*,*) 
    write(*,*)iyz,'degeneracy',deg_kyz(iyz),degeneracy(iyz)
-
+   write(*,*)
    if(allocated(kgt))deallocate(kgt)
    allocate(KGt(4,1*Ngt))
    KGt(1:4,1:1*Ngt)=KGt_kyz(1:4,1:1*Ngt,iyz)
@@ -312,7 +346,7 @@ do xx=1,ncx_d
    write(199,*)xx,neutr(xx)
 enddo
 
-  epsilon=5*Nop_g*Eop!(BOLTZ*TEMP)
+  epsilon=2*Nop_g*Eop!(BOLTZ*TEMP)
 
   SELECT CASE (chtype)
   CASE ('n')
@@ -365,12 +399,14 @@ end do  ! fine loop kyz
 
   Nop=FLOOR((emax-emin)/Eop+0.5_dp)
 
+  write(*,*)
   write(*,*)'GLOBAL ENERGY RANGE'
   write(*,*)'mus=',mus,'mud=',mud
   write(*,*)'Emax=',emax
   write(*,*)'Emin=',emin
   write(*,*)'Nop=',Nop
-
+  write(*,*)
+  
   allocate(flag(Nop,NKYZ))
   
 !!!!!!!!!!!!do iyz=1,NKYZ
@@ -764,7 +800,9 @@ enddo     ! Nsub
   deallocate(SCBA_error,SCBA_x)
   deallocate(flag)
 
-write(*,*)'Writing files'
+write(*,*)
+write(*,*)'Writing output files ...'
+write(*,*)
 
   do iyz=1,NKYZ  
 if(k_selec(iyz))then
@@ -1054,13 +1092,14 @@ deallocate(NM)
   IDScurrent=sum(con(1:NKYZ))/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
   ISDcurrent=sum(cone(1:NKYZ))/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
   if(phonons)then
-      IDScurrentb=sum(conb(1:NKYZ))/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
-   else
-      IDScurrentb=IDScurrent
-   end if
+     IDScurrentb=sum(conb(1:NKYZ))/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
+  else
+     IDScurrentb=IDScurrent
+  end if
   
+  write(*,*)
   write(*,*)'IDScurrent =',IDScurrent,ISDcurrent
-
+  
   Gcon=sum(con(1:NKYZ))/abs(mud-mus)
 
   write(*,*)'Gcon=',Gcon,sum(cone(1:nkyz))/abs(mud-mus)
@@ -1274,16 +1313,16 @@ if(ff == 0)then
      H10(1:nm(l+1),1:nm(l))=TL(iyz,ihet(l+1))%H(1:NM(l+1),1:NM(l))  !!! H(l+1,l)
      
      call zgemm('n','c',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Gl(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1)) 
-     if(chtype == 'p')then
-        call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,Gp(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, C(1:nm(l+1),1:nm(l)), nm(l+1))
-     else
-        call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,Gn(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, C(1:nm(l+1),1:nm(l)), nm(l+1))
-     end if
-     if(chtype == 'p')then
-        call zgemm('n','n',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Glp(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1))
-     else
+     !if(chtype == 'p')then
+     !   call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,Gp(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, C(1:nm(l+1),1:nm(l)), nm(l+1))
+     !else
+     call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,Gn(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, C(1:nm(l+1),1:nm(l)), nm(l+1))
+     !end if
+     !if(chtype == 'p')then
+     !   call zgemm('n','n',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Glp(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1))
+     !else
         call zgemm('n','n',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Gln(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1))
-     end if
+     !end if
      call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,G00(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, A(1:nm(l+1),1:nm(l)), nm(l+1))
      B(1:nm(l+1),1:nm(l))=C(1:nm(l+1),1:nm(l))+A(1:nm(l+1),1:nm(l))
      call zgemm('c','n',nm(l),nm(l),nm(l+1),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta,A(1:nm(l),1:nm(l)),nm(l))      !!! G<_i+1,i
@@ -1316,11 +1355,13 @@ if(ff == 0)then
      Gn(1:nm(l),1:nm(l)) = Gn(1:nm(l),1:nm(l))+C(1:nm(l),1:nm(l))-transpose(dconjg(C(1:nm(l),1:nm(l)))) !!!! I am using  (G<)^+ = -G< 	 !!! G<_i,i
 !-------------------------
      
-     call zgemm('n','n',nm(l),nm(l+1),nm(l+1),alpha,A(1:nm(l),1:nm(l+1)),nm(l),Gp(1:nm(l+1),1:nm(l+1)),nm(l+1),beta,C(1:nm(l),1:nm(l+1)),nm(l))     
+     call zgemm('n','n',nm(l),nm(l+1),nm(l+1),alpha,A(1:nm(l),1:nm(l+1)),nm(l),Gp(1:nm(l+1),1:nm(l+1)),nm(l+1),beta,C(1:nm(l),1:nm(l+1)),nm(l))
+     
      call zgemm('n','n',nm(l),nm(l),nm(l+1),alpha,C(1:nm(l),1:nm(l+1)),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l)),nm(l))
      call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),Gl(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
 
-     Gp(1:nm(l),1:nm(l)) = Glp(1:nm(l),1:nm(l),l) + C(1:nm(l),1:nm(l))  
+     Gp(1:nm(l),1:nm(l)) = Glp(1:nm(l),1:nm(l),l) + C(1:nm(l),1:nm(l))
+     
      call zgemm('n','n',nm(l),nm(l),nm(l),alpha,sig(1:nm(l),1:nm(l)),nm(l),Glp(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))     
      
      Gp(1:nm(l),1:nm(l)) = Gp(1:nm(l),1:nm(l))+C(1:nm(l),1:nm(l))-transpose(dconjg(C(1:nm(l),1:nm(l))))   !!! G<_i,i
@@ -1384,7 +1425,7 @@ subroutine sancho(nm,E,H00,H10,G00)
   integer :: nmax=500
   COMPLEX(DP) :: z
   real(dp), intent(IN) :: E
-  REAL(DP) :: TOL=1.0D-15, error
+  REAL(DP) :: TOL=1.0D-20, error
 
   COMPLEX(DP), INTENT(IN) :: H00(nm,nm), H10(nm,nm)
   COMPLEX(DP), INTENT(OUT) :: G00(nm,nm)
