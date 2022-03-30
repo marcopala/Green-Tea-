@@ -47,11 +47,12 @@
 	 nky=2,
 	 nkz=1 		/
 	 SELECTED_KYZ	
-	 0.0 0.0
-	 0.1 0.0
+	 0.0 0.0  T
+	 0.1 0.0  T
   &indata_basis  
          nsolv=4,
          nsolc=4,
+         npol=4,
 	 g_spin=1.0d0,
 	 Ecut=50.0 		/
 	 BASIS_INFO	
