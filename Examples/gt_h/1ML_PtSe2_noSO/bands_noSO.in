@@ -1,5 +1,5 @@
 &CONTROL
-    calculation = 'nscf'
+    calculation = 'bands'
 !    restart_mode= 'from_scratch'
     nstep       = 200
     prefix      = '1L'

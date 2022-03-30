@@ -1,0 +1,4 @@
+ &INPUTPP
+ prefix  = '1L'
+ outdir  = 'tmp'
+/

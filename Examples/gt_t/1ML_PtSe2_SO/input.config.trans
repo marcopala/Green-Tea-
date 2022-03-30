@@ -52,7 +52,7 @@
   &indata_basis  
          nsolv=4,
          nsolc=4,
-         npol=4,
+         npol=2,
 	 g_spin=1.0d0,
 	 Ecut=50.0 		/
 	 BASIS_INFO	
