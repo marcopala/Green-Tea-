@@ -51,7 +51,7 @@ call read_QE_output()
 write(*,*)
 write(*,*)
 write(*,*) ' This is an open source software distributed under the CeCILL license "http://www.cecill.info".'
-write(*,*) ' Please consider citing  '
+write(*,*) ' Please cite  '
 write(*,*) ' M. G. Pala, P. Giannozzi, and D. Esseni, Phys. Rev. B 102, 045410 (2020)'
 write(*,*) ' DOI: https://doi.org/10.1103/PhysRevB.102.045410'
 write(*,*)
