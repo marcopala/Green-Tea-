@@ -6,9 +6,9 @@
 ! to perform self-consistent simulations of nanosystems with a full ab initio approach
 ! by using the density functional theory and the non-equilibrium Green's function method.
 
-! This software is governed by the CeCILL-B license under French law and
+! This software is governed by the CeCILL license under French law and
 ! abiding by the rules of distribution of free software.  You can use, 
-! modify and/ or redistribute the software under the terms of the CeCILL-B
+! modify and/ or redistribute the software under the terms of the CeCILL
 ! license as circulated by CEA, CNRS and INRIA at the following URL
 ! "http://www.cecill.info". 
 
@@ -29,7 +29,7 @@
 ! same conditions as regards security. 
 
 ! The fact that you are presently reading this means that you have had
-! knowledge of the CeCILL-B license and that you accept its terms.
+! knowledge of the CeCILL license and that you accept its terms.
 
 program main
 
@@ -50,7 +50,7 @@ call read_QE_output()
 
 write(*,*)
 write(*,*)
-write(*,*) ' This is an open source software distributed under the CECILL-B license "http://www.cecill.info".'
+write(*,*) ' This is an open source software distributed under the CeCILL license "http://www.cecill.info".'
 write(*,*) ' Please consider citing  '
 write(*,*) ' M. G. Pala, P. Giannozzi, and D. Esseni, Phys. Rev. B 102, 045410 (2020)'
 write(*,*) ' DOI: https://doi.org/10.1103/PhysRevB.102.045410'

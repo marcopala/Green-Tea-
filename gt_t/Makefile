@@ -1,3 +1,7 @@
+####
+# This Makefile is adapted to work with either ifort or gfortran.
+####
+
 #FC90 = gfortran                                                                        # uncomment this line if you use gfortran
 FC90 = ifort                                                                          # uncomment this line if you use ifort
 
