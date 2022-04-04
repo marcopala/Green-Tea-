@@ -542,18 +542,18 @@ end do !End of the loop over kyz
 
      n_bose_g=1.0_dp/(EXP((Nop_g*Eop)/(BOLTZ*TEMP))-1.0_dp)
      
-     IF(nee.le.l*Nop_g)THEN
-        IF(nee.le.Nop-l*Nop_g)THEN
+     IF(nee.le.Nop_g)THEN
+        IF(nee.le.Nop-Nop_g)THEN
            ! E+Eop_g
            
            DO ii=1,Ncx_d
               DO pp=1,NM(ii)
                  
                  sigma_lesser_ph(nee,pp,ii,jyz)=sigma_lesser_ph(nee,pp,ii,jyz)+&
-                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+l*Nop_g,pp,ii,jyz)
+                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+Nop_g,pp,ii,jyz)
                  
                  sigma_greater_ph(nee,pp,ii,jyz)=sigma_greater_ph(nee,pp,ii,jyz)+&
-                      Dop_g*(n_bose_g)*(g_greater(nee+l*Nop_g,pp,ii,jyz))
+                      Dop_g*(n_bose_g)*(g_greater(nee+Nop_g,pp,ii,jyz))
                  
               END DO
            END DO
@@ -562,19 +562,19 @@ end do !End of the loop over kyz
            
      ELSE
         
-        IF(nee.le.Nop-l*Nop_g)THEN
+        IF(nee.le.Nop-Nop_g)THEN
            ! E+Eop_g and E-Eop_g
            
            DO ii=1,Ncx_d
               DO pp=1,NM(ii)
       
                  sigma_lesser_ph(nee,pp,ii,jyz)= sigma_lesser_ph(nee,pp,ii,jyz)+&
-                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+l*Nop_g,pp,ii,jyz)+&   
-                      Dop_g*(n_bose_g)*g_lesser(nee-l*Nop_g,pp,ii,jyz) 
+                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+Nop_g,pp,ii,jyz)+&   
+                      Dop_g*(n_bose_g)*g_lesser(nee-Nop_g,pp,ii,jyz) 
       
                  sigma_greater_ph(nee,pp,ii,jyz)=sigma_greater_ph(nee,pp,ii,jyz)+&
-                      Dop_g*(n_bose_g)*(g_greater(nee+l*Nop_g,pp,ii,jyz))+&
-                      Dop_g*(n_bose_g+1.0d0)*(g_greater(nee-l*Nop_g,pp,ii,jyz))
+                      Dop_g*(n_bose_g)*(g_greater(nee+Nop_g,pp,ii,jyz))+&
+                      Dop_g*(n_bose_g+1.0d0)*(g_greater(nee-Nop_g,pp,ii,jyz))
                  
               END DO
            END DO
@@ -585,10 +585,10 @@ end do !End of the loop over kyz
               DO pp=1,NM(ii)       
       
                  sigma_lesser_ph(nee,pp,ii,jyz)=sigma_lesser_ph(nee,pp,ii,jyz)+&
-                      Dop_g*(n_bose_g)*g_lesser(nee-l*Nop_g,pp,ii,jyz)  
+                      Dop_g*(n_bose_g)*g_lesser(nee-Nop_g,pp,ii,jyz)  
       
                  sigma_greater_ph(nee,pp,ii,jyz)=sigma_greater_ph(nee,pp,ii,jyz)+&
-                      Dop_g*(n_bose_g+1.0d0)*(g_greater(nee-l*Nop_g,pp,ii,jyz))
+                      Dop_g*(n_bose_g+1.0d0)*(g_greater(nee-Nop_g,pp,ii,jyz))
                  
               END DO
            END DO
