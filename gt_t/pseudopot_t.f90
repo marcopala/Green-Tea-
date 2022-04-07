@@ -657,7 +657,7 @@ allocate(C(NM,(nry)*(nrz)))
    do i=1,NM
       do j=1,NM    
          form_factor(iyz,jyz,im)%F(i,j)=form_factor(iyz,jyz,im)%F(i,j)+&
-              sum(dconjg(A(i,:))*C(j,:)*dconjg(C(j,:))*A(i,:))/(dble(nrx)*dx*dy*dz)
+              sum(dconjg(C(j,:))*A(i,:)*dconjg(A(i,:))*C(j,:))/(dble(nrx)*dx*dy*dz)
       end do
    end do
 end do

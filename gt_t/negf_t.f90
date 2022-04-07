@@ -495,7 +495,7 @@ if(k_selec(iyz))then
            do xx=1,ncx_d
               do nn=1,nm(xx)
 
-                 do jyz = 1,NKYZ
+              do jyz = 1,NKYZ
               if(k_selec(jyz))then
                  g_lesser (nee,1:nm(xx),xx,jyz)=g_lesser (nee,1:nm(xx),xx,jyz)+&
                       degeneracy(iyz)/g_spin/dble(NCY*NCZ)*g_lesser_diag_local(nn,nn,xx) * form_factor(jyz,iyz,imat(xx))%F(1:nm(xx),nn)
@@ -1313,16 +1313,16 @@ if(ff == 0)then
      H10(1:nm(l+1),1:nm(l))=TL(iyz,ihet(l+1))%H(1:NM(l+1),1:NM(l))  !!! H(l+1,l)
      
      call zgemm('n','c',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Gl(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1)) 
-     !if(chtype == 'p')then
-     !   call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,Gp(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, C(1:nm(l+1),1:nm(l)), nm(l+1))
-     !else
-     call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,Gn(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, C(1:nm(l+1),1:nm(l)), nm(l+1))
-     !end if
-     !if(chtype == 'p')then
-     !   call zgemm('n','n',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Glp(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1))
-     !else
+     if(chtype == 'p')then
+        call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,Gp(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, C(1:nm(l+1),1:nm(l)), nm(l+1))
+     else
+        call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,Gn(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, C(1:nm(l+1),1:nm(l)), nm(l+1))
+     end if
+     if(chtype == 'p')then
+        call zgemm('n','n',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Glp(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1))
+     else
         call zgemm('n','n',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Gln(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1))
-     !end if
+     end if
      call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,G00(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, A(1:nm(l+1),1:nm(l)), nm(l+1))
      B(1:nm(l+1),1:nm(l))=C(1:nm(l+1),1:nm(l))+A(1:nm(l+1),1:nm(l))
      call zgemm('c','n',nm(l),nm(l),nm(l+1),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta,A(1:nm(l),1:nm(l)),nm(l))      !!! G<_i+1,i
