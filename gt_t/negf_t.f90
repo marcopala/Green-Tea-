@@ -185,7 +185,8 @@ do iyz=1,NKYZ !!! loop over transverse k-vectors
    KGt(1:4,1:1*Ngt)=KGt_kyz(1:4,1:1*Ngt,iyz)
 
 
-if(.not. onlyT)then
+if(.not. onlyT .or. in_pot)then
+      
 allocate(U(Ngt,(Ny+1)*(Nz+1)))
 do iy=1,NY+1
    do iz=1,NZ+1
@@ -285,12 +286,12 @@ deallocate(CR)
 
 !$omp end parallel
 
-
 if(allocated(U))deallocate(U)
+
 end if
 
 t2=SECNDS(t1)
-if(.not.onlyT) write(*,*)'potential transformed in ',t2,'s'
+if(.not.onlyT .or. in_pot ) write(*,*)'potential transformed in ',t2,'s'
 
 end if
 end do !fine loop kyz
@@ -390,7 +391,7 @@ end do  ! fine loop kyz
   emax=maxval(emax_yz(:))
   emin=minval(emin_yz(:))
 
-  if(onlyT)then
+  if(onlyT .and. .not. in_pot)then
      emin=min(emin,min(mus,mud))-NKT*(BOLTZ*TEMP)
      emax=max(emax,max(mus,mud))+NKT*(BOLTZ*TEMP)
   end if

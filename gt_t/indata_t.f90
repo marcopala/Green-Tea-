@@ -107,6 +107,7 @@ MODULE indata
   LOGICAL  :: rgt_gate
   LOGICAL  :: schottky_source
   LOGICAL  :: onlyT
+  LOGICAL  :: in_pot
   LOGICAL  :: magnetic
 
   CHARACTER(2) :: updw
@@ -279,6 +280,7 @@ MODULE indata
        &  NKT,                                 &
        &  eta                            
   NAMELIST /indata_stimulus/                   &
+       &  in_Pot,                              &
        &  onlyT,                               &
        &  VGMIN,                               &
        &  VGMAX,                               &
@@ -334,6 +336,8 @@ CONTAINS
     CHARACTER(20) :: comment
     
 !!! DEFAULT VALUES !!!
+    onlyT=.false.
+    in_pot=.false.
     tox_top=0
     tox_bot=0
     tox_lft=0
@@ -497,16 +501,11 @@ CONTAINS
        read(*,*)j,nm_mat(i),nband_val(i),off_set(i)
     end do
 
-    do i=1,nc
-       write(*,*)i,'nband_v',nband_val(imat(i))
-       write(*,*)i,'off_set',off_set(imat(i))
-    end do
-
     READ(*,NML=indata_cell)
 
-    write(*,*)  'ac1',ac1
-    write(*,*)  'ac2',ac2
-    write(*,*)  'ac3',ac3
+    write(*,*)  'ac1 =',ac1
+    write(*,*)  'ac2 =',ac2
+    write(*,*)  'ac3 =',ac3
     
     allocate(HL(Nkyz,num_mat))    
     allocate(TL(NKyz,num_mat+num_het))

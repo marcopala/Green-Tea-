@@ -217,9 +217,17 @@ DO gg=0, NUMVG
   IF(sweepbz)THEN
      if(ss.eq.0 .and. gg.eq.0 .and. bb.eq.0)then
         write(*,*)'////////////////////////////////////////////////////////////////'
-        write(*,*)'Poisson init guess'
-        call pot_init(POT_3D,whichkind_3D,map_3D,ntot_x,ntot_y,ntot_z,lwork_3D)
-        write(*,*)'POT INIT DONE',mus,mud
+        if(.not. in_pot)then
+           write(*,*)'Poisson init guess'
+           call pot_init(POT_3D,whichkind_3D,map_3D,ntot_x,ntot_y,ntot_z,lwork_3D)
+           write(*,*)'POT INIT DONE',mus,mud
+        else
+           open(10,file='Init_Potential.dat',status='unknown')
+           do ii=0,LWORK_3D-1
+              read(10,*)POT_3D(ii)
+           end do
+           close(10)
+        end if
      end if
   END IF
 
@@ -436,6 +444,12 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   CLOSE(22)
   CLOSE(23)
 
+open(10,file='Last_Potential.dat',status='unknown')
+do ii=0,LWORK_3D-1
+   write(10,*)POT_3D(ii)
+end do
+close(10)
+
 END DO
 
 t2=SECNDS(t1)
@@ -474,7 +488,6 @@ open(23,file=TRIM(outdir)//'scat_current_vd_'//TRIM(STRINGA(gg))//'.dat',status=
 write(23,*) -mud, ISDcurrent, IDScurrent
 close(23)
 end if
-
 
 END DO
 END DO
