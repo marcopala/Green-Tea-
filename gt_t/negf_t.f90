@@ -977,7 +977,7 @@ if(k_selec(iyz))     sumt=sumt+cur(ee,nee,xx,iyz)
      do  xx=1,ncx_d-2
      sumt=0.0_dp
      do iyz=1,nkyz
-if(k_selec(iyz)) sumt=sumt+cur(ee,nee,xx,iyz)+cur(ee,nee,xx+1,iyz)
+if(k_selec(iyz)) sumt=sumt-cur(ee,nee,xx,iyz)+cur(ee,nee,xx+1,iyz)
      end do
      write(42,*)(xx)*ac1*1.0d7,EN,sumt
      end do
@@ -985,7 +985,7 @@ if(k_selec(iyz)) sumt=sumt+cur(ee,nee,xx,iyz)+cur(ee,nee,xx+1,iyz)
      do  xx=1,ncx_d-2
      sumt=0.0_dp
      do iyz=1,nkyz
-if(k_selec(iyz)) sumt=sumt+cur(ee,nee,xx,iyz)+cur(ee,nee,xx+1,iyz)
+if(k_selec(iyz)) sumt=sumt-cur(ee,nee,xx,iyz)+cur(ee,nee,xx+1,iyz)
      end do
      write(43,*)(xx)*ac1*1.0d7,EN,-EN*sumt
      end do
