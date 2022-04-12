@@ -212,25 +212,7 @@ allocate(CR(2,2))
 do xx=1,Ncx_D
 
 do ip=1,npol
-!   Gcc=0.0_dp
-!   do ix=1,Ndeltax
-!      pt=0.0_dp
-!      do iy=1,Ny+1  
-!      do iz=1,Nz+1  
-!         CR(1,1)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3),  to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3))
-!         CR(2,1)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3+1),to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3))
-!         CR(1,2)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3),  to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3+1))
-!         CR(2,2)=pot3D(ix+(xx-1)*Ndeltax, to2_lft+ceiling(dble(iy-1)*dy/deltay+1.0d-3+1),to2_bot+ceiling(dble(iz-1)*dz/deltaz+1.0d-3+1))
-!         call surf_interp(iy,iz,CR,pt(iy+(iz-1)*(NY+1)))
-!      end do
-!      end do
-!      forall (i = 1:Ngt, j = 1:(Ny+1)*(Nz+1) ) A(i,j) = U(i,j) * pt(j)
-!      
-!      call zgemm('n','c',Ngt,ngt,(Ny+1)*(Nz+1),alpha,A,ngt,U(1:ngt,1:(Ny+1)*(Nz+1)),ngt,beta,pot,ngt)
-!      
-!      Gcc(1:ngt,1:Ngt)=Gcc(1:Ngt,1:Ngt)+pot(1:Ngt,1:Ngt)/dble(Ndeltax)
-!      
-!   end do
+
    
    !!!! TRANSFORMING INTO THE Bloch states BASIS
 
@@ -964,6 +946,8 @@ if(phonons)then
    OPEN(UNIT=30,FILE='scat_LDOS_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=40,FILE='scat_Jdens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=41,FILE='scat_Jx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   OPEN(UNIT=42,FILE='scat_Junbalance_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   OPEN(UNIT=43,FILE='scat_Qdens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
 else
    OPEN(UNIT=30,FILE='bal_LDOS_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=40,FILE='bal_Jdens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
@@ -986,11 +970,30 @@ if(k_selec(iyz))   sumt=sumt+ldos(ee,nee,xx,iyz)
      sumt=0.0_dp
      do iyz=1,nkyz
 if(k_selec(iyz))     sumt=sumt+cur(ee,nee,xx,iyz)
-     end do        
-     write(40,*)(xx-1)*ac1*1.0d7,EN,sumt
      end do
+     write(40,*)(xx-1)*ac1*1.0d7,EN,sumt
+  end do
+
+     do  xx=1,ncx_d-2
+     sumt=0.0_dp
+     do iyz=1,nkyz
+if(k_selec(iyz)) sumt=sumt+cur(ee,nee,xx,iyz)+cur(ee,nee,xx+1,iyz)
+     end do
+     write(42,*)(xx)*ac1*1.0d7,EN,sumt
+     end do
+
+     do  xx=1,ncx_d-2
+     sumt=0.0_dp
+     do iyz=1,nkyz
+if(k_selec(iyz)) sumt=sumt+cur(ee,nee,xx,iyz)+cur(ee,nee,xx+1,iyz)
+     end do
+     write(43,*)(xx)*ac1*1.0d7,EN,-EN*sumt
+     end do
+
      write(30,*)
      write(40,*)
+     write(42,*)
+     write(43,*)
   end do
 end do
 
@@ -1012,6 +1015,8 @@ end if
  close(30)
  close(40)
  close(41)
+ close(42)
+ close(43)
 
   deallocate(trans)
   deallocate(ldos)
