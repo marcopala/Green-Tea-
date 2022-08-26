@@ -127,44 +127,53 @@ MODULE indata
   REAL(DP) :: TEMP
   INTEGER  :: NKT
 
-  INTEGER  :: nband,nband_c,nband_v,nk1,MM,ni,nf,nkx,nkx_d,Nk,nkyz,nky,nkz,nmod
+  INTEGER  :: nband,nband_c,nband_v,nk1,MM,ni,nf,nkx,nkx_d,Nk,nkyz,nky,nkz,nmod,nmodes_ph
   INTEGER  :: nx, ny, nz, NKGt, NMODES
   INTEGER  :: Nrx,Nry,Nrz,ngt,npol,Ncy,Ncz,Ncx_D
   integer,  allocatable :: Nez(:), Ney(:), Nex(:), nband_val(:), off_k_nvb(:)
   real(dp)              :: dx, dy, dz
-  REAL(DP), ALLOCATABLE :: kx(:), ky(:), kz(:), Kyz(:), KGt(:,:), k_vec(:,:), KGt_kyz(:,:,:) 
+  REAL(DP), ALLOCATABLE :: kx(:), ky(:), kz(:), Kyz(:), KGt(:,:), k_vec(:,:), KGt_kyz(:,:,:), kq_vec(:,:) 
   REAL(DP), ALLOCATABLE :: deg_ky(:), deg_kz(:), deg_kyz(:), kv_max(:,:), kc_min(:,:), off_set(:)
 
   LOGICAL,  ALLOCATABLE :: k_selec(:)
-  LOGICAL               :: phonons
+  LOGICAL               :: phonons, dfpt, vec_field_new, vec_field_old
   
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
+  type I_BLOCKS
+     integer, allocatable :: I(:)
+  end type I_BLOCKS
+  type(I_blocks),allocatable :: ind_kx(:,:), ind_bnd(:,:)
   
   type H_blocks
      complex(dp), allocatable :: H(:,:)
   end type H_blocks
   type(H_blocks),allocatable :: HL(:,:), TL(:,:), ULCBB(:,:)
+  type(H_blocks),allocatable :: Si_m05(:,:), Si(:,:)
+  
+  type M_blocks
+     COMPLEX(DP), ALLOCATABLE :: M(:,:,:)
+  end type M_blocks
+  type(M_blocks),allocatable :: el_ph_mtrx(:,:,:,:)
 
   type K_tensor
      complex(dp), allocatable :: K(:,:,:,:)
   end type K_tensor
-  type(k_tensor),allocatable :: U_PSI(:,:)
+  type(k_tensor),allocatable :: U_PSI(:,:), AJ(:,:), BJ(:,:), CJ(:,:)
   
-  type F_blocks
-     REAL(DP), ALLOCATABLE :: F(:,:)
-  end type F_blocks
-  type(F_blocks),allocatable :: form_factor(:,:,:)
 
+  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   REAL(DP)  :: E_GAP,ref,ac,ac1,ac2,ac3,g_spin,Ecut,mu,eta
 
   CHARACTER :: domag, lspinorb, okvan
   
-  INTEGER               :: num_mat, num_reg, num_het
-  INTEGER,  ALLOCATABLE :: imat(:), ihet(:), nc_reg(:), typ_mat(:)
-  INTEGER,  ALLOCATABLE :: nm_mat(:), mat_1(:), mat_0(:),ihh(:,:), htype(:)
+  INTEGER               :: num_mat, num_reg, num_het, nqs, nqmodes
+  INTEGER,  ALLOCATABLE :: imat(:), ihet(:), nc_reg(:), typ_mat(:), ind_q(:,:)
+  INTEGER,  ALLOCATABLE :: nm_mat(:), mat_1(:), mat_0(:),ihh(:,:)
   REAL(DP), ALLOCATABLE :: ref_ev(:),ref_ec(:)
+  REAL(DP), ALLOCATABLE :: omega_q(:,:),x_q(:,:)
 
   REAL(DP) :: Eop
   INTEGER  :: Nop_g
@@ -194,6 +203,7 @@ MODULE indata
   
   CHARACTER(LEN=60) :: outdir
   CHARACTER(LEN=60) :: inputdir
+  CHARACTER(LEN=100) :: input_file_DFPT
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -246,6 +256,7 @@ MODULE indata
   NAMELIST /indata_dimensionality/             &
        &  Ncy,                                 &
        &  Ncz,                                 &
+       &  nkx,                                 &
        &  Nky,                                 &
        &  Nkz
   NAMELIST /indata_basis/                      &
@@ -268,6 +279,9 @@ MODULE indata
        &  alphapot,                            &
        &  Nomp
   NAMELIST /indata_energy/                     &
+       &  dfpt,                                &
+       &  nqs,                                 &
+       &  nqmodes,                             &
        &  Eop,                                 &
        &  Nop_g,                               &
        &  Dop_g,                               &
@@ -281,6 +295,8 @@ MODULE indata
        &  eta                            
   NAMELIST /indata_stimulus/                   &
        &  in_Pot,                              &
+       &  vec_field_new,                       &
+       &  vec_field_old,                       &
        &  onlyT,                               &
        &  VGMIN,                               &
        &  VGMAX,                               &
@@ -293,7 +309,8 @@ MODULE indata
 !       &  DELTABZ,                             &
        &  workgate                         
  NAMELIST /indata_inout/                       &
-       &  outdir, inputdir
+       &  outdir, inputdir,                    &
+       &  input_file_DFPT
 
 
 CONTAINS
@@ -316,6 +333,7 @@ CONTAINS
     write(*,*)'Ndeltay=',Ndeltay
     write(*,*)'Ndeltaz=',Ndeltaz
     
+    WRITE(*,*)'NKX=',NKx
     WRITE(*,*)'NKY=',NKY
     WRITE(*,*)'NKZ=',NKZ
     
@@ -336,8 +354,11 @@ CONTAINS
     CHARACTER(20) :: comment
     
 !!! DEFAULT VALUES !!!
+    vec_field_new=.FALSE.
+    vec_field_old=.FALSE.
     onlyT=.false.
     in_pot=.false.
+    dfpt=.false.
     tox_top=0
     tox_bot=0
     tox_lft=0
@@ -361,6 +382,7 @@ CONTAINS
     DIEL_O2=1.0d0
     ncy=1
     ncz=1
+    nkx=2
     nky=1
     nkz=1
     source_dop_val  = 0.0d20
@@ -440,11 +462,9 @@ CONTAINS
        write(*,*)comment
     allocate(mat_0(num_het),mat_1(num_het))
        allocate(ihh(num_mat,num_mat))
-       allocate(htype(num_het))
        ihh=0
        do i=1,num_het
           read(*,*)j,mat_0(i),mat_1(i)
-          htype(i)='n'
           ihh(mat_1(i),mat_0(i))=j
        end do
 
@@ -480,6 +500,37 @@ CONTAINS
           read(*,*) k_vec(2,l), k_vec(3,l), k_selec(l)  !!!!!, off_k_nvb(l)
        end do
     end do
+
+
+    allocate(kq_vec(3,nkx*Nkyz))
+    do iz=1,nkz
+       do iy=1,nky
+          l = iy + (iz-1)*nky
+          if(nkx==4)then
+             kq_vec(1,1+(l-1)*nkx)=-0.250
+             kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,2+(l-1)*nkx)= 0.0
+             kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,3+(l-1)*nkx)= 0.250
+             kq_vec(2,3+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,3+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,4+(l-1)*nkx)= 0.50
+             kq_vec(2,4+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,4+(l-1)*nkx)= k_vec(3,l)
+          end if
+          if(nkx==2)then
+             kq_vec(1,1+(l-1)*nkx)= 0.0
+             kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,2+(l-1)*nkx)= 0.50
+             kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
+          end if
+       end do
+    end do
+    
     magnetic='F'
     updw='ni'
     READ(*,NML=indata_basis)
@@ -507,12 +558,17 @@ CONTAINS
     write(*,*)  'ac2 =',ac2
     write(*,*)  'ac3 =',ac3
     
+    allocate(AJ(Nkyz,num_mat)) 
+    allocate(BJ(Nkyz,num_mat)) 
+    allocate(CJ(Nkyz,num_mat))  
     allocate(HL(Nkyz,num_mat))    
     allocate(TL(NKyz,num_mat+num_het))
     allocate(ULCBB(NKyz,num_mat))
     allocate(U_PSI(NKyz,num_mat))
+    allocate(Si(Nkyz,num_mat))   
+    allocate(Si_m05(Nkyz,num_mat))  
 
-
+    
     deltax=ac1/dble(Ndeltax)
     deltay=ac2/dble(Ndeltay)
     deltaz=ac3/dble(Ndeltaz)
@@ -550,16 +606,23 @@ CONTAINS
   
     phonons=.FALSE.
     if(dac > 0.0_dp .or. dop_g > 0.0_dp) phonons=.TRUE.
+    if(dfpt)  phonons=.TRUE.
 
     if(phonons) then
        write(*,*)'PHONONS ON'
     else
        write(*,*)'PHONONS OFF, balistic simulation'
     end if
-    
-    if(phonons) allocate(form_factor(NKyz,NKyz,num_mat))
-    
 
+    if(phonons) allocate(el_ph_mtrx(NKyz,Nkx,NKyz,num_mat))
+    
+    if(phonons)then
+       allocate(ind_kx(NKyz,num_mat))
+       allocate(ind_bnd(NKyz,num_mat))
+       if (dfpt) allocate(ind_q(nkx,nkyz))
+    end if
+
+    
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   IF((mod(tsc_h-tsc_h,2).ne.0).or.(mod(tsc_w-tsc_w,2).ne.0))STOP "Error in structure declaration"
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1274,6 +1337,8 @@ function stringa(ii) result(rr)
   rr = trim(tt)
 
 end function stringa
+
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   

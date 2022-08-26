@@ -58,7 +58,7 @@ integer :: is,ic,ip,jp,nt,na,ikb,info
 integer(k15) :: N_Gvec, N_k_pts,i,j,n,nnpw,npw
 integer(k15) :: max_mill_1, max_mill_2,max_mill_3, min_mill_1, min_mill_2, min_mill_3
 integer(k15), allocatable :: miller(:,:), ind_miller(:,:,:), miller_2D(:,:), ind_miller_2D(:,:)
-integer(k15), allocatable :: N_projs(:), N_PW(:), ityp(:), ind_cube(:), ind_kG(:,:)
+integer(k15), allocatable :: N_projs(:), N_PW(:), ityp(:), ind_cube(:), ind_kG(:,:), ind_kx(:), ind_bnd(:)
 
 real(dp) :: a_1(3),a_2(3),a_3(3)
 real(dp) :: b_1(3),b_2(3),b_3(3)
@@ -71,7 +71,7 @@ real(dp), allocatable :: k_vec(:,:),coeff(:),kx1(:),kx2(:)
 real(dp), allocatable :: E(:), KGt(:,:), Gx(:), hkl(:,:)
 
 complex(dp) :: tmp, dummy(1,1)
-complex(dp), allocatable :: beta_fun(:,:),KS_fun(:,:),Psi_mod(:,:),Psi_mod_1(:,:),betafunc(:,:)
+complex(dp), allocatable :: beta_fun(:,:),KS_fun(:,:),Psi_old(:,:),Psi_mod(:,:),Psi_mod_1(:,:),betafunc(:,:)
 complex(dp), allocatable :: A(:,:),B(:,:),C(:,:),D(:,:),Q(:,:),Uh(:,:),U(:,:)
 complex(dp), allocatable :: Vloc(:,:),HCC(:,:),Deeq_so(:,:,:,:),Deeq(:,:,:),HV(:,:)
 complex(dp), allocatable :: HLL(:,:),TLL(:,:),HLLL(:,:),TLLL(:,:),HLLLL(:,:),TLLLL(:,:)
@@ -204,20 +204,27 @@ write(*,*)'N_projs =',N_projs
 
 nn=maxval(N_projs(:))
 
-IF ( n_spin /= 4 ) THEN
+!!$IF ( n_spin /= 4 ) THEN
+!!$   allocate(hkl(nn,nn))
+!!$   allocate(Deeq(nn,nn,N_typ_at))
+!!$ELSE
+!!$   allocate(Deeq_so(nn,nn,n_spin,N_typ_at))
+!!$END IF
+
+IF ( lspinorb ) THEN
+   allocate(Deeq_so(nn,nn,n_spin,N_typ_at))
+ELSE
    allocate(hkl(nn,nn))
    allocate(Deeq(nn,nn,N_typ_at))
-ELSE
-   allocate(Deeq_so(nn,nn,n_spin,N_typ_at))
 END IF
-
+   
 
 read(10,'(a)') comment
 do j=1,N_typ_at
    read(10,'(a)') comment
    read(10,*) i,N_projs(j)
    write(*,*) 'Nprojs', i,N_projs(j)
-   IF ( n_spin /= 4 ) THEN
+  IF(.not. lspinorb) THEN ! IF ( n_spin /= 4 ) THEN
       read(10,*)hkl(1:N_projs(j),1:N_projs(j))
       Deeq(1:N_projs(j),1:N_projs(j),j)=hkl(1:N_projs(j),1:N_projs(j))
    ELSE
@@ -471,6 +478,8 @@ do ikx=1,nkx-1
 end do
 
 
+
+allocate(Psi_old(nkx*nrx*Ngt*npol,N_bands*nkx))
 allocate(Psi_mod(nkx*nrx*Ngt*npol,N_bands*nkx))
 Psi_mod=0.0_dp
 allocate(A(nkx*nrx*Ngt*npol,N_bands*nkx))
@@ -623,14 +632,18 @@ end if
 
 deallocate(Psi_mod)
 allocate(PSI_MOD(Nrx*Ngt*npol,NM))
-Psi_mod=0.0_dp
+!Psi_mod=0.0_dp
 
 if(.not. refine)then
 write(*,*)
 t1=SECNDS(0.0)
 write(*,*)'Starting the orthonormalization...'
 ic=1
-call MGS(nrx0*Ngt*npol,NM,C(1:nrx0*ngt*npol,1:NM))
+!call MGS(nrx0*Ngt*npol,NM,C(1:nrx0*ngt*npol,1:NM))
+psi_old=C
+call ortonorma(nrx0*Ngt*npol,NM,C,PSI_mod)
+
+C=psi_mod
 do jp=1,npol
    do jgt=1,Ngt
       do ix=1,nrx0
@@ -638,7 +651,6 @@ do jp=1,npol
       end do  
    end do
 end do
-
    
 do j=1,NM
    do i=1,Nrx*Ngt*npol
@@ -659,6 +671,19 @@ deallocate(C)
 deallocate(ks_fun)
 
 
+
+!allocate(C(NM,NM))
+!call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,PSI_MOD,nrx*ngt*npol,PSI_MOD,nrx*ngt*npol,beta,C,NM)
+!do i=1,nm
+!   do j=1,nm
+!      write(319,*)i,j,abs(C(i,j))
+!   end do
+!   write(319,*)
+!end do
+!deallocate(C)
+!stop
+
+
 if(ncell==1)then
    ic=1
 if(nspin==1) then
@@ -672,7 +697,7 @@ if(.not. refine)then
    write(*,*)'Writing PPSI files...'
    do j=1,NM
       do i=1,Nrx*Ngt*npol
-         write(13,*)PSI_MOD(i,j)
+         write(13,*)PSI_OLD(i,j)!PSI_MOD(i,j)
       end do
    end do
    write(*,*)'done'
@@ -681,10 +706,11 @@ else if(refine)then
    write(*,*)'reading PPSI files...'
    do j=1,NM
       do i=1,Nrx*Ngt*npol
-         read(13,*)PSI_MOD(i,j)
+         read(13,*)PSI_OLD(i,j)!PSI_MOD(i,j)
       end do
    end do
    write(*,*)'done'
+   call ortonorma(nrx0*Ngt*npol,NM,psi_old,PSI_mod)
 end if
 close(13)
 end if
@@ -699,14 +725,17 @@ if(ncell==2)then
       if(is==2)nome=trim(indir2)//'PPsi_Bloch_dw_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat'
    end if
    write(*,*)nome
+   allocate(A(Nrx*Ngt*npol,NM2))
    allocate(PSI_MOD_1(Nrx*Ngt*npol,NM2))
    open(unit=13,file=nome,status='unknown')
       do j=1,NM2
       do i=1,Nrx*Ngt*npol
-         read(13,*)PSI_MOD_1(i,j)
+         read(13,*)A(i,j)!PSI_MOD_1(i,j)
       end do
    end do
    close(13)
+   call ortonorma(nrx0*Ngt*npol,NM,A,PSI_mod_1)
+   deallocate(A)
 end if
 
 
@@ -1109,6 +1138,8 @@ if(gap_corr)then
       stop
    end if
 
+   HLLL=HLL
+   TLLL=TLL
    deallocate(TLL,HLL)
    deallocate(A,B,C)
    deallocate(E)  
@@ -1188,6 +1219,7 @@ do ikx=1,nk1
    A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*kx1(ikx)*2.0_dp*pi)+transpose(dconjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*kx1(ikx)*2.0_dp*pi)
    call SUB_DEF_Z(ni,nf,NM,A,E,C)
    B(:,1+(ikx-1)*mm1:ikx*mm1)=C(:,1:mm1)
+
 end do
 deallocate(C,E)
 
@@ -1208,14 +1240,80 @@ deallocate(A)
 write(*,*)
 write(*,*)' Reduced basis order =',mmm
 write(*,*)
-call MGS(NM,mmm,B) !!! Modified Gram-Schmidt to orthonormalize the Psi functions at different kx
+
+!call MGS(NM,mmm,B) !!! Modified Gram-Schmidt to orthonormalize the Psi functions at different kx
+allocate(A(NM,mmm))
+call ortonorma(NM,mmm,B,A)
+B=A
+deallocate(A)
 
 NMODES=mmm
 
-   ic=1
-   allocate(C(Nrx*Ngt*npol,NModes))
-   call ZGEMM('n','n',Nrx*Ngt*npol,NModes,NM,alpha,psi_mod,Nrx*Ngt*npol,B,NM,beta,C,Nrx*Ngt*npol)
+ic=1
+allocate(C(Nrx*Ngt*npol,NModes))
+!!!call ZGEMM('n','n',Nrx*Ngt*npol,NModes,NM,alpha,psi_mod,Nrx*Ngt*npol,B,NM,beta,C,Nrx*Ngt*npol)
 
+
+!!!!!!!!!!!!!!!!!!!!
+allocate(A(nrx*ngt*npol,nmodes))
+   
+i=0
+do ikx=1,nk1
+do j=1,nkx
+   if(abs(kx1(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-6)then
+      i=i+1
+   end if
+end do
+end do
+if(i /= nk1)then
+   write(*,*)'pb with nk1'
+   stop
+end if
+
+allocate(ind_kx(nmodes),ind_bnd(nmodes))
+do ikx=1,nk1
+   do j=1,nkx
+      if(abs(kx1(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-6)then
+         do i=1,mm1
+            A(:,i+(ikx-1)*mm1)=psi_old(:,i+ni-1+(j-1)*n_bands)
+            ind_kx(i+(ikx-1)*mm1)=ikx
+            ind_bnd(i+(ikx-1)*mm1)=i
+         end do
+      end if
+   end do
+end do
+
+if(nplus>0)then
+
+i=0
+do ikx=1,nnn
+do j=1,nkx
+   if(abs(kx2(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-6)then
+      i=i+1
+   end if
+end do
+end do
+if(i /= nkplus)then
+   write(*,*)'pb with nkplus'
+   stop
+end if
+do ikx=1,nnn
+   do j=1,nkx
+      if(abs(kx2(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-6)then
+         do i=1,nplus
+            A(:,nk1*mm1 + i+(ikx-1)*nplus)=psi_old(:,nf+i+(j-1)*n_bands)
+            ind_kx(nk1*mm1 + i+(ikx-1)*nplus)=ikx
+            ind_bnd(nk1*mm1 + i+(ikx-1)*nplus)=mm1+i
+         end do
+      end if
+   end do
+end do
+end if
+
+call ortonorma(nrx*ngt*npol,nmodes,A,C)
+deallocate(A)
+!!!!!!!!!!!!!!!!!!!!!!
+  
    if(ncell==1)then
       if( nspin == 1 )then
          open(unit=13,file=TRIM(outdir)//'Psi_Bloch_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat',status='unknown')
@@ -1228,6 +1326,9 @@ NMODES=mmm
             write(13,*)C(i,j)
          end do
       end do
+      do j=1,NModes
+         write(13,*)j,ind_kx(j),ind_bnd(j)
+      end do      
       close(13)
       ic=1
       if( nspin == 1 )then
@@ -1244,7 +1345,7 @@ NMODES=mmm
       close(13)
    end if
 
-
+   deallocate(ind_bnd,ind_kx)
    deallocate(C)
 
    if(ncell==2)then
@@ -1315,105 +1416,12 @@ deallocate(hkl)
 
 
 !!!!stop
-
-
-!!!!
-en_select=.false.
-if(en_select)then
-   deallocate(HLL,TLL)
-   
-   write(*,*)nek,'Ev',Ev
-   
-   allocate(A(2*NM,2*NM),C(2*NM,2*NM), U(2*NM,2*NM), id(NM,NM))
-   allocate(DAL(2*NM))
-   allocate(DBE(2*NM))
-   allocate(work(4*NM),rwork(16*NM))
-   allocate(kval(10000),Q(NM,10000))
-   id=0.0_dp
-   forall (i=1:NM) id(i,i)=1.0_dp
-   j=0
-   do i=1,nEK
-      A=0.0_dp
-      C=0.0_dp
-      A(1:NM,1:NM)=HLLL(1:NM,1:NM)-Ev(i)*id(1:NM,1:NM)
-      A(1:NM,1+NM:2*NM)=TLLL(1:NM,1:NM)
-      A(1+NM:2*NM,1:NM)=id(1:NM,1:NM)
-      C(1:NM,1:NM)=-transpose(conjg(TLLL(1:NM,1:NM)))
-      C(1+NM:2*NM,1+NM:2*NM)=id(1:NM,1:NM)
-      write(*,*)2*nm,size(A),size(C)
-      call ZGGEV('n', 'v', 2*NM, A, 2*NM, C, 2*NM, DAL, DBE, dummy, 1, U, 2*NM, WORK, 4*NM, rwork, INFO)
-            
-      write(*,*)i,'INFO = ',info
-      do n=1,2*NM
-         if(abs(DBE(n))>0)then
-            if(abs(abs(DAL(n)/DBE(n))-1.0_dp)<1.0d-10)then
-               !write(*,*)ev(i),DAL(n)/DBE(n),abs(aimag(log(DAL(n)/DBE(n))))/(2.0*pi)
-              ! if(abs(abs(aimag(log(DAL(n)/DBE(n))))/(2.0*pi)-Kv(i))<1.0d-2 )then
-               !   write(*,*)ev(i),log(DAL(n)/DBE(n))/(2.0*pi),kv(i)
-                  j=j+1
-                  kval(j)=DAL(n)/DBE(n)
-                  Q(1:NM,j)=U(1:NM,n)
-               !end if
-            end if
-         end if
-      end do
-   end do
-   write(*,*)j
-   do n=1,j
-      write(*,*)n,aimag(log(kval(n))),aimag(log(kval(n)))/(2.0*pi)
-   end do
-   deallocate(work,rwork,id,A,C,U,dal,dbe)
-
-      
-   mmm=j
-   write(*,*)'en-selected-basis size =',mmm
-   allocate(C(NM,mmm))
-   C(1:NM,1:mmm)=Q(1:NM,1:mmm)
-   deallocate(Q)
-   call MGS(NM,mmm,C) !!! Modified Gram-Schmidt to orthonormalize the Psi functions at different kx
-  
-allocate(HLLLL(mmm,mmm),TLLLL(mmm,mmm))
-allocate(A(NM,mmm))
-call ZGEMM('n','n',NM,mmm,NM,alpha,HLLL,NM,C,NM,beta,A,NM)
-call ZGEMM('c','n',mmm,mmm,NM,alpha,C,NM,A,NM,beta,HLLLL,mmm)
-call ZGEMM('n','n',NM,mmm,NM,alpha,TLLL,NM,C,NM,beta,A,NM)
-call ZGEMM('c','n',mmm,mmm,NM,alpha,C,NM,A,NM,beta,TLLLL,mmm)
-deallocate(A,C)
-
-
-n=40
-allocate(E(mmm))
-allocate(A(mmm,mmm),hkl(n+1,mmm))
-do ikx=1,n+1
-   A=HLLLL+TLLLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+transpose(dconjg(TLLLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-   call SUB_DEF_Z0(1,mmm,mmm,A,E)
-   hkl(ikx,1:mmm)=e(1:mmm)
-end do
-do ii=1,mmm
-   if(nspin == 1)then
-      open(unit=300,file=TRIM(outdir)//'disp_'//TRIM(STRINGA(ii))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
-   else
-      if(is==1)open(unit=300,file=TRIM(outdir)//'disp_up_'//TRIM(STRINGA(ii))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
-      if(is==2)open(unit=300,file=TRIM(outdir)//'disp_dw_'//TRIM(STRINGA(ii))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
-   end if
-   do ikx=1,n+1
-      write(300,*)dble(ikx-1-n/2)/dble(n),hkl(ikx,ii)
-   end do
-   close(300)
-end do
-deallocate(A)
-deallocate(E,hkl)
-stop
-!!!!
-else 
 NM=mmm
 NMODES=NM
 write(*,*)'NUMBER OF BLOCH STATES=',NMODES
-end if
-!!!! END
+
 
 if(ncell==1)then
-
    do ic=1,ncell
       if( nspin == 1 )then
          open(unit=13,file=TRIM(outdir)//'H00_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat',status='unknown')
@@ -1508,6 +1516,7 @@ U_LCBB(:,:,iyz)=A(:,:)
 
 deallocate(A,B)
 deallocate(PSI_MOD)
+deallocate(PSI_OLD)
 if(allocated(PSI_MOD_1))deallocate(PSI_MOD_1)
 deallocate(HLLL,TLLL)
 
@@ -1643,5 +1652,72 @@ deallocate(R,X)
 
 end subroutine MGS
  
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+ subroutine ortonorma(np,nm,PSI,PHI) !!!! 
+ implicit none
+ 
+ integer, intent(IN) :: np, nm
+ complex(dp), intent(IN)  :: PSI(np,nm)
+ complex(dp), intent(OUT) :: PHI(np,nm)
+ integer :: i,m
+ complex(dp), allocatable :: S(:,:),S_m05(:,:)
+
+ 
+ allocate(S(NM,NM))
+ call ZGEMM('c','n',NM,NM,np,alpha,PSI,np,PSI,np,beta,S,NM)
+
+ allocate(S_m05(NM,NM))
+ call A_POWER(-0.5_dp,nm,S,S_m05)
+
+ PHI=0.0_dp
+ do i=1,NM
+    do m=1,NM
+       PHI(1:np,i)=PHI(1:np,i)+S_m05(m,i)*PSI(1:np,m)
+    end do
+ end do
+ deallocate(S,S_m05)
+ 
+ 
+end subroutine ortonorma
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+ subroutine A_POWER(p,NM,A,B)  ! computes A**(p) of the hermitian matrix A
+   implicit none
+   
+   integer, intent(in)      :: nm
+   real(dp), intent(in)     :: p
+   complex(dp),intent(in)   :: A (nm,nm) 
+   complex(dp),intent(out)  :: B (nm,nm) 
+
+   integer                  :: i
+   complex(dp), allocatable :: U(:,:),C(:,:)
+   real(dp), allocatable    :: E(:)
+
+   allocate(U(nm,nm),C(nm,nm))
+   allocate(E(nm))
+   
+   B=A
+   
+   call SUB_DEF_Z(1,NM,nm,B,E,U)
+
+   B=0.0_dp
+   do i=1,nm
+      B(i,i)=E(i)**p
+   end do
+   
+   call zgemm('n','c',nm,nm,nm,alpha,B,nm,U,nm,beta,C,nm)
+   call zgemm('n','n',nm,nm,nm,alpha,U,nm,C,nm,beta,B,nm)
+   
+   deallocate(U,C)
+   deallocate(E)
+   
+ end subroutine A_POWER
+ 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 END MODULE Pseudopot_so_gen

@@ -444,7 +444,9 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   CLOSE(22)
   CLOSE(23)
 
-open(10,file='Last_Potential.dat',status='unknown')
+
+
+open(10,file='Last_Potential_vg'//TRIM(STRINGA(gg))//'_vd'//TRIM(STRINGA(ss))//'.dat',status='unknown')
 do ii=0,LWORK_3D-1
    write(10,*)POT_3D(ii)
 end do
