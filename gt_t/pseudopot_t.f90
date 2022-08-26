@@ -636,200 +636,200 @@ write(*,*)'Computing the el-ph matrix'
 t1=SECNDS(0.0)
 
 
-if(dfpt)then
-write(*,*)
-write(*,*)'Reading the DFPT el-ph matrix file'
-
-
-open(unit=13,file=TRIM(input_file_DFPT),status='unknown')
-read(13,'(A)') comment!nbnd
-read(13,'(I)')nbnd
-write(*,*)comment, nbnd
-read(13,'(A)') comment
-read(13,'(I)')nqmodes
-write(*,*)comment, nqmodes
-read(13,'(A)') comment
-read(13,'(I)')nqs
-write(*,*)comment, nqs
-nadd=nqs
-
-allocate(x_q(3,nqs))
-allocate(omega_q(nqs,nqmodes))
-allocate(el_ph_mat(nbnd, nbnd, nqs, nqmodes))
-el_ph_mat=0.0_dp
-allocate(xkadd(3,nadd),xkqadd(3,nadd))
-allocate(ind_k(nkx,nkyz))
-
-read(13,'(a)') comment
-write(*,*) comment
-read(13,*) ((x_q(i, j), i = 1, 3), j = 1, nqs)
-write(*,*) ((x_q(i, j), i = 1, 3), j = 1, nqs)
-
-
-do iq=1,nqs
-   write(*,*)'iq=',iq
-   read(13,*)   
-   read(13,*) comment ! 'current q-point',nadd,nksqtot
-   !write(*,*) comment
-   read(13,'(A3,3e20.10)') comment,x_q(1, iq),x_q(2, iq),x_q(3, iq)
-   !write(*,'(A4,3e20.10)') 'q0=',x_q(1, iq),x_q(2, iq),x_q(3, iq)
-   x_q(2, iq)=x_q(2, iq)/ac1*ac2
-   x_q(3, iq)=x_q(3, iq)/ac1*ac3
-   !write(*,'(A3,3e20.10)') 'q=',x_q(1, iq),x_q(2, iq),x_q(3, iq)
-
-   read(13,*)nksq
-   write(*,*)'nksq',nksq
-   if(dot_product(x_q(:,iq),x_q(:,iq))>1.0d-6)then
-      allocate(xk(4,2*nksq))
-      do nn=1,nksq
-         READ(13,'(I,4e20.10)')i,xk(1,2*nn-1),xk(2,2*nn-1),xk(3,2*nn-1),xk(4,2*nn-1)
-      end do
-      READ(13,*)
-      do nn=1,nksq
-         READ(13,'(I,4e20.10)')i,xk(1,2*nn),xk(2,2*nn),xk(3,2*nn-1),xk(4,2*nn)
-      end do
-      deallocate(xk)
-   else
-      allocate(xk(4,nksq))
-      READ(13,*)
-      do nn=1,nksq
-         READ(13,'(I,4e20.10)')i,xk(1,nn),xk(2,nn),xk(3,nn),xk(4,nn)
-      end do
-      deallocate(xk)
-   end if
-   read(13,*) comment !'hbar omega (Ryd):',shape(w2)
-   do ll=1,nqmodes
-      read(13,*) i,omega_q(iq,ll) !j,  dsqrt(abs(w2( j )))
-      !write(*,*) i,omega_q(iq,ll)
-      !if(omega_q(iq,ll)<0.0_dp)then
-      !   omega_q(iq,ll)=0.0_dp
-      !else
-      !   omega_q(iq,ll)=ryd*sqrt(omega_q(iq,ll)) !omega in eV
-      !end if
-      
-      omega_q(iq,ll)=ryd*omega_q(iq,ll) !omega in eV
-      write(*,*) 'omega_q',iq,ll,omega_q(iq,ll)
-   end do
-
-   read(13,*)
-   read(13,'(a)') comment !'matrix elements (Ryd)', nadd,nkstot,nksqtot
-   !write(*,*)comment
-   do nn=1,nqs 
-      if(dot_product(x_q(:,iq),x_q(:,iq))<1.0d-6)then
-         read(13,'(I,A3,3e20.10)')i,comment,xkadd(1,nn),xkadd(2,nn),xkadd(3,nn)
-         xkadd(2,nn)=xkadd(2,nn)/ac1*ac2
-         xkadd(3,nn)=xkadd(3,nn)/ac1*ac3
-              
-         do ll = 1,nqmodes
-            read(13,'(A)')comment!,ll
-            do ii = 1,nbnd
-               do jj = 1,nbnd
-                  read(13,*) tmp1,tmp2
-                  el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2)
-               end do
-            end do
-         end do
-
-      else
-         
-      read(13,'(I,A5,3e20.10)')i,comment,xkadd(1,nn),xkadd(2,nn),xkadd(3,nn)
-      read(13,'(I,A5,3e20.10)')i,comment,xkqadd(1,nn),xkqadd(2,nn),xkqadd(3,nn)
-      xkadd(2,nn)=xkadd(2,nn)/ac1*ac2
-      xkadd(3,nn)=xkadd(3,nn)/ac1*ac3
-      xkqadd(2,nn)=xkqadd(2,nn)/ac1*ac2
-      xkqadd(3,nn)=xkqadd(3,nn)/ac1*ac3
-           
-      do ll = 1,nqmodes
-         read(13,'(A)')comment!,ll
-         do ii = 1,nbnd
-            do jj = 1,nbnd
-               read(13,*) tmp1,tmp2
-               if( omega_q(iq,ll) > 0.0_dp ) el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)
-            end do
-         end do
-      end do
-   end if
-      read(13,*)
-   end do
-   
-   ind_k=0
-   do jx=1,nkx
-      do jyz=1,NKyz
-         do nn=1,nqs
-            if ( abs(abs(kq_vec(1,jx+(jyz-1)*nkx))-abs(xkadd(1, nn)))<1.0d-3 .and. &
-                 abs(abs(kq_vec(2,jx+(jyz-1)*nkx))-abs(xkadd(2, nn)))<1.0d-3 .and. &
-                 abs(abs(kq_vec(3,jx+(jyz-1)*nkx))-abs(xkadd(3, nn)))<1.0d-3 ) then
-               ind_k(jx,jyz)=nn
-            end if
-         end do
-      end do
-   end do
-   
-   allocate(A(NM,NM))
-   
-   write(*,*)iq, 'x_q  =',x_q(1:3,iq)
-   do jx=1,nkx
-      do jyz=1,NKyz
-         
-         if ( abs(abs(kq_vec(1,jx+(jyz-1)*nkx))-abs(x_q(1, iq)))<1.0d-3 .and. & !!! kq_vec(1:3,jx+(jyz-1)*nkx) is the q vector
-              abs(abs(kq_vec(2,jx+(jyz-1)*nkx))-abs(x_q(2, iq)))<1.0d-3 .and. &
-              abs(abs(kq_vec(3,jx+(jyz-1)*nkx))-abs(x_q(3, iq)))<1.0d-3 ) then 
-            ind_q(jx,jyz)=iq
-            write(*,*)'ind_q',jx,jyz,ind_q(jx,jyz)
-            do iyz=1,NKyz !!! varying kyz
-               !iyz=ind_kyz( kq_vec(2:3,jx+(jyz-1)*nkx) - x_q(2:3,iq) )
-               allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(nqmodes,NM_mat(im),NM_mat(im)))
-               el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
-               jj = ind_kyz( k_vec(2:3,iyz) + k_vec(2:3,jyz) ) !!! this is the index of (k+q)_yz
-
-do ll=1,nqmodes
-   A=0.0_dp
-   do i=1,NM
-      do j=1,NM
-
-         do m=1,NM
-            nn= ind_k(ind_kx(iyz,im)%i(m),iyz)
-            if(nn==0)then
-               write(*,*)'pb w the dtrmnation of k'
-               write(*,*) ind_k(ind_kx(iyz,im)%i(m),iyz), ind_kx(iyz,im)%i(m),m,iyz
-               stop
-            end if
-            do n=1,NM
-               if(  abs(    kq_vec(1,ind_kx(iyz,im)%i(n))-kq_vec(1,ind_kx(jj,im)%i(m))+kq_vec(1,jx)) < 1.0d-3 .or. &
-                    abs(abs(kq_vec(1,ind_kx(iyz,im)%i(n))-kq_vec(1,ind_kx(jj,im)%i(m))+kq_vec(1,jx))-1.0_dp) < 1.0d-3   ) then
-                  A(i,j) = A(i,j) + &
-                       Si_m05(iyz,im)%H(i,n) *  Si_m05(jj,im)%H(m,j) * &
-                       el_ph_mat(ind_bnd(iyz,im)%i(n), ind_bnd(jyz,im)%i(m),  nn , ll)
-               end if
-            end do
-         end do
-         el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)
-         write(4000+100*iyz+ll,*)i,j,abs(A(i,j))
-      end do
-      write(4000+100*iyz+ll,*)
-   end do
-end do
-            
-end do
-end if
-      end do
-   end do
-   deallocate(A)
-
-  
-end do !end iq
-close(13)
-write(*,*)'End reading the el-ph matrix file'
-
-
-
-
-deallocate(x_q)
-deallocate(el_ph_mat)
-deallocate(xkadd)
-deallocate(ind_k)
-
-end if
+!!$if(dfpt)then
+!!$write(*,*)
+!!$write(*,*)'Reading the DFPT el-ph matrix file'
+!!$
+!!$
+!!$open(unit=13,file=TRIM(input_file_DFPT),status='unknown')
+!!$read(13,'(A)') comment!nbnd
+!!$read(13,'(I)')nbnd
+!!$write(*,*)comment, nbnd
+!!$read(13,'(A)') comment
+!!$read(13,'(I)')nqmodes
+!!$write(*,*)comment, nqmodes
+!!$read(13,'(A)') comment
+!!$read(13,'(I)')nqs
+!!$write(*,*)comment, nqs
+!!$nadd=nqs
+!!$
+!!$allocate(x_q(3,nqs))
+!!$allocate(omega_q(nqs,nqmodes))
+!!$allocate(el_ph_mat(nbnd, nbnd, nqs, nqmodes))
+!!$el_ph_mat=0.0_dp
+!!$allocate(xkadd(3,nadd),xkqadd(3,nadd))
+!!$allocate(ind_k(nkx,nkyz))
+!!$
+!!$read(13,'(a)') comment
+!!$write(*,*) comment
+!!$read(13,*) ((x_q(i, j), i = 1, 3), j = 1, nqs)
+!!$write(*,*) ((x_q(i, j), i = 1, 3), j = 1, nqs)
+!!$
+!!$
+!!$do iq=1,nqs
+!!$   write(*,*)'iq=',iq
+!!$   read(13,*)   
+!!$   read(13,*) comment ! 'current q-point',nadd,nksqtot
+!!$   !write(*,*) comment
+!!$   read(13,'(A3,3e20.10)') comment,x_q(1, iq),x_q(2, iq),x_q(3, iq)
+!!$   !write(*,'(A4,3e20.10)') 'q0=',x_q(1, iq),x_q(2, iq),x_q(3, iq)
+!!$   x_q(2, iq)=x_q(2, iq)/ac1*ac2
+!!$   x_q(3, iq)=x_q(3, iq)/ac1*ac3
+!!$   !write(*,'(A3,3e20.10)') 'q=',x_q(1, iq),x_q(2, iq),x_q(3, iq)
+!!$
+!!$   read(13,*)nksq
+!!$   write(*,*)'nksq',nksq
+!!$   if(dot_product(x_q(:,iq),x_q(:,iq))>1.0d-6)then
+!!$      allocate(xk(4,2*nksq))
+!!$      do nn=1,nksq
+!!$         READ(13,'(I,4e20.10)')i,xk(1,2*nn-1),xk(2,2*nn-1),xk(3,2*nn-1),xk(4,2*nn-1)
+!!$      end do
+!!$      READ(13,*)
+!!$      do nn=1,nksq
+!!$         READ(13,'(I,4e20.10)')i,xk(1,2*nn),xk(2,2*nn),xk(3,2*nn-1),xk(4,2*nn)
+!!$      end do
+!!$      deallocate(xk)
+!!$   else
+!!$      allocate(xk(4,nksq))
+!!$      READ(13,*)
+!!$      do nn=1,nksq
+!!$         READ(13,'(I,4e20.10)')i,xk(1,nn),xk(2,nn),xk(3,nn),xk(4,nn)
+!!$      end do
+!!$      deallocate(xk)
+!!$   end if
+!!$   read(13,*) comment !'hbar omega (Ryd):',shape(w2)
+!!$   do ll=1,nqmodes
+!!$      read(13,*) i,omega_q(iq,ll) !j,  dsqrt(abs(w2( j )))
+!!$      !write(*,*) i,omega_q(iq,ll)
+!!$      !if(omega_q(iq,ll)<0.0_dp)then
+!!$      !   omega_q(iq,ll)=0.0_dp
+!!$      !else
+!!$      !   omega_q(iq,ll)=ryd*sqrt(omega_q(iq,ll)) !omega in eV
+!!$      !end if
+!!$      
+!!$      omega_q(iq,ll)=ryd*omega_q(iq,ll) !omega in eV
+!!$      write(*,*) 'omega_q',iq,ll,omega_q(iq,ll)
+!!$   end do
+!!$
+!!$   read(13,*)
+!!$   read(13,'(a)') comment !'matrix elements (Ryd)', nadd,nkstot,nksqtot
+!!$   !write(*,*)comment
+!!$   do nn=1,nqs 
+!!$      if(dot_product(x_q(:,iq),x_q(:,iq))<1.0d-6)then
+!!$         read(13,'(I,A3,3e20.10)')i,comment,xkadd(1,nn),xkadd(2,nn),xkadd(3,nn)
+!!$         xkadd(2,nn)=xkadd(2,nn)/ac1*ac2
+!!$         xkadd(3,nn)=xkadd(3,nn)/ac1*ac3
+!!$              
+!!$         do ll = 1,nqmodes
+!!$            read(13,'(A)')comment!,ll
+!!$            do ii = 1,nbnd
+!!$               do jj = 1,nbnd
+!!$                  read(13,*) tmp1,tmp2
+!!$                  el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2)
+!!$               end do
+!!$            end do
+!!$         end do
+!!$
+!!$      else
+!!$         
+!!$      read(13,'(I,A5,3e20.10)')i,comment,xkadd(1,nn),xkadd(2,nn),xkadd(3,nn)
+!!$      read(13,'(I,A5,3e20.10)')i,comment,xkqadd(1,nn),xkqadd(2,nn),xkqadd(3,nn)
+!!$      xkadd(2,nn)=xkadd(2,nn)/ac1*ac2
+!!$      xkadd(3,nn)=xkadd(3,nn)/ac1*ac3
+!!$      xkqadd(2,nn)=xkqadd(2,nn)/ac1*ac2
+!!$      xkqadd(3,nn)=xkqadd(3,nn)/ac1*ac3
+!!$           
+!!$      do ll = 1,nqmodes
+!!$         read(13,'(A)')comment!,ll
+!!$         do ii = 1,nbnd
+!!$            do jj = 1,nbnd
+!!$               read(13,*) tmp1,tmp2
+!!$               if( omega_q(iq,ll) > 0.0_dp ) el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)
+!!$            end do
+!!$         end do
+!!$      end do
+!!$   end if
+!!$      read(13,*)
+!!$   end do
+!!$   
+!!$   ind_k=0
+!!$   do jx=1,nkx
+!!$      do jyz=1,NKyz
+!!$         do nn=1,nqs
+!!$            if ( abs(abs(kq_vec(1,jx+(jyz-1)*nkx))-abs(xkadd(1, nn)))<1.0d-3 .and. &
+!!$                 abs(abs(kq_vec(2,jx+(jyz-1)*nkx))-abs(xkadd(2, nn)))<1.0d-3 .and. &
+!!$                 abs(abs(kq_vec(3,jx+(jyz-1)*nkx))-abs(xkadd(3, nn)))<1.0d-3 ) then
+!!$               ind_k(jx,jyz)=nn
+!!$            end if
+!!$         end do
+!!$      end do
+!!$   end do
+!!$   
+!!$   allocate(A(NM,NM))
+!!$   
+!!$   write(*,*)iq, 'x_q  =',x_q(1:3,iq)
+!!$   do jx=1,nkx
+!!$      do jyz=1,NKyz
+!!$         
+!!$         if ( abs(abs(kq_vec(1,jx+(jyz-1)*nkx))-abs(x_q(1, iq)))<1.0d-3 .and. & !!! kq_vec(1:3,jx+(jyz-1)*nkx) is the q vector
+!!$              abs(abs(kq_vec(2,jx+(jyz-1)*nkx))-abs(x_q(2, iq)))<1.0d-3 .and. &
+!!$              abs(abs(kq_vec(3,jx+(jyz-1)*nkx))-abs(x_q(3, iq)))<1.0d-3 ) then 
+!!$            ind_q(jx,jyz)=iq
+!!$            write(*,*)'ind_q',jx,jyz,ind_q(jx,jyz)
+!!$            do iyz=1,NKyz !!! varying kyz
+!!$               !iyz=ind_kyz( kq_vec(2:3,jx+(jyz-1)*nkx) - x_q(2:3,iq) )
+!!$               allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(nqmodes,NM_mat(im),NM_mat(im)))
+!!$               el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
+!!$               jj = ind_kyz( k_vec(2:3,iyz) + k_vec(2:3,jyz) ) !!! this is the index of (k+q)_yz
+!!$
+!!$do ll=1,nqmodes
+!!$   A=0.0_dp
+!!$   do i=1,NM
+!!$      do j=1,NM
+!!$
+!!$         do m=1,NM
+!!$            nn= ind_k(ind_kx(iyz,im)%i(m),iyz)
+!!$            if(nn==0)then
+!!$               write(*,*)'pb w the dtrmnation of k'
+!!$               write(*,*) ind_k(ind_kx(iyz,im)%i(m),iyz), ind_kx(iyz,im)%i(m),m,iyz
+!!$               stop
+!!$            end if
+!!$            do n=1,NM
+!!$               if(  abs(    kq_vec(1,ind_kx(iyz,im)%i(n))-kq_vec(1,ind_kx(jj,im)%i(m))+kq_vec(1,jx)) < 1.0d-3 .or. &
+!!$                    abs(abs(kq_vec(1,ind_kx(iyz,im)%i(n))-kq_vec(1,ind_kx(jj,im)%i(m))+kq_vec(1,jx))-1.0_dp) < 1.0d-3   ) then
+!!$                  A(i,j) = A(i,j) + &
+!!$                       Si_m05(iyz,im)%H(i,n) *  Si_m05(jj,im)%H(m,j) * &
+!!$                       el_ph_mat(ind_bnd(iyz,im)%i(n), ind_bnd(jyz,im)%i(m),  nn , ll)
+!!$               end if
+!!$            end do
+!!$         end do
+!!$         el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)
+!!$         write(4000+100*iyz+ll,*)i,j,abs(A(i,j))
+!!$      end do
+!!$      write(4000+100*iyz+ll,*)
+!!$   end do
+!!$end do
+!!$            
+!!$end do
+!!$end if
+!!$      end do
+!!$   end do
+!!$   deallocate(A)
+!!$
+!!$  
+!!$end do !end iq
+!!$close(13)
+!!$write(*,*)'End reading the el-ph matrix file'
+!!$
+!!$
+!!$
+!!$
+!!$deallocate(x_q)
+!!$deallocate(el_ph_mat)
+!!$deallocate(xkadd)
+!!$deallocate(ind_k)
+!!$
+!!$end if    !!end dfpt option
 
 
 if (.not. dfpt) then
