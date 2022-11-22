@@ -442,7 +442,7 @@ do iyz=1,Nkyz
             do ix=1,nrx   
                read(13,*)tmp
                A(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)=tmp
-!               ULCBB(iyz,im)%H(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)=tmp
+!!!!               ULCBB(iyz,im)%H(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)=tmp
             end do
          end do
       end do

@@ -1200,10 +1200,16 @@ if(nk1==3)kx1=(/-1.0_dp/3.0_dp, 0.0_dp, 1.0_dp/3.0_dp/)
 if(nk1==2)kx1=(/0.0_dp, 0.5_dp/)
 if(nk1==1)kx1=(/0.0_dp/)
 nnn=nkplus
-if( nkplus .ne. 2 .or. nkplus .ne. 4 .or. nkplus .ne. 8 ) then
+
+
+if(nkplus == 2 .or. nkplus == 4 .or. nkplus == 8)then
+   write(*,*)'nkplus=',nkplus
+else
    write(*,*)'pb with nkplus', nkplus
    stop
 end if
+
+
 allocate(kx2(nnn))
 if(nnn==2)kx2=(/ 0.0, 0.5/)
 !if(nnn==3)kx2=(/ -0.3333, 0.0, 0.3333/)

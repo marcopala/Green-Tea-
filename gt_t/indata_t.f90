@@ -501,9 +501,6 @@ CONTAINS
        end do
     end do
 
-    if(nkx .ne. 2 .or. nkx .ne. 4 .or. nkx .ne. 8)then
-       write(*,*)'pb with kq_vec definition: unexpected nkx',nkx
-    end if
     allocate(kq_vec(3,nkx*Nkyz))
     do iz=1,nkz
        do iy=1,nky
@@ -533,8 +530,7 @@ CONTAINS
              kq_vec(1,8+(l-1)*nkx)= 0.5_dp
              kq_vec(2,8+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,8+(l-1)*nkx)= k_vec(3,l)
-          end if
-          if(nkx == 4)then
+          else          if(nkx == 4)then
              kq_vec(1,1+(l-1)*nkx)=-0.25_dp
              kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
@@ -547,14 +543,16 @@ CONTAINS
              kq_vec(1,4+(l-1)*nkx)= 0.5_dp
              kq_vec(2,4+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,4+(l-1)*nkx)= k_vec(3,l)
-          end if
-          if(nkx == 2)then
+          else          if(nkx == 2)then
              kq_vec(1,1+(l-1)*nkx)= 0.0_dp
              kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
              kq_vec(1,2+(l-1)*nkx)= 0.5_dp
              kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
+          else
+             write(*,*)'pb with kq_vec definition: unexpected nkx',nkx
+             stop
           end if
        end do
     end do
