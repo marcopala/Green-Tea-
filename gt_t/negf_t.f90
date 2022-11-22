@@ -911,12 +911,11 @@ if(k_selec(iyz))then
         curr(nee+(ee-1)*Nop,xx)=tmp
      end do
      
-  if(vec_field_new .or. vec_field_old)then
-     do xx=1,ncx_d
-
-
-           allocate(A(1:NM(xx),1:NM(xx)))
-
+!!$  if(vec_field_new .or. vec_field_old)then
+!!$     do xx=1,ncx_d
+!!$
+!!$
+!!$           allocate(A(1:NM(xx),1:NM(xx)))
 !!$        do ix=1,NRX-1
 !!$        do iz=1,NRZ-1
 !!$           A(1:NM(xx),1:NM(xx))=g_lesser_diag_local(1:NM(xx),1:NM(xx),xx)*AJ(iyz,imat(xx))%K(1:NM(xx),1:NM(xx),ix,iz)
@@ -946,43 +945,42 @@ if(k_selec(iyz))then
 !!$                degeneracy(iyz)*w(ee)*2.0_dp*(tmp)/(2.0_dp*pi)
 !!$        end do
 !!$        end do
-
-
-        do ix=1,NRX
-        do iz=1,NRZ
-           A(1:NM(xx),1:NM(xx))=g_lesser_diag_local(1:NM(xx),1:NM(xx),xx)*CJ(iyz,imat(xx))%K(1:NM(xx),1:NM(xx),ix,iz)
-           !tmp=sum(sum(dimag(A),dim=2),dim=1)
-           tmp=0.0_dp
-           do j=1,NM(xx)
-              do i=1,NM(xx)
-                 tmp=tmp+dimag(A(i,j))
-              end do
-           end do
-           nvec(ix+(xx-1)*(nrx),iz)=nvec(ix+(xx-1)*(nrx),iz)+&
-                degeneracy(iyz)*w(ee)*(tmp)/(2.0_dp*pi)
-        end do
-        end do
-
-        if(xx<ncx_d)then
-        do ix=1,NRX
-        do iz=1,NRZ
-           A(1:NM(xx),1:NM(xx))=lcur(1:NM(xx),1:NM(xx),xx)*CJ(iyz,imat(xx))%K(1:NM(xx),1:NM(xx),ix,iz)
-           !tmp=sum(sum(dimag(A),dim=2),dim=1)
-           tmp=0.0_dp
-           do j=1,NM(xx)
-              do i=1,NM(xx)
-                 tmp=tmp+dble(A(i,j))
-              end do
-           end do
-           jxvec(ix+(xx-1)*(nrx),iz)=jxvec(ix+(xx-1)*(nrx),iz)+&
-                degeneracy(iyz)*w(ee)*(tmp)/(2.0_dp*pi)
-        end do
-        end do
-        endif
-     
-        deallocate(A)
-     end do
-  end if !endif vec_field
+!!$
+!!$        do ix=1,NRX
+!!$        do iz=1,NRZ
+!!$           A(1:NM(xx),1:NM(xx))=g_lesser_diag_local(1:NM(xx),1:NM(xx),xx)*CJ(iyz,imat(xx))%K(1:NM(xx),1:NM(xx),ix,iz)
+!!$           !tmp=sum(sum(dimag(A),dim=2),dim=1)
+!!$           tmp=0.0_dp
+!!$           do j=1,NM(xx)
+!!$              do i=1,NM(xx)
+!!$                 tmp=tmp+dimag(A(i,j))
+!!$              end do
+!!$           end do
+!!$           nvec(ix+(xx-1)*(nrx),iz)=nvec(ix+(xx-1)*(nrx),iz)+&
+!!$                degeneracy(iyz)*w(ee)*(tmp)/(2.0_dp*pi)
+!!$        end do
+!!$        end do
+!!$
+!!$        if(xx<ncx_d)then
+!!$        do ix=1,NRX
+!!$        do iz=1,NRZ
+!!$           A(1:NM(xx),1:NM(xx))=lcur(1:NM(xx),1:NM(xx),xx)*CJ(iyz,imat(xx))%K(1:NM(xx),1:NM(xx),ix,iz)
+!!$           !tmp=sum(sum(dimag(A),dim=2),dim=1)
+!!$           tmp=0.0_dp
+!!$           do j=1,NM(xx)
+!!$              do i=1,NM(xx)
+!!$                 tmp=tmp+dble(A(i,j))
+!!$              end do
+!!$           end do
+!!$           jxvec(ix+(xx-1)*(nrx),iz)=jxvec(ix+(xx-1)*(nrx),iz)+&
+!!$                degeneracy(iyz)*w(ee)*(tmp)/(2.0_dp*pi)
+!!$        end do
+!!$        end do
+!!$        endif
+!!$     
+!!$        deallocate(A)
+!!$     end do
+!!$  end if !endif vec_field
      
      con(iyz) = con(iyz)  + degeneracy(iyz)*w(ee)*(tr)
   
@@ -1016,68 +1014,70 @@ do xx=1,ncx_d-1
    end do
    write(329,*)
 end do
-if(vec_field_new .or. vec_field_old)then
 
-do xx=1,ncx_d
-do  ix=1,nrx
-   do iz=1,nrz
-      write(330,*)dble(ix-1+0.5+(xx-1)*nrx)*dx*1d7,dble(iz-1+0.5)*dz*1d7,jxvec(ix+(xx-1)*(nrx),iz)
-      !write(331,*)dble(ix-1+0.5+(xx-1)*nrx)*dx*1d7,dble(iz-1+0.5)*dz*1d7,jzvec(ix+(xx-1)*(nrx-1),iz)
-   end do
-   write(330,*)
-   write(331,*)
-end do
-end do
-close (330)
-close (331)
-
-open(UNIT=332,FILE='j_xz_vec_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='unknown')
-do xx=1,ncx_d
-do  ix=1,nrx
-   do iz=1,nrz
-      write(332,'(4E12.4)')dble(ix-1+0.5+(xx-1)*nrx)*dx*1d7,dble(iz-1+0.5)*dz*1d7,jxvec(ix+(xx-1)*(nrx),iz)!,jzvec(ix+(xx-1)*(nrx-1),iz)
-   end do
-   write(332,*)
-end do
-end do
-close (332)
-
-open(UNIT=333,FILE='n_xz_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='unknown')
-do xx=1,ncx_d
-do  ix=1,(nrx)
-   do iz=1,nrz
-      write(333,'(3E12.4)')dble(ix-1+(xx-1)*nrx)*dx*1d7,dble(iz-1)*dz*1d7,nvec(ix+(xx-1)*(nrx),iz)
-   end do
-   write(333,*)
-end do
-end do
-close (333)
-
-do xx=1,ncx_d
-   do ix=1,nrx
-      tr=0.0_dp
-      tre=0.0_dp
-      do iz=1,NRZ
-         tr =tr +jxvec(ix+(xx-1)*(nrx),iz)
-        ! tre=tre+jzvec(ix+(xx-1)*(nrx-1),iz)
-      end do
-      write(334,'(3E12.4)')dble(ix-1+0.5+(xx-1)*nrx)*dx*1d7,tr!,tre
-   end do
-end do
-close (334)
-do xx=1,ncx_d
-   tr=0.0_dp
-   tre=0.0_dp
-   do  ix=1,nrx
-      do iz=1,NRZ
-         tr =tr +jxvec(ix+(xx-1)*(nrx),iz)
-!         tre=tre+jzvec(ix+(xx-1)*(nrx-1),iz)
-      end do
-   end do
-   write(335,'(3E12.4)')dble((xx-1)*nrx)*dx*1d7,tr!,tre
-end do
-close (335)
-end if
+!!$if(vec_field_new .or. vec_field_old)then
+!!$
+!!$do xx=1,ncx_d
+!!$do  ix=1,nrx
+!!$   do iz=1,nrz
+!!$      write(330,*)dble(ix-1+0.5+(xx-1)*nrx)*dx*1d7,dble(iz-1+0.5)*dz*1d7,jxvec(ix+(xx-1)*(nrx),iz)
+!!$      !write(331,*)dble(ix-1+0.5+(xx-1)*nrx)*dx*1d7,dble(iz-1+0.5)*dz*1d7,jzvec(ix+(xx-1)*(nrx-1),iz)
+!!$   end do
+!!$   write(330,*)
+!!$   write(331,*)
+!!$end do
+!!$end do
+!!$close (330)
+!!$close (331)
+!!$
+!!$open(UNIT=332,FILE='j_xz_vec_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='unknown')
+!!$do xx=1,ncx_d
+!!$do  ix=1,nrx
+!!$   do iz=1,nrz
+!!$      write(332,'(4E12.4)')dble(ix-1+0.5+(xx-1)*nrx)*dx*1d7,dble(iz-1+0.5)*dz*1d7,jxvec(ix+(xx-1)*(nrx),iz)!,jzvec(ix+(xx-1)*(nrx-1),iz)
+!!$   end do
+!!$   write(332,*)
+!!$end do
+!!$end do
+!!$close (332)
+!!$
+!!$open(UNIT=333,FILE='n_xz_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='unknown')
+!!$do xx=1,ncx_d
+!!$do  ix=1,(nrx)
+!!$   do iz=1,nrz
+!!$      write(333,'(3E12.4)')dble(ix-1+(xx-1)*nrx)*dx*1d7,dble(iz-1)*dz*1d7,nvec(ix+(xx-1)*(nrx),iz)
+!!$   end do
+!!$   write(333,*)
+!!$end do
+!!$end do
+!!$close (333)
+!!$
+!!$do xx=1,ncx_d
+!!$   do ix=1,nrx
+!!$      tr=0.0_dp
+!!$      tre=0.0_dp
+!!$      do iz=1,NRZ
+!!$         tr =tr +jxvec(ix+(xx-1)*(nrx),iz)
+!!$        ! tre=tre+jzvec(ix+(xx-1)*(nrx-1),iz)
+!!$      end do
+!!$      write(334,'(3E12.4)')dble(ix-1+0.5+(xx-1)*nrx)*dx*1d7,tr!,tre
+!!$   end do
+!!$end do
+!!$close (334)
+!!$do xx=1,ncx_d
+!!$   tr=0.0_dp
+!!$   tre=0.0_dp
+!!$   do  ix=1,nrx
+!!$      do iz=1,NRZ
+!!$         tr =tr +jxvec(ix+(xx-1)*(nrx),iz)
+!!$!         tre=tre+jzvec(ix+(xx-1)*(nrx-1),iz)
+!!$      end do
+!!$   end do
+!!$   write(335,'(3E12.4)')dble((xx-1)*nrx)*dx*1d7,tr!,tre
+!!$end do
+!!$close (335)
+!!$
+!!$end if
 
   deallocate(sigma_greater_ph_prev)
   deallocate(sigma_lesser_ph_prev)

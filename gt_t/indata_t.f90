@@ -354,11 +354,11 @@ CONTAINS
     CHARACTER(20) :: comment
     
 !!! DEFAULT VALUES !!!
-    vec_field_new=.FALSE.
-    vec_field_old=.FALSE.
-    onlyT=.false.
-    in_pot=.false.
-    dfpt=.false.
+    vec_field_new =.FALSE.
+    vec_field_old =.FALSE.
+    onlyT         =.FALSE.
+    in_pot        =.FALSE.
+    dfpt          =.FALSE.
     tox_top=0
     tox_bot=0
     tox_lft=0
@@ -373,16 +373,16 @@ CONTAINS
     num_mat=1
     num_reg=1 
     num_het=0 
-    top_gate=.false.
-    bot_gate=.false.
-    lft_gate=.false.
-    rgt_gate=.false.     
+    top_gate = .false.
+    bot_gate = .false.
+    lft_gate = .false.
+    rgt_gate = .false.     
     DIEL_SC=1.0d0
     DIEL_OX=1.0d0
     DIEL_O2=1.0d0
     ncy=1
     ncz=1
-    nkx=2
+    nkx=1
     nky=1
     nkz=1
     source_dop_val  = 0.0d20
@@ -501,30 +501,58 @@ CONTAINS
        end do
     end do
 
-
+    if(nkx .ne. 2 .or. nkx .ne. 4 .or. nkx .ne. 8)then
+       write(*,*)'pb with kq_vec definition: unexpected nkx',nkx
+    end if
     allocate(kq_vec(3,nkx*Nkyz))
     do iz=1,nkz
        do iy=1,nky
           l = iy + (iz-1)*nky
-          if(nkx==4)then
-             kq_vec(1,1+(l-1)*nkx)=-0.250
+          if(nkx == 8)then
+             kq_vec(1,1+(l-1)*nkx)=-0.375_dp
              kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,2+(l-1)*nkx)= 0.0
+             kq_vec(1,2+(l-1)*nkx)=-0.25_dp
              kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,3+(l-1)*nkx)= 0.250
+             kq_vec(1,3+(l-1)*nkx)=-0.125_dp
              kq_vec(2,3+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,3+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,4+(l-1)*nkx)= 0.50
+             kq_vec(1,4+(l-1)*nkx)= 0.0_dp
+             kq_vec(2,4+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,4+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,5+(l-1)*nkx)= 0.125_dp
+             kq_vec(2,5+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,5+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,6+(l-1)*nkx)= 0.25_dp
+             kq_vec(2,6+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,6+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,7+(l-1)*nkx)= 0.375_dp
+             kq_vec(2,7+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,7+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,8+(l-1)*nkx)= 0.5_dp
+             kq_vec(2,8+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,8+(l-1)*nkx)= k_vec(3,l)
+          end if
+          if(nkx == 4)then
+             kq_vec(1,1+(l-1)*nkx)=-0.25_dp
+             kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,2+(l-1)*nkx)= 0.0_dp
+             kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,3+(l-1)*nkx)= 0.25_dp
+             kq_vec(2,3+(l-1)*nkx)= k_vec(2,l)
+             kq_vec(3,3+(l-1)*nkx)= k_vec(3,l)
+             kq_vec(1,4+(l-1)*nkx)= 0.5_dp
              kq_vec(2,4+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,4+(l-1)*nkx)= k_vec(3,l)
           end if
-          if(nkx==2)then
-             kq_vec(1,1+(l-1)*nkx)= 0.0
+          if(nkx == 2)then
+             kq_vec(1,1+(l-1)*nkx)= 0.0_dp
              kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,2+(l-1)*nkx)= 0.50
+             kq_vec(1,2+(l-1)*nkx)= 0.5_dp
              kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
           end if

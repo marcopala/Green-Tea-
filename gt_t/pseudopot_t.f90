@@ -257,7 +257,7 @@ end do
 
 
 do iyz=1,Nkyz
-if(k_selec(iyz))then
+!if(k_selec(iyz))then
    
 do im=1,num_mat
    nm=NM_mat(im)
@@ -413,7 +413,7 @@ end if
 
 KGt_kyz(1:4,1:Ngt,iyz)=KGt(1:4,1:1*Ngt)
 
-end if
+!end if ! endif k_selec
 end do ! endo do iyz
 
 
@@ -423,7 +423,7 @@ if(.not. onlyT .or. phonons .or. vec_field_new)then
 do im=1,num_mat
 !if(schottky_type(im)==0)then      
 do iyz=1,Nkyz
-if(k_selec(iyz))then
+!if(k_selec(iyz))then
 
    allocate(ULCBB(iyz,im)%H(Nrx*NGt*npol,NM_mat(im)))
    NM=NM_mat(im)
@@ -466,7 +466,7 @@ if(k_selec(iyz))then
    call ortonorma(nrx*ngt*npol,NM,A,ULCBB(iyz,im)%H)
 
    deallocate(A)
-end if
+!end if !endif k_selec
 end do
 !end if
 end do
@@ -479,7 +479,7 @@ do im=1,num_mat
    NM=NM_mat(im)
 
    do iyz=1,Nkyz
-if(k_selec(iyz))then
+   if(k_selec(iyz))then
       
       allocate(U_psi(iyz,im)%K(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))
       
@@ -634,7 +634,6 @@ if(phonons)then
 write(*,*)
 write(*,*)'Computing the el-ph matrix'
 t1=SECNDS(0.0)
-
 
 !!$if(dfpt)then
 !!$write(*,*)
@@ -831,7 +830,6 @@ t1=SECNDS(0.0)
 !!$
 !!$end if    !!end dfpt option
 
-
 if (.not. dfpt) then
    
    allocate(A(NM,NM))
@@ -839,13 +837,15 @@ if (.not. dfpt) then
    do jx=1,nkx
       do jyz=1,NKyz
 
-         do iyz = 1,nkyz
+         if(k_selec(jyz))then
+         do iyz = 1,NKyz
          
             if(k_selec(iyz))then
-            allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
-            el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
+
+               allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
+               el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
             
-            jj = ind_kyz( k_vec(2:3,iyz) + kq_vec(2:3,jx+(jyz-1)*nkx) )
+               jj = ind_kyz( k_vec(2:3,iyz) + kq_vec(2:3,jx+(jyz-1)*nkx) )
             
             do ll=1,1
                A=0.0_dp
@@ -854,6 +854,7 @@ if (.not. dfpt) then
                      
                      do m=1,NM
                         do n=1,NM
+                                                      
                            if(  abs(    kq_vec(1,ind_kx(iyz,im)%i(n))-kq_vec(1,ind_kx(jj,im)%i(m))+kq_vec(1,jx)) < 1.0d-3 .or. &
                                 abs(abs(kq_vec(1,ind_kx(iyz,im)%i(n))-kq_vec(1,ind_kx(jj,im)%i(m))+kq_vec(1,jx))-1.0_dp) < 1.0d-3 ) then
                               A(i,j) = A(i,j) + &
@@ -863,21 +864,21 @@ if (.not. dfpt) then
                      end do
                      el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)/sqrt(ac1*ac2*ac3)
                      
-                     write(5000+100*iyz+jyz,*)i,j,abs(A(i,j))
+                     !write(5000+100*iyz+jyz,*)i,j,abs(A(i,j))
                   end do
-               write(5000+100*iyz+jyz,*)
-            end do
+               !write(5000+100*iyz+jyz,*)
+               end do
             end do
           
          end if
-         end do
       end do
-   end do
+   end if
+end do
+end do
    deallocate(A)
 
    
 end if
-
 
 
 t2=SECNDS(t1)
@@ -1160,66 +1161,66 @@ end if
 
 
 
-if(vec_field_old)then
-do im=1,num_mat
-do iyz=1,Nkyz
-if( k_selec(iyz))then
-      
-allocate(AJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
-allocate(BJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
-allocate(CJ(iyz,im)%K(NM,NM,NRX,NRZ))
-  
-AJ(iyz,im)%K=0.0_dp
-BJ(iyz,im)%K=0.0_dp
-CJ(iyz,im)%K=0.0_dp
-
-write(*,*) 
-write(*,*) 'reading the connection matrices (vec_field_old option is enabled)'
-write(*,*) '...'
-
-t1=SECNDS(0.0)
-open(unit=13,file=TRIM(inputdir)//'AJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-do iz=1,NRZ
-do ix=1,NRX
-do nn=1,NM
-do mm=1,NM
-read(13,*)AJ(iyz,im)%K(mm,nn,ix,iz)
-end do
-end do
-end do
-end do
-close(13)
-open(unit=13,file=TRIM(inputdir)//'BJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-do iz=1,NRZ
-do ix=1,NRX
-do nn=1,NM
-do mm=1,NM
-read(13,*)BJ(iyz,im)%K(mm,nn,ix,iz)
-end do
-end do
-end do
-end do
-close(13)
-open(unit=13,file=TRIM(inputdir)//'CJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-do iz=1,NRZ
-do ix=1,NRX
-do nn=1,NM
-do mm=1,NM
-read(13,*)CJ(iyz,im)%K(mm,nn,ix,iz)
-end do
-end do
-end do
-end do
-close(13)
-
-end if
-end do
-end do
-
-t2=SECNDS(t1)
-write(*,*) 'done in ',t2,'s'
-write(*,*) 
-end if
+!!$if(vec_field_old)then
+!!$do im=1,num_mat
+!!$do iyz=1,Nkyz
+!!$if( k_selec(iyz))then
+!!$      
+!!$allocate(AJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
+!!$allocate(BJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
+!!$allocate(CJ(iyz,im)%K(NM,NM,NRX,NRZ))
+!!$  
+!!$AJ(iyz,im)%K=0.0_dp
+!!$BJ(iyz,im)%K=0.0_dp
+!!$CJ(iyz,im)%K=0.0_dp
+!!$
+!!$write(*,*) 
+!!$write(*,*) 'reading the connection matrices (vec_field_old option is enabled)'
+!!$write(*,*) '...'
+!!$
+!!$t1=SECNDS(0.0)
+!!$open(unit=13,file=TRIM(inputdir)//'AJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+!!$do iz=1,NRZ
+!!$do ix=1,NRX
+!!$do nn=1,NM
+!!$do mm=1,NM
+!!$read(13,*)AJ(iyz,im)%K(mm,nn,ix,iz)
+!!$end do
+!!$end do
+!!$end do
+!!$end do
+!!$close(13)
+!!$open(unit=13,file=TRIM(inputdir)//'BJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+!!$do iz=1,NRZ
+!!$do ix=1,NRX
+!!$do nn=1,NM
+!!$do mm=1,NM
+!!$read(13,*)BJ(iyz,im)%K(mm,nn,ix,iz)
+!!$end do
+!!$end do
+!!$end do
+!!$end do
+!!$close(13)
+!!$open(unit=13,file=TRIM(inputdir)//'CJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+!!$do iz=1,NRZ
+!!$do ix=1,NRX
+!!$do nn=1,NM
+!!$do mm=1,NM
+!!$read(13,*)CJ(iyz,im)%K(mm,nn,ix,iz)
+!!$end do
+!!$end do
+!!$end do
+!!$end do
+!!$close(13)
+!!$
+!!$end if
+!!$end do
+!!$end do
+!!$
+!!$t2=SECNDS(t1)
+!!$write(*,*) 'done in ',t2,'s'
+!!$write(*,*) 
+!!$end if
 
 
 
