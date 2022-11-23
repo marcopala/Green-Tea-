@@ -1451,7 +1451,7 @@ end subroutine ortonorma
       end do
    end do
    if( ind_kyz == 0 )then
-      write(*,*)'pb w ind_kyz'
+      write(*,*)'pb w ind_kyz', ind_kyz,v
       stop
    end if
    
