@@ -1364,7 +1364,37 @@ function stringa(ii) result(rr)
 
 end function stringa
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+ integer function ind_Kyz(v)
+   implicit none
+
+   INTEGER  :: iz,iy,l
+   real(dp) :: v(2),vv(2)
+
+   ind_kyz=0
+
+   vv=v
+
+   if(abs(V(1))>0.5_dp+1.0d-3) vv(1)=abs(abs(v(1))-1.0_dp)
+   if(abs(V(2))>0.5_dp+1.0d-3) vv(1)=abs(abs(v(2))-1.0_dp)
+   
+   do iz=1,nkz
+      do iy=1,nky
+         l = iy + (iz-1)*nky
+         if(  abs(abs(vv(1))-abs(k_vec(2,l))) < 1.0d-3 .and. &
+              abs(abs(vv(2))-abs(k_vec(3,l))) < 1.0d-3 )then
+            ind_kyz=l
+            exit
+         end if
+      end do
+   end do
+   if( ind_kyz == 0 )then
+      write(*,*)'pb w ind_kyz', ind_kyz,v
+      stop
+   end if
+   
+ end function ind_Kyz
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   

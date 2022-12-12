@@ -36,6 +36,7 @@ MODULE negf
 USE static
 USE indata
 
+
 INTEGER, ALLOCATABLE :: NM(:), flag(:,:)
 INTEGER              :: iyz, jyz
 
@@ -482,7 +483,7 @@ if(k_selec(iyz))then
    close(3200+iyz)
    close(3300+iyz)
 
-           !$omp parallel default(none)  private(jyz,jj,ll,ix,nee,xx,pp,nn,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,lcur,A) &
+           !$omp parallel default(none)  private(jyz,ii,ll,ix,nee,xx,pp,nn,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,lcur,A) &
            !$omp shared(ee,iyz,Nop,nm,imat,ncx_d,ncy,ncz,nmax,nkyz,nkx,nqmodes,k_vec,emin,emin_local,Eop,mus,mud,hi,&
            !$omp sigma_lesser_ph_prev,sigma_greater_ph_prev,sigma_r_ph_prev,cur,ldos,ndos,pdos,zdos,chtype,neutr,&
            !$omp degeneracy,g_spin,w,temp,trans,g_lesser,g_greater,el_ph_mtrx,g_lesser_dfpt,g_greater_dfpt,flag,k_selec,dfpt)
@@ -507,23 +508,23 @@ if(k_selec(iyz))then
 
            if (dfpt) then
                  
-              do jyz = 1,NKYZ
+              do jyz = 1,NKYZ ! this is the idex of  k_yz 
                  if(k_selec(jyz))then
                     
-                    jj = ind_kyz( k_vec(2:3,iyz) - k_vec(2:3,jyz) )
+                    ii = ind_kyz( k_vec(2:3,jyz) - k_vec(2:3,iyz) ) ! this is the idex of q_yz
                     
-                    do xx=1,ncx_d
-                       do ix=1,nkx
-                          do ll=1,nqmodes
-                             A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,jj,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
+                    do ix=1,nkx ! this is the idex of q_x
+                       do ll=1,nqmodes
+                          do xx=1,ncx_d
+                             A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
                              do nn=1,nm(xx)
                                ! do pp=1,nm(xx)
-                                   
-                                   g_lesser_dfpt (ix,iyz,ll,nee,1:nm(xx),xx,jyz)=g_lesser_dfpt (ix,iyz,ll,nee,1:nm(xx),xx,jyz)+&
+                                
+                                   g_lesser_dfpt (ix,ii,ll,nee,1:nm(xx),xx,jyz)=g_lesser_dfpt (ix,ii,ll,nee,1:nm(xx),xx,jyz)+&
                                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)*g_lesser_diag_local(nn,nn,xx) &
                                         * abs(A(nn,1:nm(xx)))**2
                                    
-                                   g_greater_dfpt(ix,iyz,ll,nee,1:nm(xx),xx,jyz)=g_greater_dfpt(ix,iyz,ll,nee,1:nm(xx),xx,jyz)+&
+                                   g_greater_dfpt(ix,ii,ll,nee,1:nm(xx),xx,jyz)=g_greater_dfpt(ix,ii,ll,nee,1:nm(xx),xx,jyz)+&
                                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)*g_greater_diag_local(nn,nn,xx) &
                                         * abs(A(nn,1:nm(xx)))**2
                                    
@@ -538,17 +539,16 @@ if(k_selec(iyz))then
               
            end if
            
-
            
            if ( .not. dfpt ) then
               do xx=1,ncx_d
-                 do jyz = 1,NKYZ
+                 do jyz = 1,NKYZ ! this is the idex of  k_yz 
                     if(k_selec(jyz))then
                        
-                       jj = ind_kyz( k_vec(2:3,iyz) - k_vec(2:3,jyz) )
+                       ii = ind_kyz( k_vec(2:3,iyz) - k_vec(2:3,jyz) ) ! this is the idex of q_yz
                        
-                       do ix=1,nkx   
-                          A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,jj,imat(xx))%M(1,1:nm(xx),1:nm(xx))
+                       do ix=1,nkx   ! this is the idex of q_x
+                          A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
                           do nn=1,nm(xx)
                              do pp=1,nm(xx)
                                 
@@ -613,8 +613,8 @@ if(k_selec(iyz))then
      
      if (dfpt) then
         do ll=1,nqmodes
-           do ix =1,nkx
-              do iyz =1,nkyz
+           do ix =1,nkx ! index of q_x
+              do iyz =1,nkyz !index of q_yz
                  
                  NdE=int(omega_q(ind_q(ix,iyz),ll)/Eop)
                
@@ -670,7 +670,7 @@ if(k_selec(iyz))then
               DO pp=1,NM(ii)
                  
                  sigma_lesser_ph(nee,pp,ii,jyz)=sigma_lesser_ph(nee,pp,ii,jyz)+&
-                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+Nop_g,pp,ii,jyz)
+                      Dop_g*(n_bose_g+1.0d0)*g_lesser (nee+Nop_g,pp,ii,jyz)
                  
                  sigma_greater_ph(nee,pp,ii,jyz)=sigma_greater_ph(nee,pp,ii,jyz)+&
                       Dop_g*(n_bose_g)*(g_greater(nee+Nop_g,pp,ii,jyz))
@@ -689,7 +689,7 @@ if(k_selec(iyz))then
               DO pp=1,NM(ii)
       
                  sigma_lesser_ph(nee,pp,ii,jyz)= sigma_lesser_ph(nee,pp,ii,jyz)+&
-                      Dop_g*(n_bose_g+1.0d0)*g_lesser(nee+Nop_g,pp,ii,jyz)+&   
+                      Dop_g*(n_bose_g+1.0d0)*g_lesser (nee+Nop_g,pp,ii,jyz)+&   
                       Dop_g*(n_bose_g)*g_lesser(nee-Nop_g,pp,ii,jyz) 
       
                  sigma_greater_ph(nee,pp,ii,jyz)=sigma_greater_ph(nee,pp,ii,jyz)+&
@@ -2012,37 +2012,6 @@ SUBROUTINE surf_interp(iy,iz,mat,interp)
  
 END SUBROUTINE surf_interp
          
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
- integer function ind_Kyz(v)
-   implicit none
-
-   INTEGER  :: iz,iy,l
-   real(dp) :: v(2),vv(2)
-
-   ind_kyz=0
-
-   vv=v
-
-   if(abs(V(1))>0.5_dp+1.0d-3) vv(1)=abs(v(1))-0.5_dp
-   if(abs(V(2))>0.5_dp+1.0d-3) vv(1)=abs(v(2))-0.5_dp
-   
-   do iz=1,nkz
-      do iy=1,nky
-         l = iy + (iz-1)*nky
-         if(  abs(abs(vv(1))-abs(k_vec(2,l))) < 1.0d-3 .and. &
-              abs(abs(vv(2))-abs(k_vec(3,l))) < 1.0d-3 )then
-            ind_kyz=l
-            exit
-         end if
-      end do
-   end do
-   if( ind_kyz == 0 )then
-      write(*,*)'pb w ind_kyz'
-      stop
-   end if
-   
- end function ind_Kyz
    
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
