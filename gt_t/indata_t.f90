@@ -133,7 +133,7 @@ MODULE indata
   integer,  allocatable :: Nez(:), Ney(:), Nex(:), nband_val(:), off_k_nvb(:)
   real(dp)              :: dx, dy, dz
   REAL(DP), ALLOCATABLE :: kx(:), ky(:), kz(:), Kyz(:), KGt(:,:), k_vec(:,:), KGt_kyz(:,:,:), kq_vec(:,:) 
-  REAL(DP), ALLOCATABLE :: deg_ky(:), deg_kz(:), deg_kyz(:), kv_max(:,:), kc_min(:,:), off_set(:)
+  REAL(DP), ALLOCATABLE :: deg_kx(:), deg_ky(:), deg_kz(:), deg_kyz(:), kv_max(:,:), kc_min(:,:), off_set(:)
 
   LOGICAL,  ALLOCATABLE :: k_selec(:)
   LOGICAL               :: phonons, dfpt, vec_field_new, vec_field_old
@@ -143,13 +143,18 @@ MODULE indata
   type I_BLOCKS
      integer, allocatable :: I(:)
   end type I_BLOCKS
-  type(I_blocks),allocatable :: ind_kx(:,:), ind_bnd(:,:)
+  type(I_blocks),allocatable :: ind_bnd(:,:)
+  
+  type N_BLOCKS
+     real(dp), allocatable :: N(:)
+  end type N_BLOCKS
+  type(N_blocks),allocatable :: in_kx(:,:)
   
   type H_blocks
      complex(dp), allocatable :: H(:,:)
   end type H_blocks
-  type(H_blocks),allocatable :: HL(:,:), TL(:,:), ULCBB(:,:)
-  type(H_blocks),allocatable :: Si_m05(:,:), Si(:,:)
+  type(H_blocks),allocatable :: HL(:,:), TL(:,:), ULCBB(:,:),  psibb(:,:)
+  type(H_blocks),allocatable :: Si_m05(:,:), Si_p05(:,:), Si(:,:)
   
   type M_blocks
      COMPLEX(DP), ALLOCATABLE :: M(:,:,:)
@@ -340,7 +345,8 @@ CONTAINS
     allocate(ky(1:nky))
     allocate(kz(1:nkz))
     
-    allocate(deg_ky(nky),deg_kz(nkz))
+    allocate(deg_kx(nkx),deg_ky(nky),deg_kz(nkz))
+    deg_kx=2.0_dp
     deg_ky=2.0_dp    
     deg_kz=2.0_dp  
     
@@ -354,11 +360,11 @@ CONTAINS
     CHARACTER(20) :: comment
     
 !!! DEFAULT VALUES !!!
-    vec_field_new =.FALSE.
-    vec_field_old =.FALSE.
-    onlyT         =.FALSE.
-    in_pot        =.FALSE.
-    dfpt          =.FALSE.
+    vec_field_new=.FALSE.
+    vec_field_old=.FALSE.
+    onlyT=.false.
+    in_pot=.false.
+    dfpt=.false.
     tox_top=0
     tox_bot=0
     tox_lft=0
@@ -373,16 +379,16 @@ CONTAINS
     num_mat=1
     num_reg=1 
     num_het=0 
-    top_gate = .false.
-    bot_gate = .false.
-    lft_gate = .false.
-    rgt_gate = .false.     
+    top_gate=.false.
+    bot_gate=.false.
+    lft_gate=.false.
+    rgt_gate=.false.     
     DIEL_SC=1.0d0
     DIEL_OX=1.0d0
     DIEL_O2=1.0d0
     ncy=1
     ncz=1
-    nkx=1
+    nkx=2
     nky=1
     nkz=1
     source_dop_val  = 0.0d20
@@ -444,7 +450,7 @@ CONTAINS
        write(*,*)'Error! nc_reg wrong...'
        stop
     end if
-    allocate(imat(1:nc),ihet(1:nc+1))
+    allocate(imat(1:nc+1),ihet(1:nc+1))
     imat=0
     ihet=0
     l=0
@@ -456,6 +462,7 @@ CONTAINS
           !write(*,*)l,'imat',imat(l)
        end do
     end do
+    imat(nc+1)=imat(nc)
     READ(*,NML=indata_heterojunctions)
     if(num_het>0)then
        READ(*,*)comment
@@ -501,58 +508,32 @@ CONTAINS
        end do
     end do
 
+
     allocate(kq_vec(3,nkx*Nkyz))
     do iz=1,nkz
        do iy=1,nky
           l = iy + (iz-1)*nky
-          if(nkx == 8)then
-             kq_vec(1,1+(l-1)*nkx)=-0.375_dp
+          if(nkx==4)then
+             kq_vec(1,1+(l-1)*nkx)=-0.250
              kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,2+(l-1)*nkx)=-0.25_dp
+             kq_vec(1,2+(l-1)*nkx)= 0.0
              kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,3+(l-1)*nkx)=-0.125_dp
+             kq_vec(1,3+(l-1)*nkx)= 0.250
              kq_vec(2,3+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,3+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,4+(l-1)*nkx)= 0.0_dp
+             kq_vec(1,4+(l-1)*nkx)= 0.50
              kq_vec(2,4+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,4+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,5+(l-1)*nkx)= 0.125_dp
-             kq_vec(2,5+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,5+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,6+(l-1)*nkx)= 0.25_dp
-             kq_vec(2,6+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,6+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,7+(l-1)*nkx)= 0.375_dp
-             kq_vec(2,7+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,7+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,8+(l-1)*nkx)= 0.5_dp
-             kq_vec(2,8+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,8+(l-1)*nkx)= k_vec(3,l)
-          else          if(nkx == 4)then
-             kq_vec(1,1+(l-1)*nkx)=-0.25_dp
+          end if
+          if(nkx==2)then
+             kq_vec(1,1+(l-1)*nkx)= 0.0
              kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,2+(l-1)*nkx)= 0.0_dp
+             kq_vec(1,2+(l-1)*nkx)= 0.50
              kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
              kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,3+(l-1)*nkx)= 0.25_dp
-             kq_vec(2,3+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,3+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,4+(l-1)*nkx)= 0.5_dp
-             kq_vec(2,4+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,4+(l-1)*nkx)= k_vec(3,l)
-          else          if(nkx == 2)then
-             kq_vec(1,1+(l-1)*nkx)= 0.0_dp
-             kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,2+(l-1)*nkx)= 0.5_dp
-             kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
-          else
-             write(*,*)'pb with kq_vec definition: unexpected nkx',nkx
-             stop
           end if
        end do
     end do
@@ -590,8 +571,10 @@ CONTAINS
     allocate(HL(Nkyz,num_mat))    
     allocate(TL(NKyz,num_mat+num_het))
     allocate(ULCBB(NKyz,num_mat))
+    allocate(PSIBB(NKyz,num_mat))
     allocate(U_PSI(NKyz,num_mat))
     allocate(Si(Nkyz,num_mat))   
+    allocate(Si_p05(Nkyz,num_mat))  
     allocate(Si_m05(Nkyz,num_mat))  
 
     
@@ -643,7 +626,7 @@ CONTAINS
     if(phonons) allocate(el_ph_mtrx(NKyz,Nkx,NKyz,num_mat))
     
     if(phonons)then
-       allocate(ind_kx(NKyz,num_mat))
+       allocate(in_kx(NKyz,num_mat))
        allocate(ind_bnd(NKyz,num_mat))
        if (dfpt) allocate(ind_q(nkx,nkyz))
     end if
@@ -1364,37 +1347,106 @@ function stringa(ii) result(rr)
 
 end function stringa
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
- integer function ind_Kyz(v)
-   implicit none
 
-   INTEGER  :: iz,iy,l
-   real(dp) :: v(2),vv(2)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   ind_kyz=0
+SUBROUTINE SUB_DEF_Z_GEN(Mi,Mf,ny,A,C,subband,U)
+implicit none
+integer :: ny,mi,mf
+real(dp) :: subband(1:(Mf-Mi+1))
+complex(dp) :: A(1:NY,1:NY),B(1:NY,1:NY),C(1:NY,1:NY),U(1:NY,1:(Mf-Mi+1))
+integer :: INFO
+integer, allocatable :: iwork(:),ifail(:)
+complex(dp), allocatable :: work(:)
+real(dp), allocatable :: rwork(:)
+REAL(DP), EXTERNAL :: DLAMCH
 
-   vv=v
+B=C
 
-   if(abs(V(1))>0.5_dp+1.0d-3) vv(1)=abs(abs(v(1))-1.0_dp)
-   if(abs(V(2))>0.5_dp+1.0d-3) vv(1)=abs(abs(v(2))-1.0_dp)
-   
-   do iz=1,nkz
-      do iy=1,nky
-         l = iy + (iz-1)*nky
-         if(  abs(abs(vv(1))-abs(k_vec(2,l))) < 1.0d-3 .and. &
-              abs(abs(vv(2))-abs(k_vec(3,l))) < 1.0d-3 )then
-            ind_kyz=l
-            exit
-         end if
-      end do
-   end do
-   if( ind_kyz == 0 )then
-      write(*,*)'pb w ind_kyz', ind_kyz,v
-      stop
-   end if
-   
- end function ind_Kyz
+allocate(WORK(20*ny))
+allocate(RWORK(7*ny))
+allocate(IWORK(5*ny))
+allocate(ifail(ny))
+
+
+call zhegvx(1,'V','I','U',ny,A,ny,B,ny,0.0,0.0,mi,mf,2*DLAMCH('S'),(Mf-Mi+1),subband,U,ny,WORK,20*ny,RWORK,IWORK,ifail,INFO )
+
+deallocate(ifail)
+deallocate(work)
+deallocate(rwork)
+deallocate(iwork)
+
+if (INFO.ne.0)then
+   write(*,*)'SEVERE WARNING: SUB_DEF_Z_GEN HAS FAILED. INFO=',INFO
+   stop
+endif     
+
+END SUBROUTINE SUB_DEF_Z_GEN
+
+SUBROUTINE SUB_DEF_Z0_GEN(Mi,Mf,ny,A,C,subband)
+implicit none
+integer :: ny,mi,mf
+real(dp) :: subband(1:(Mf-Mi+1))
+complex(dp) :: A(1:NY,1:NY),B(1:NY,1:NY),C(1:NY,1:NY),U(1:NY,1:(Mf-Mi+1))
+integer :: INFO
+integer, allocatable :: iwork(:),ifail(:)
+complex(dp), allocatable :: work(:)
+real(dp), allocatable :: rwork(:)
+REAL(DP), EXTERNAL :: DLAMCH
+
+B=C
+
+allocate(WORK(20*ny))
+allocate(RWORK(7*ny))
+allocate(IWORK(5*ny))
+allocate(ifail(ny))
+
+CALL ZHEGVX (1,'N','I','U',ny,A,ny,B,ny,0.0,0.0,mi,mf,2*DLAMCH('S'), mf-mi+1, subband,U,ny,work,20*ny,rwork,iwork,ifail,info)
+
+deallocate(ifail)
+deallocate(work)
+deallocate(rwork)
+deallocate(iwork)
+
+if (INFO.ne.0)then
+   write(*,*)'SEVERE WARNING: SUB_DEF_Z0_GEN HAS FAILED. INFO=',INFO
+   stop
+endif     
+
+END SUBROUTINE SUB_DEF_Z0_GEN
+
+
+SUBROUTINE SUB_DEF_Z(Mi,Mf,ny,A,subband,U)
+implicit none
+integer :: ny,mi,mf
+real(dp) :: subband(1:(Mf-Mi+1))
+complex(dp) :: A(1:NY,1:NY),U(1:NY,1:(Mf-Mi+1))
+integer :: INFO!,LWORK
+integer, allocatable :: iwork(:), supp(:)
+complex(dp), allocatable :: work(:)
+real(dp), allocatable :: rwork(:)
+REAL(DP), EXTERNAL :: DLAMCH
+
+
+allocate(WORK(20*ny))
+allocate(RWORK(24*ny))
+allocate(IWORK(10*ny))
+allocate(Supp(2*ny))
+
+call ZHEEVR('V','I','U',ny,A,ny,0.0,0.0,mi,mf,2*DLAMCH('S'),(Mf-Mi+1),subband,U,ny,SUPP,WORK,20*ny,RWORK,24*ny,IWORK,10*ny,INFO)
+
+deallocate(work)
+deallocate(rwork)
+deallocate(supp)
+deallocate(iwork)
+
+if (INFO.ne.0)then
+   write(*,*)'SEVERE WARNING: SUB_DEF HAS FAILED. INFO=',INFO
+   stop
+endif     
+
+END SUBROUTINE SUB_DEF_Z
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   

@@ -67,12 +67,12 @@ real(dp) :: Ecutoff,ref
 real(4) :: t1,t2
 
 real(dp), allocatable :: x_at(:), y_at(:), z_at(:), Gvec(:,:), R_at(:,:)
-real(dp), allocatable :: k_vec(:,:),coeff(:),kx1(:),kx2(:)
+real(dp), allocatable :: k_vec(:,:),coeff(:),kx1(:),kx2(:), in_kx(:)
 real(dp), allocatable :: E(:), KGt(:,:), Gx(:), hkl(:,:)
 
 complex(dp) :: tmp, dummy(1,1)
-complex(dp), allocatable :: beta_fun(:,:),KS_fun(:,:),Psi_old(:,:),Psi_mod(:,:),Psi_mod_1(:,:),betafunc(:,:)
-complex(dp), allocatable :: A(:,:),B(:,:),C(:,:),D(:,:),Q(:,:),Uh(:,:),U(:,:)
+complex(dp), allocatable :: beta_fun(:,:),KS_fun(:,:),psi_add(:,:),Psi_mod(:,:),Psi_mod_1(:,:),betafunc(:,:)
+complex(dp), allocatable :: A(:,:),B(:,:),C(:,:),D(:,:),Q(:,:),Uh(:,:),U(:,:),Si(:,:)
 complex(dp), allocatable :: Vloc(:,:),HCC(:,:),Deeq_so(:,:,:,:),Deeq(:,:,:),HV(:,:)
 complex(dp), allocatable :: HLL(:,:),TLL(:,:),HLLL(:,:),TLLL(:,:),HLLLL(:,:),TLLLL(:,:)
 complex(dp), allocatable :: dal(:),dbe(:),work(:),rwork(:),kval(:),id(:,:)
@@ -279,7 +279,7 @@ ind_kG=0
 Ecutoff=ryd*Ecut !!!!/3.0_dp
 
 nrx=0
-do n2=-1000,1000!minval(miller(1,:)),maxval(miller(1,:))
+do n2=-1000,1000 !minval(miller(1,:)),maxval(miller(1,:))
    vec(1:3)=n2*b_1(1:3)
    if(t0*vec(1)**2*(2.0_dp*pi/a0)**2 < 4.0_dp*Ecutoff )nrx=nrx+1
 end do
@@ -287,18 +287,18 @@ nrx=(nrx-1)
 write(*,*)'NRX =',nrx
 !nrx=maxval(miller(1,:))-minval(miller(1,:))+1
 nry=0
-do n2=minval(miller(2,:)),maxval(miller(2,:))
+do n2=-1000,1000!minval(miller(2,:)),maxval(miller(2,:))
    vec(2:3)=n2*b_2(2:3)
    if(t0*vec(2)**2*(2.0_dp*pi/a0)**2 <= 4.0_dp*Ecutoff )nry=nry+1
 end do
-!nry=nry-1
+nry=nry-1
 write(*,*)'NRY =',nry
 nrz=0
-do n3=minval(miller(3,:)),maxval(miller(3,:))
+do n3=-1000,1000!minval(miller(3,:)),maxval(miller(3,:))
    vec(2:3)=n3*b_3(2:3)
    if(t0*vec(3)**2*(2.0_dp*pi/a0)**2 <= 4.0_dp*Ecutoff )nrz=nrz+1
 end do
-!nrz=nrz-1
+nrz=nrz-1
 write(*,*)'NRZ =',nrz
 
 ndx=nrx
@@ -479,7 +479,7 @@ end do
 
 
 
-allocate(Psi_old(nkx*nrx*Ngt*npol,N_bands*nkx))
+!allocate(Psi_old(nkx*nrx*Ngt*npol,N_bands*nkx))
 allocate(Psi_mod(nkx*nrx*Ngt*npol,N_bands*nkx))
 Psi_mod=0.0_dp
 allocate(A(nkx*nrx*Ngt*npol,N_bands*nkx))
@@ -531,7 +531,7 @@ do jp=1,npol
       call zgemm ('c','n',nkx*nrx,nkx*N_bands,nkx*nrx,alpha,Uh,nkx*nrx,&
            A(1+(jgt-1)*nkx*nrx+(jp-1)*nkx*nrx*ngt:jgt*nkx*nrx+(jp-1)*nkx*nrx*ngt,1:nkx*N_Bands),nkx*nrx,beta,B(1:nkx*nrx,1:nkx*n_bands),nkx*nrx)
       do n=1,nkx*nrx
-         Psi_mod(n+(jgt-1)*nkx*nrx+(jp-1)*nkx*nrx*ngt,1:Nkx*N_bands)=B(n,1:Nkx*N_bands)
+         Psi_mod(n+(jgt-1)*nkx*nrx+(jp-1)*nkx*nrx*ngt,1:Nkx*N_bands)=B(n,1:Nkx*N_bands)*sqrt(dble(Nkx))
       end do
    end do
 end do
@@ -618,7 +618,7 @@ do ix=1,nrx
       do iz=1,nrz
          tmp=0.0d0
          do i=1,nband_v
-            tmp=tmp+(A(i,iy+(iz-1)*(nry))*dconjg( A(i,iy+(iz-1)*(nry)) ))
+            tmp=tmp+(A(i,iy+(iz-1)*(nry))*conjg( A(i,iy+(iz-1)*(nry)) ))
          end do
          write(2000+ix,*)(iy-1)*dy*1e8,(iz-1)*dz*1e8,dble(tmp)
                end do
@@ -632,18 +632,19 @@ end if
 
 deallocate(Psi_mod)
 allocate(PSI_MOD(Nrx*Ngt*npol,NM))
+!allocate(Psi_old(nrx*Ngt*npol,N_bands*nkx))
 !Psi_mod=0.0_dp
 
 if(.not. refine)then
-write(*,*)
-t1=SECNDS(0.0)
-write(*,*)'Starting the orthonormalization...'
+!write(*,*)
+!t1=SECNDS(0.0)
+!write(*,*)'Starting the orthonormalization...'
 ic=1
 !call MGS(nrx0*Ngt*npol,NM,C(1:nrx0*ngt*npol,1:NM))
-psi_old=C
-call ortonorma(nrx0*Ngt*npol,NM,C,PSI_mod)
-
-C=psi_mod
+!psi_old=C
+!!call ortonorma(nrx0*Ngt*npol,NM,C,PSI_mod)
+!psi_mod=C!psi_old
+!C=psi_mod
 do jp=1,npol
    do jgt=1,Ngt
       do ix=1,nrx0
@@ -652,19 +653,20 @@ do jp=1,npol
    end do
 end do
    
-do j=1,NM
-   do i=1,Nrx*Ngt*npol
-      if(C(i,j)/=C(i,j))then
-         write(*,*)'prob with the MGS',j
-         write(*,*)'stopping the simulaton'
-         stop
-         exit
-      end if
-   end do
-end do
-t2=SECNDS(t1)
-write(*,'(a,F7.3,a)')' Orthonormalization done in ',t2,' s'
-write(*,*)
+!do j=1,NM
+!   do i=1,Nrx*Ngt*npol
+!      if(C(i,j)/=C(i,j))then
+!         write(*,*)'prob with the MGS',j
+!         write(*,*)'stopping the simulaton'
+!         stop
+!         exit
+!      end if
+!   end do
+!end do
+
+!t2=SECNDS(t1)
+!write(*,'(a,F7.3,a)')' Orthonormalization done in ',t2,' s'
+!write(*,*)
 end if
 
 deallocate(C)
@@ -672,16 +674,6 @@ deallocate(ks_fun)
 
 
 
-!allocate(C(NM,NM))
-!call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,PSI_MOD,nrx*ngt*npol,PSI_MOD,nrx*ngt*npol,beta,C,NM)
-!do i=1,nm
-!   do j=1,nm
-!      write(319,*)i,j,abs(C(i,j))
-!   end do
-!   write(319,*)
-!end do
-!deallocate(C)
-!stop
 
 
 if(ncell==1)then
@@ -692,29 +684,37 @@ else
 if(is==1)   open(unit=13,file=TRIM(outdir)//'PPsi_Bloch_up_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat',status='unknown')
 if(is==2)   open(unit=13,file=TRIM(outdir)//'PPsi_Bloch_dw_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat',status='unknown')
 end if
+
 if(.not. refine)then
    write(*,*)
    write(*,*)'Writing PPSI files...'
    do j=1,NM
       do i=1,Nrx*Ngt*npol
-         write(13,*)PSI_OLD(i,j)!PSI_MOD(i,j)
+         write(13,*)PSI_MOD(i,j)!PSI_OLD(i,j)!PSI_MOD(i,j)
       end do
    end do
    write(*,*)'done'
 else if(refine)then
    write(*,*)
-   write(*,*)'reading PPSI files...'
+   write(*,*)'reading PPSI files...',Nrx*Ngt*npol
    do j=1,NM
       do i=1,Nrx*Ngt*npol
-         read(13,*)PSI_OLD(i,j)!PSI_MOD(i,j)
+         read(13,*)PSI_MOD(i,j)!PSI_OLD(i,j)!PSI_MOD(i,j)
       end do
    end do
    write(*,*)'done'
-   call ortonorma(nrx0*Ngt*npol,NM,psi_old,PSI_mod)
+   !write(*,*)shape(PSI_mod),nrx*Ngt*npol
+!t1=SECNDS(0.0)
+!write(*,*)'Starting the orthonormalization...'
+!   call ortonorma(nrx*Ngt*npol,NM,psi_old,PSI_mod)
+!t2=SECNDS(t1)
+!write(*,'(a,F7.3,a)')' Orthonormalization done in ',t2,' s'
+!psi_mod=psi_old
 end if
 close(13)
 end if
 write(*,*)
+
 
 if(ncell==2)then
    ic=1 
@@ -725,19 +725,32 @@ if(ncell==2)then
       if(is==2)nome=trim(indir2)//'PPsi_Bloch_dw_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat'
    end if
    write(*,*)nome
-   allocate(A(Nrx*Ngt*npol,NM2))
+   !!allocate(A(Nrx*Ngt*npol,NM2))
    allocate(PSI_MOD_1(Nrx*Ngt*npol,NM2))
    open(unit=13,file=nome,status='unknown')
       do j=1,NM2
       do i=1,Nrx*Ngt*npol
-         read(13,*)A(i,j)!PSI_MOD_1(i,j)
+         read(13,*)PSI_MOD_1(i,j)!A(i,j)!PSI_MOD_1(i,j)
       end do
    end do
    close(13)
-   call ortonorma(nrx0*Ngt*npol,NM,A,PSI_mod_1)
-   deallocate(A)
+   !!call ortonorma(nrx0*Ngt*npol,NM,A,PSI_mod_1)
+   !!PSI_mod_1=A
+   !!deallocate(A)
 end if
 
+
+allocate(Si(NM,NM))
+call ZGEMM('c','n',NM,NM,Nrx*Ngt*npol,alpha,PSI_MOD,Nrx*Ngt*npol,PSI_MOD,Nrx*Ngt*npol,beta,Si,NM)
+
+!do i=1,nm
+!   do j=1,nm
+!      write(1112,*)i,j,(Si(i,j))
+!      write(1113,*)i,j,abs(Si(i,j))
+!   end do
+!   write(1112,*)
+!   write(1113,*)
+!end do
 
 if(.not. refine)then
    
@@ -1041,8 +1054,8 @@ if(iyz==1)then
    allocate(E(NM))
    allocate(B(NM,NM))
 
-   A=HLLL+TLLL+transpose(dconjg(TLLL))
-   call SUB_DEF_Z(1,NM,NM,A,E,B)
+   A=HLLL+TLLL+transpose(conjg(TLLL))
+   call SUB_DEF_Z0_GEN(1,NM,NM,A,Si,E)!!!   call SUB_DEF_Z(1,NM,NM,A,E,B)
    ref=E(nband_v)
    write(*,*)'TOP VB AT GAMMA',ref
 
@@ -1051,7 +1064,7 @@ if(iyz==1)then
    deallocate(E)
 end if
 
-forall (i = 1:NM) HLLL(i,i)=HLLL(i,i)-ref !!! THIS sets the zero energy point at the top of EV(Gamma)
+HLLL=HLLL-ref*Si !!! THIS sets the zero energy point at the top of EV(Gamma)
 
 
 end if
@@ -1099,8 +1112,14 @@ deallocate(Uh)
 
 if(gap_corr)then
 
+   write(*,*)
+   write(*,*)'WARNING!'
+   write(*,*)
+   write(*,*)'You are using the gap correction option. Use it with caution: it can result in an unphysical deformation of band dispersion'
+   write(*,*)
+   
    if(nm <= nband_v)then
-      write(*,*)'errore in gap_corr'
+      write(*,*)'error in gap_corr: nm <= nband_v'
       stop
    end if
    
@@ -1115,8 +1134,8 @@ if(gap_corr)then
       
       if(mod(ikx-1,1000)==0) write(*,*)'ikx',ikx-1,dble(ikx-1)/dble(n)*2.0_dp*pi
       A=HLLL+TLLL*exp(im*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
-           transpose(dconjg(TLLL))*exp(-im*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-      call SUB_DEF_Z(1,NM,NM,A,E,B)
+           transpose(conjg(TLLL))*exp(-im*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+      call SUB_DEF_Z_GEN(1,NM,NM,A,Si,E,B) !!    call SUB_DEF_Z(1,NM,NM,A,E,B)
 
       A=0.0_dp
       forall ( i = 1 : nband_v ) A(i,i)=E(i)
@@ -1155,8 +1174,8 @@ allocate(E(M))
 allocate(A(NM,NM))
 do ikx=1,n+1
    A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
-        transpose(dconjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-   call SUB_DEF_Z0(1,M,NM,A,E)
+        transpose(conjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+   call SUB_DEF_Z0_GEN(1,M,NM,A,Si,E)  !!!!! call SUB_DEF_Z0(1,M,NM,A,E)
    do k=1,M
       hkl(ikx,k)=e(k)
    end do
@@ -1193,10 +1212,9 @@ if(nkplus > nkx)then
 end if
 
 allocate(kx1(nk1))
-if(nk1==6)kx1=(/-3.0_dp/6.0_dp, -2.0_dp/6.0_dp, -1.0_dp/6.0_dp, 0.0_dp, 1.0_dp/6.0_dp,  2.0_dp/6.0_dp, 3.0_dp/6.0_dp/)
-if(nk1==5)kx1=(/-2.0_dp/5.0_dp, -1.0_dp/5.0_dp, 0.0_dp, 1.0_dp/5.0_dp, 2.0_dp/5.0_dp/)
+if(nk1==8)kx1=(/-0.375_dp, -0.25_dp, -0.125_dp, 0.0_dp, 0.125_dp, 0.25_dp, 0.375_dp, 0.5_dp/)
+if(nk1==6)kx1=(/-1.0_dp/3.0_dp, -1.0_dp/6.0_dp, 0.0_dp, 1.0_dp/6.0_dp,  1.0_dp/3.0_dp, 0.5_dp/)
 if(nk1==4)kx1=(/-0.25_dp, 0.0_dp, 0.25_dp, 0.5_dp/)
-if(nk1==3)kx1=(/-1.0_dp/3.0_dp, 0.0_dp, 1.0_dp/3.0_dp/)
 if(nk1==2)kx1=(/0.0_dp, 0.5_dp/)
 if(nk1==1)kx1=(/0.0_dp/)
 nnn=nkplus
@@ -1212,22 +1230,23 @@ end if
 
 allocate(kx2(nnn))
 if(nnn==2)kx2=(/ 0.0, 0.5/)
-!if(nnn==3)kx2=(/ -0.3333, 0.0, 0.3333/)
 if(nnn==4)kx2=(/-0.25, 0.0, 0.25, 0.5/)
+if(nnn==6)kx1=(/-1.0_dp/3.0_dp, -1.0_dp/6.0_dp, 0.0_dp, 1.0_dp/6.0_dp,  1.0_dp/3.0_dp, 0.5_dp/)
 if(nnn==8)kx2=(/-0.375, -0.25, -0.125, 0.0, 0.125, 0.25, 0.375, 0.5/)
 nplus=mplus
 nn=nplus*nnn
-!!!!! 
+!!!!
 mm1=nf-ni+1
-mmm=nk1*mm1+nn
+if(.not.refine) nkx_add = 0
+mmm=nk1*mm1+nn + nkx_add
 !!!!
 allocate(B(NM,mmm))
 allocate(A(NM,NM))
 allocate(E(nf-ni+1))
 allocate(C(NM,nf-ni+1))
 do ikx=1,nk1
-   A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*kx1(ikx)*2.0_dp*pi)+transpose(dconjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*kx1(ikx)*2.0_dp*pi)
-   call SUB_DEF_Z(ni,nf,NM,A,E,C)
+   A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*kx1(ikx)*2.0_dp*pi)+transpose(conjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*kx1(ikx)*2.0_dp*pi)
+   call SUB_DEF_Z_GEN(ni,nf,NM,A,Si,E,C)   !!!call SUB_DEF_Z(ni,nf,NM,A,E,C)
    B(:,1+(ikx-1)*mm1:ikx*mm1)=C(:,1:mm1)
 
 end do
@@ -1239,34 +1258,55 @@ if(nplus>0)then
    do ikx=1,nnn
 !!!      write(*,*)'adding kx',kx2(ikx)
       A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*kx2(ikx)*2.0_dp*pi)+&
-           transpose(dconjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*kx2(ikx)*2.0_dp*pi)
-      call SUB_DEF_Z(nf+1,nf+nplus,NM,A,E,C)
+           transpose(conjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*kx2(ikx)*2.0_dp*pi)
+      call SUB_DEF_Z_GEN(nf+1,nf+nplus,NM,A,Si,E,C)      !!!call SUB_DEF_Z(nf+1,nf+nplus,NM,A,E,C)
       B(:,nk1*mm1+1+(ikx-1)*nplus:nk1*mm1+ikx*nplus)=C(:,1:nplus)
 !!!      write(*,*)nf+1,nf+nplus,nk1*mm1+1+(ikx-1)*nplus,nk1*mm1+ikx*nplus
    end do
    deallocate(C,E)
 end if
+
+if(Nkx_add > 0)then
+   allocate ( psi_add(nrx*Ngt*npol,nkx_add) )
+   allocate(E(1))
+   allocate(C(NM,1))
+   do ikx=1,Nkx_add
+      A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*xk_add(ikx)*2.0_dp*pi)+ &
+           transpose(conjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*xk_add(ikx)*2.0_dp*pi)
+      call SUB_DEF_Z_GEN(nbnd_add(ikx),nbnd_add(ikx),NM,A,Si,E,C)   !!!   call SUB_DEF_Z(nbnd_add(ikx),nbnd_add(ikx),NM,A,E,C)
+      B(:,nk1*mm1+nn+ikx)=C(:,1)
+!      psi_add(1:nrx*Ngt*npol,ikx)=matmul(psi_mod(1:nrx*Ngt*npol,1:nm),C(1:nm,1))
+      write(*,*)'nbnd',nbnd_add(ikx),'additional kx',xk_add(ikx),E(1)
+   end do
+   deallocate(C,E)
+end if
+   
 deallocate(A)
 write(*,*)
 write(*,*)' Reduced basis order =',mmm
 write(*,*)
 
-!call MGS(NM,mmm,B) !!! Modified Gram-Schmidt to orthonormalize the Psi functions at different kx
-allocate(A(NM,mmm))
-call ortonorma(NM,mmm,B,A)
-B=A
-deallocate(A)
+!!!$!!!call MGS(NM,mmm,B) !!! Modified Gram-Schmidt to orthonormalize the Psi functions at different kx
+!!!$!!allocate(A(NM,mmm))
+!!!$!!call ortonorma(NM,mmm,B,A)
+!!!$!!B=A
+!!!$!!deallocate(A)
 
 NMODES=mmm
 
 ic=1
 allocate(C(Nrx*Ngt*npol,NModes))
-!!!call ZGEMM('n','n',Nrx*Ngt*npol,NModes,NM,alpha,psi_mod,Nrx*Ngt*npol,B,NM,beta,C,Nrx*Ngt*npol)
+call ZGEMM('n','n',Nrx*Ngt*npol,NModes,NM,alpha,psi_mod,Nrx*Ngt*npol,B,NM,beta,C,Nrx*Ngt*npol)
+
+
+deallocate(Si)
+allocate(Si(NModes,NModes))
+call ZGEMM('c','n',NModes,NModes,nrx*ngt*npol,alpha,C,nrx*ngt*npol,C,nrx*ngt*npol,beta,Si,NModes)
 
 
 !!!!!!!!!!!!!!!!!!!!
 allocate(A(nrx*ngt*npol,nmodes))
-   
+A=0.0_dp
 i=0
 do ikx=1,nk1
 do j=1,nkx
@@ -1280,14 +1320,15 @@ if(i /= nk1)then
    stop
 end if
 
-allocate(ind_kx(nmodes),ind_bnd(nmodes))
+allocate(in_kx(nmodes),ind_bnd(nmodes))
 do ikx=1,nk1
    do j=1,nkx
-      if(abs(kx1(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-6)then
+      if(abs(kx1(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-3)then
+         write(*,*)'ikx=',j,'kx1=',k_vec(1,j+(iyz-1)*nkx)
          do i=1,mm1
-            A(:,i+(ikx-1)*mm1)=psi_old(:,i+ni-1+(j-1)*n_bands)
-            ind_kx(i+(ikx-1)*mm1)=ikx
-            ind_bnd(i+(ikx-1)*mm1)=i
+!            A(1:nrx*Ngt*npol,i+(ikx-1)*mm1)=psi_old(1:nrx*Ngt*npol,i+ni-1+(j-1)*n_bands)
+            in_kx(i+(ikx-1)*mm1)=k_vec(1,j+(iyz-1)*nkx)
+            ind_bnd(i+(ikx-1)*mm1)=i+ni-1
          end do
       end if
    end do
@@ -1298,7 +1339,7 @@ if(nplus>0)then
 i=0
 do ikx=1,nnn
 do j=1,nkx
-   if(abs(kx2(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-6)then
+   if(abs(kx2(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-3)then
       i=i+1
    end if
 end do
@@ -1309,21 +1350,47 @@ if(i /= nkplus)then
 end if
 do ikx=1,nnn
    do j=1,nkx
-      if(abs(kx2(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-6)then
+      if(abs(kx2(ikx)-k_vec(1,j+(iyz-1)*nkx))<1.0d-3)then
+         write(*,*)'ikx=',j,'kx2=',k_vec(1,j+(iyz-1)*nkx)
          do i=1,nplus
-            A(:,nk1*mm1 + i+(ikx-1)*nplus)=psi_old(:,nf+i+(j-1)*n_bands)
-            ind_kx(nk1*mm1 + i+(ikx-1)*nplus)=ikx
-            ind_bnd(nk1*mm1 + i+(ikx-1)*nplus)=mm1+i
+!            A(1:nrx*Ngt*npol,nk1*mm1 + i+(ikx-1)*nplus)=psi_old(1:nrx*Ngt*npol,nf+i+(j-1)*n_bands)
+            in_kx(nk1*mm1 + i+(ikx-1)*nplus)=k_vec(1,j+(iyz-1)*nkx)
+            ind_bnd(nk1*mm1 + i+(ikx-1)*nplus)=mm1+i+ni-1
          end do
       end if
    end do
 end do
+
 end if
 
-call ortonorma(nrx*ngt*npol,nmodes,A,C)
-deallocate(A)
+if(nkx_add > 0)then
+   do ikx=1,nkx_add
+!      A(1:nrx*Ngt*npol,nk1*mm1 +nn + ikx) = psi_add(1:nrx*Ngt*npol,ikx)
+      in_kx(nk1*mm1+nn+ikx) = xk_add(ikx)
+      ind_bnd(nk1*mm1 + nn + ikx) = nbnd_add(ikx)
+   end do
+end if
+
+
+
+!if(allocated(C))deallocate(C)
+!allocate(C(NModes,NModes))
+!call ZGEMM('c','n',NModes,NModes,nrx*ngt*npol,alpha,A,nrx*ngt*npol,A,nrx*ngt*npol,beta,C,NModes)
+!do i=1,nmodes
+!   do j=1,nmodes
+!      write(329,*)i,j,abs(C(i,j))
+!   end do
+!   write(329,*)
+!end do
+!deallocate(C)
+!!stop
+!allocate(C(nrx*ngt*npol,nmodes))
+!!!! call ortonorma(nrx*ngt*npol,nmodes,A,C)
+!!!! deallocate(A)
+!C=A
 !!!!!!!!!!!!!!!!!!!!!!
-  
+
+
    if(ncell==1)then
       if( nspin == 1 )then
          open(unit=13,file=TRIM(outdir)//'Psi_Bloch_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat',status='unknown')
@@ -1337,7 +1404,7 @@ deallocate(A)
          end do
       end do
       do j=1,NModes
-         write(13,*)j,ind_kx(j),ind_bnd(j)
+         write(13,*)j,in_kx(j),ind_bnd(j)
       end do      
       close(13)
       ic=1
@@ -1354,8 +1421,26 @@ deallocate(A)
       end do
       close(13)
    end if
+   
+!!   A=C
+!!   call ortonorma(nrx*ngt*npol,nmodes,A,C)
 
-   deallocate(ind_bnd,ind_kx)
+   
+   deallocate(A)
+   deallocate(ind_bnd,in_kx)
+
+
+!allocate(A(nmodes,nmodes))
+!write(*,*)'shape C',shape(C),nrx*ngt*npol,NModes
+!call ZGEMM('c','n',NModes,NModes,nrx*ngt*npol,alpha,C,nrx*ngt*npol,C,nrx*ngt*npol,beta,A,NModes)
+!do i=1,nmodes
+!   do j=1,nmodes
+!      write(339,*)i,j,abs(A(i,j))
+!   end do
+!   write(339,*)
+!end do
+!deallocate(A)
+   
    deallocate(C)
 
    if(ncell==2)then
@@ -1400,10 +1485,11 @@ n=40
 allocate(hkl(n+1,mmm))
 allocate(E(mmm))
 allocate(A(mmm,mmm))
+
 do ikx=1,n+1
    A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
-        transpose(dconjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-   call SUB_DEF_Z0(1,mmm,mmm,A,E)
+        transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+   call SUB_DEF_Z0_GEN(1,mmm,mmm,A,Si,E) !!!call SUB_DEF_Z0(1,mmm,mmm,A,E)
    do k=1,mmm
       hkl(ikx,k)=e(k)
    end do
@@ -1448,7 +1534,7 @@ if(ncell==1)then
    end do
 
    allocate(A(nm,nm))
-   A=transpose(dconjg(TLL))
+   A=transpose(conjg(TLL))
    ic=1
    if( nspin == 1 )then
       open(unit=13,file=TRIM(outdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(ic))//'.dat',status='unknown')
@@ -1467,7 +1553,7 @@ end if
 
 if(ncell==2)then
    allocate(A(nm,mm2))
-   A=transpose(dconjg(HV))
+   A=transpose(conjg(HV))
    ic=1
    if( nspin == 1 )then
       open(unit=13,file=TRIM(outdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nhet_'//TRIM(STRINGA(ic))//'.dat',status='unknown')
@@ -1526,12 +1612,14 @@ U_LCBB(:,:,iyz)=A(:,:)
 
 deallocate(A,B)
 deallocate(PSI_MOD)
-deallocate(PSI_OLD)
+!!!deallocate(PSI_OLD)
+if(allocated(psi_add))deallocate(psi_add)
 if(allocated(PSI_MOD_1))deallocate(PSI_MOD_1)
 deallocate(HLLL,TLLL)
 
 
 deallocate(HLL,TLL)
+deallocate(Si)
 
 write(*,*)
 write(*,*)'END Kyz',iyz
@@ -1558,6 +1646,72 @@ END IF
 end subroutine read_QE_output
 
 
+
+SUBROUTINE SUB_DEF_Z_GEN(Mi,Mf,ny,A,C,subband,U)
+implicit none
+integer :: ny,mi,mf
+real(dp) :: subband(1:(Mf-Mi+1))
+complex(dp) :: A(1:NY,1:NY),B(1:NY,1:NY),C(1:NY,1:NY),U(1:NY,1:(Mf-Mi+1))
+integer :: INFO
+integer, allocatable :: iwork(:),ifail(:)
+complex(dp), allocatable :: work(:)
+real(dp), allocatable :: rwork(:)
+REAL(DP), EXTERNAL :: DLAMCH
+
+B=C
+
+allocate(WORK(20*ny))
+allocate(RWORK(7*ny))
+allocate(IWORK(5*ny))
+allocate(ifail(ny))
+
+
+call zhegvx(1,'V','I','U',ny,A,ny,B,ny,0.0,0.0,mi,mf,2*DLAMCH('S'),(Mf-Mi+1),subband,U,ny,WORK,20*ny,RWORK,IWORK,ifail,INFO )
+
+deallocate(ifail)
+deallocate(work)
+deallocate(rwork)
+deallocate(iwork)
+
+if (INFO.ne.0)then
+   write(*,*)'SEVERE WARNING: SUB_DEF_Z_GEN HAS FAILED. INFO=',INFO
+   stop
+endif     
+
+END SUBROUTINE SUB_DEF_Z_GEN
+
+
+SUBROUTINE SUB_DEF_Z0_GEN(Mi,Mf,ny,A,C,subband)
+implicit none
+integer :: ny,mi,mf
+real(dp) :: subband(1:(Mf-Mi+1))
+complex(dp) :: A(1:NY,1:NY),B(1:NY,1:NY),C(1:NY,1:NY),U(1:NY,1:(Mf-Mi+1))
+integer :: INFO
+integer, allocatable :: iwork(:),ifail(:)
+complex(dp), allocatable :: work(:)
+real(dp), allocatable :: rwork(:)
+REAL(DP), EXTERNAL :: DLAMCH
+
+B=C
+
+allocate(WORK(20*ny))
+allocate(RWORK(7*ny))
+allocate(IWORK(5*ny))
+allocate(ifail(ny))
+
+CALL ZHEGVX (1,'N','I','U',ny,A,ny,B,ny,0.0,0.0,mi,mf,2*DLAMCH('S'), mf-mi+1, subband,U,ny,work,20*ny,rwork,iwork,ifail,info)
+
+deallocate(ifail)
+deallocate(work)
+deallocate(rwork)
+deallocate(iwork)
+
+if (INFO.ne.0)then
+   write(*,*)'SEVERE WARNING: SUB_DEF_Z0_GEN HAS FAILED. INFO=',INFO
+   stop
+endif     
+
+END SUBROUTINE SUB_DEF_Z0_GEN
 
 SUBROUTINE SUB_DEF_Z(Mi,Mf,ny,A,subband,U)
 implicit none
@@ -1716,7 +1870,7 @@ end subroutine ortonorma
 
    B=0.0_dp
    do i=1,nm
-      B(i,i)=E(i)**p
+      B(i,i)=E(i)**(p)
    end do
    
    call zgemm('n','c',nm,nm,nm,alpha,B,nm,U,nm,beta,C,nm)
@@ -1727,7 +1881,10 @@ end subroutine ortonorma
    
  end subroutine A_POWER
  
+
+
+ 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+ 
 END MODULE Pseudopot_so_gen

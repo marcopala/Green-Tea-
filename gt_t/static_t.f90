@@ -42,6 +42,7 @@ module static
 
   integer,     parameter :: k15 = selected_int_kind(15)
   integer,     parameter :: dp = selected_real_kind(15,307)
+  integer,     parameter :: qp = selected_real_kind(33, 4931)
   REAL(DP),    PARAMETER :: DIEL_0=8.854187817d-14  ! F/cm
   REAL(DP),    PARAMETER :: DIEL_METAL=0.0_dp
   real(dp),    parameter :: pi=abs(acos(-1.0_dp))

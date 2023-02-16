@@ -478,6 +478,77 @@ end subroutine multYSMP
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+SUBROUTINE pot_init2(POT3D,which,map,nx,ny,nz,lwork,potelectr)
+
+IMPLICIT NONE
+
+REAL(DP),INTENT(OUT) :: POT3D(0:lwork-1)
+
+INTEGER,  INTENT(IN) :: which(0:nx*ny*nz-1)
+INTEGER,  INTENT(IN) :: map(0:nx*ny*nz-1)
+INTEGER,  INTENT(IN) :: nx
+INTEGER,  INTENT(IN) :: ny
+INTEGER,  INTENT(IN) :: nz
+INTEGER,  INTENT(IN) :: lwork
+INTEGER              :: ii, x_index
+REAL(DP), INTENT(IN) :: potelectr
+
+ POT3D=0.0
+ DO ii=0, nx*ny*nz-1
+ x_index=ii/(ny*nz)
+
+IF(which(ii).le.0)THEN
+
+if(chtype.eq.'n')then
+!write(*,*)ii,ny*nz,x_index,x_index/Ndeltax,x_index/Ndeltax+1
+!      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-(mud-mus)/(source_len+2*spacer+gate_len+drain_len)*(x_index)-mus-potelectr
+
+   IF(x_index.le.source_len)THEN
+      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-mus
+   ELSEIF(x_index.gt.source_len+2*spacer+gate_len .and. &
+        x_index .lt. source_len+2*spacer+gate_len+drain_len)THEN
+      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-mud
+   ELSEIF(x_index.gt.source_len.and.x_index.le.source_len+2*spacer+gate_len)THEN
+      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))
+   ELSEIF(x_index .gt. source_len .and. &
+      x_index .le. source_len+2*spacer+gate_len)THEN
+     POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-0.1_dp
+      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-(mud-mus)/(2*spacer+gate_len)*(x_index-source_len)-mus!-potelectr
+     endif
+   
+elseif(chtype.eq.'p')then
+
+      POT3D(map(ii))=ref_ev(imat(x_index/Ndeltax+1))-(mud-mus)/(source_len+2*spacer+gate_len+drain_len)*(x_index)-mus-potelectr
+elseif(chtype.eq.'t')then
+   
+   IF(x_index.le.source_len)THEN
+      POT3D(map(ii))=ref_ev(imat(x_index/Ndeltax+1))-mus
+   ELSEIF(x_index.gt.source_len+2*spacer+gate_len .and. &
+        x_index .lt. source_len+2*spacer+gate_len+drain_len)THEN
+      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-mud
+!   ELSEIF(x_index.gt.source_len.and.x_index.le.source_len+2*spacer+gate_len)THEN
+!      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))
+   ELSEIF(x_index .gt. source_len .and. &
+      x_index .le. source_len+2*spacer+gate_len)THEN
+      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-0.1_dp
+  
+
+   END IF
+   
+   !IF(x_index.eq.source_len+2*spacer+gate_len+drain_len)THEN
+   !   POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax))-mud 
+   !END IF
+
+end if
+   
+END IF
+END DO
+
+END SUBROUTINE pot_init2
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 SUBROUTINE pot_init(POT3D,which,map,nx,ny,nz,lwork)
 
 IMPLICIT NONE

@@ -263,21 +263,21 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   call negf_mixed(POT3D,rho_n,rho_p,ISDcurrent,IDScurrent,IDScurrentb,ss,gg,transport_iter)
   write(*,*)
 
-  if(onlyT)then
-     write(*,*)
-     write(*,*)
-     write(*,*) ' Simulation ended. &
-          Only transmission and current in the flat-band configuration were computed. '
-     write(*,*)
-     write(*,*)
-     write(*,*) ' This is an open source software distributed under the CeCILL license.'
-     write(*,*) ' Please cite  '
-     write(*,*) ' M. G. Pala, P. Giannozzi, and D. Esseni, Phys. Rev. B 102, 045410 (2020)'
-     write(*,*) ' DOI: https://doi.org/10.1103/PhysRevB.102.045410'
-     write(*,*)
-     write(*,*)
-     stop
-  end if
+  !if(onlyT)then
+  !   write(*,*)
+  !   write(*,*)
+  !   write(*,*) ' Simulation ended. &
+  !        Only transmission and current in the flat-band configuration were computed. '
+  !   write(*,*)
+  !   write(*,*)
+  !   write(*,*) ' This is an open source software distributed under the CeCILL license.'
+  !   write(*,*) ' Please cite  '
+  !   write(*,*) ' M. G. Pala, P. Giannozzi, and D. Esseni, Phys. Rev. B 102, 045410 (2020)'
+  !   write(*,*) ' DOI: https://doi.org/10.1103/PhysRevB.102.045410'
+  !   write(*,*)
+  !   write(*,*)
+  !   stop
+  !end if
 
   
   OPEN(UNIT=22,FILE='charge_y'//TRIM(STRINGA(transport_iter))//'.dat',STATUS='UNKNOWN')
@@ -444,9 +444,7 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   CLOSE(22)
   CLOSE(23)
 
-
-
-open(10,file='Last_Potential_vg'//TRIM(STRINGA(gg))//'_vd'//TRIM(STRINGA(ss))//'.dat',status='unknown')
+open(10,file='Last_Potential_vg_'//TRIM(STRINGA(ss))//'.dat',status='replace')
 do ii=0,LWORK_3D-1
    write(10,*)POT_3D(ii)
 end do

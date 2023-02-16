@@ -47,15 +47,17 @@ MODULE indata
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Input parameters!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  INTEGER :: nband_v,ni,nf,ncell,nk1,nkplus,mm1,mplus,mm2,nm2,nmod,NKGt,NMODES
+  INTEGER :: nband_v,ni,nf,ncell,nk1,nkplus,mm1,mplus,nkx_add,mm2,nm2,nmod,NKGt,NMODES
   INTEGER :: nx,ny,nz,Ndx,Ndy,Ndz,nkx,nkyz,nky,nkz,ngt,Ncy,Ncz
   INTEGER :: NEK
   INTEGER :: Nomp
+  INTEGER, ALLOCATABLE :: nbnd_add(:)
   
   real(dp) :: dx, dy, dz, t0x, t0y, t0z
   REAL(DP) :: ac,ac1,ac2,ac3,Ecut,omega,delta_gap
 
   REAL(DP), ALLOCATABLE :: Ev(:)
+  REAL(DP), ALLOCATABLE :: xk_add(:)
   REAL(DP), ALLOCATABLE :: Kyz(:)
   REAL(DP), ALLOCATABLE :: KGt_kyz(:,:,:)
   complex(dp), allocatable ::  HL(:,:,:), TL(:,:,:), U_LCBB(:,:,:), U_PSI(:,:,:,:,:)
@@ -87,6 +89,7 @@ MODULE indata
        &  nkx,                                 &
        &  nkplus,                              &
        &  Mplus,                               &
+       &  Nkx_add,                             &
        &  Ecut,                                &
        &  delta_gap
   NAMELIST /indata_basis2/                     &
@@ -125,8 +128,12 @@ CONTAINS
 
   SUBROUTINE indata_readinput()
 
-    IMPLICIT NONE    
+    IMPLICIT NONE
+    integer :: i
+
     delta_gap = 0.0_dp
+    Nkx_add=0
+
     READ(*,NML=indata_dimensionality)
     READ(*,NML=indata_basis)
 
@@ -140,6 +147,15 @@ CONTAINS
        allocate(Ev(nEk))
        read(*,*)Ev
        write(*,*)'ev',ev
+    end if
+
+    if(refine)then
+       if(Nkx_add > 0)then
+          allocate(xk_add(Nkx_add),nbnd_add(nkx_add))
+          do i=1,Nkx_add
+             read(*,*)nbnd_add(i),xk_add(i)
+          end do
+       end if
     end if
     
     if(ncell==2)READ(*,NML=indata_basis2)
