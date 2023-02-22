@@ -429,10 +429,10 @@ do im=1,num_mat
          read(13,*)tmp
          HL(iyz,im)%H(i,j)=tmp
       end do
-      HL(iyz,im)%H(i,i)=HL(iyz,im)%H(i,i)+off_set(im)
    end do
    close(13)
    HL(iyz,im)%H=(HL(iyz,im)%H+transpose(conjg(HL(iyz,im)%H)))/2.0_dp
+   HL(iyz,im)%H = HL(iyz,im)%H + off_set(im)*Si(iyz,im)%H  !!! offset of the material
    
    allocate(TL(iyz,im)%H(NM_mat(im),NM_mat(im)))
    nm=NM_mat(im)
@@ -872,24 +872,12 @@ do iq=1,nqs
             do ii = 1,nbnd
                do jj = 1,nbnd
                   read(13,*) tmp1,tmp2
-                  !if(abs(omega_q(iq,ll)) < 1.0d-3)then    !!! this should cover the acoustic branches !!!
+                  !!! this should cover the acoustic branches !!!
                   if(ll.le.3)then
-                  el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2)
+                     el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2)
                   else
-                  ! if(ii.ge.27.and.jj.ge.27)then
-                 ! if(ii.eq.13.or.ll.eq.14)then
-                  !el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2)
-                 ! else
-                  !if( abs(ryd*cmplx(tmp1,tmp2)) < 0.7_dp ) el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)
-                !if( omega_q(iq,ll) > BOLTZ*TEMP )then
-                           el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)
-                   !else
-                   !        el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2)
-                   !endif
-                  
-                  !  endif
-                 ! endif
-                endif
+                     el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)
+                  endif
                end do
             end do
          end do
@@ -908,17 +896,9 @@ do iq=1,nqs
          do ii = 1,nbnd
             do jj = 1,nbnd
                read(13,*) tmp1,tmp2
-             !  if(ll.gt.1)then
-             ! if(ii.ge.27.and.jj.ge.27)then
-                 ! if( abs(ryd*cmplx(tmp1,tmp2)) < 0.7_dp ) el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)    
-              
-                  ! if( omega_q(iq,ll) > BOLTZ*TEMP )then
-                           el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)
-                  ! else
-                  !         el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2)
-                  ! endif
-                 !endif
-             !  endif  
+
+               el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)
+               
             end do
          end do
       end do
@@ -956,36 +936,34 @@ do iq=1,nqs
             do iyz=1,NKyz !!! index of k_yz
                if(k_selec(iyz))then
 
-               !iyz=ind_kyz( kq_vec(2:3,jx+(jyz-1)*nkx) - x_q(2:3,iq) )
-               allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(nqmodes,NM_mat(im),NM_mat(im)))
-               el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
-               jj = ind_kyz( k_vec(2:3,iyz) - k_vec(2:3,jyz) ) !!! this is the index of (k-q)_yz
-              ! write(*,*)'iyz =',iyz,'jyz =',jyz,'jj =',jj
-               if(k_selec(jj))then
-do ll=1,nqmodes
-   A=0.0_dp
-   do i=1,NM
-      do j=1,NM
-      A(i,j)=0.0_dp
-         do m=1,NM
-            do n=1,NM
+                  allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(nqmodes,NM_mat(im),NM_mat(im)))
+                  el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
+                  jj = ind_kyz( k_vec(2:3,iyz) - k_vec(2:3,jyz) ) !!! this is the index of (k-q)_yz
                   
-               if(abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m)         ) < 1.0d-3    )then
-                  A(i,j) = A(i,j) + &
-                       Si_p05(iyz,im)%H(i,n) *  el_ph_mat( ind_bnd(iyz,im)%i(n), ind_bnd(jj,im)%i(m), ind_k(jx,jyz) , ll) * Si_p05(jj,im)%H(m,j)
-               end if
-              end do
-           end do
-        
-         el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)
-         write(40000+1000*jyz+100*jx+ll,*)i,j,abs(A(i,j))
-         write(4000+100*jyz+ll,*)i,j,abs(A(i,j))
+if(k_selec(jj))then
+   do ll=1,nqmodes
+      A=0.0_dp
+      do i=1,NM
+         do j=1,NM
+            A(i,j)=0.0_dp
+            do m=1,NM
+               do n=1,NM
+                  
+                 ! if(abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) ) < 1.0d-3 )then !!! delta(k_x+q_x=k_x')
+                     A(i,j) = A(i,j) + &
+                          Si_p05(iyz,im)%H(i,n) *  el_ph_mat( ind_bnd(iyz,im)%i(n), ind_bnd(jj,im)%i(m), ind_k(jx,jyz) , ll) * Si_p05(jj,im)%H(m,j)
+                 ! end if
+               end do
+            end do
+            el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)
+            write(40000+1000*jyz+100*jx+ll,*)i,j,abs(A(i,j))
+            write(4000+100*jyz+ll,*)i,j,abs(A(i,j))
+         end do
+         write(40000+1000*jyz+100*jx+ll,*)
+         write(4000+100*jyz+ll,*)
       end do
-      write(40000+1000*jyz+100*jx+ll,*)
-      write(4000+100*jyz+ll,*)
-   end do
-enddo
-! stop
+   enddo
+    !!!stop
 endif
 endif
 !           endif

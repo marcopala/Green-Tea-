@@ -236,7 +236,7 @@ t1=SECNDS(0.0)
 
 DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   transport_iter=transport_iter+1
-  write(*,*)'ITERAZIONE CONSISTENZA ESTERNA:', transport_iter
+  write(*,*)'ITERATION n.', transport_iter
 
 
   EC_3D=0.0d0
@@ -403,7 +403,7 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   outer_pot3D_OLD(:)=POT_3D(:)
 
 
-  write(*,*) 'Errore consistenza TRANSP-ELECTR=',transport_error
+  write(*,*) 'Error of the self-consistent cycle = ',transport_error
   open(23, file = TRIM(outdir)//'convergence_LOG.dat',status='old',position='append')
   write(23,*) 'Iter=', transport_iter, 'Err=', transport_error
   close(23)
@@ -453,7 +453,7 @@ close(10)
 END DO
 
 t2=SECNDS(t1)
-write(*,*)t2,'SECs SPENT FOR THE BIAS POINT','VG=',vg,'VD=',-mud
+write(*,*)t2,'SECs SPENT FOR THE BIAS POINT ','VG =',vg,'VD =',-mud
 
 IF(NUMBZ.gt.0)sweepbz=.FALSE.
 
@@ -461,10 +461,10 @@ open(23, file = TRIM(outdir)//'convergence_LOG.dat',status='old',position='appen
 IF(transport_iter.ge.MAX_ITER_OUTER)THEN
    write(23,*) '::::!!!!MAX ITER NUMBER REACHED!!!!::::'
 END IF
-write(23,*) 'Conergence achieved in', transport_iter, 'iterations'
-write(23,*) 'with error=', transport_error
-write(23,*) 'Current=',IDScurrent,ISDcurrent
-write(23,*) 'Bal current=',IDScurrentb
+write(23,*) 'Convergence achieved in', transport_iter, 'iterations'
+write(23,*) 'with error =', transport_error
+write(23,*) 'Current =',IDScurrent,ISDcurrent
+write(23,*) 'Balistic current =',IDScurrentb
 conductance  = abs( IDScurrent  )/( abs(mud-mus) )
 conductanceb = abs( IDScurrentb )/( abs(mud-mus) )
 write(23,*) 'Conductance=',conductance

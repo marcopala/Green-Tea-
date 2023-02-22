@@ -133,7 +133,7 @@ SUBROUTINE poisson_nonlin_selfconsistent(pot3D,EC3D,EV3D,outer_rho,outer_drho,Fn
     ZZ(:)=0.0_dp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(*,*)'POISSON ALLOCATION SUCCESSFUL!!',size(POT3D)
+    write(*,*)'POISSON ALLOCATION SUCCESSFUL!!'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 

@@ -285,8 +285,6 @@ MODULE indata
        &  Nomp
   NAMELIST /indata_energy/                     &
        &  dfpt,                                &
-       &  nqs,                                 &
-       &  nqmodes,                             &
        &  Eop,                                 &
        &  Nop_g,                               &
        &  Dop_g,                               &
