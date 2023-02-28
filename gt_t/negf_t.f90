@@ -958,10 +958,10 @@ write(*,*)
 write(*,*)'Writing output files ...'
 write(*,*)
 
-  do iyz=1,NKYZ  
+do iyz=1,NKYZ  
 if(k_selec(iyz))then
   ! ==========  End of parallel resolution ===========================
-if(iyz < 10)then
+if(iyz <= 10)then
 
 if(phonons)then
    OPEN(UNIT=10,FILE=TRIM(outdir)//'scat_pdens_convergence_kyz_'//TRIM(STRINGA(iyz))//'_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
@@ -988,7 +988,6 @@ else
 end if
 
 
-
   do xx=1,ncx_d
      if(nsolv > 0) write(61,*)(xx-1)*ac1*1.0d7,subband(nsolv,xx,iyz)
      write(62,*)(xx-1)*ac1*1.0d7,subband(nsolv+1,xx,iyz)
@@ -996,50 +995,48 @@ end if
    
 do nee=1,Nop
    do ee=1,Nsub
-     emin_local=en_global(ee) 
-        EN=emin+emin_local+dble(nee-1)*Eop
-        do xx=1,ncx_d
-           write(10,*)(xx-1)*ac1*1.0d7,EN,pdos(ee,nee,xx,iyz)
-           write(20,*)(xx-1)*ac1*1.0d7,EN,ndos(ee,nee,xx,iyz)
-           write(30,*)(xx-1)*ac1*1.0d7,EN,ldos(ee,nee,xx,iyz)
-           write(60,*)(xx-1)*ac1*1.0d7,EN,zdos(ee,nee,xx,iyz)
-        end do
-        do xx=1,ncx_d-1
-           write(40,*)(xx-1)*ac1*1.0d7,EN,cur(ee,nee,xx,iyz)
-        end do
-        write(10,*)
-        write(20,*)
-        write(30,*)
-        write(60,*)
-        write(40,*)
-        write(50,*)EN,trans(ee,nee,1,iyz),trans(ee,nee,2,iyz)
-        write(51,*)EN,trans(ee,nee,3,iyz),trans(ee,nee,4,iyz)
-     end do
-  end do
-  do xx=1,ncx_d-1
-     ttr=0.0_dp
-     do ee=1,Nsub
-        do nee=1,Nop
-           emin_local=en_global(ee) 
-           EN=emin+emin_local+dble(nee-1)*Eop
-           ttr=ttr+w(ee)*cur(ee,nee,xx,iyz)*Eop
-        end do
-     end do
-     write(41,*)(xx-1)*ac1*1.0d7,ttr
-  end do
+      emin_local=en_global(ee) 
+      EN=emin+emin_local+dble(nee-1)*Eop
+      do xx=1,ncx_d
+         write(10,*)(xx-1)*ac1*1.0d7,EN,pdos(ee,nee,xx,iyz)
+         write(20,*)(xx-1)*ac1*1.0d7,EN,ndos(ee,nee,xx,iyz)
+         write(30,*)(xx-1)*ac1*1.0d7,EN,ldos(ee,nee,xx,iyz)
+         write(60,*)(xx-1)*ac1*1.0d7,EN,zdos(ee,nee,xx,iyz)
+      end do
+      do xx=1,ncx_d-1
+         write(40,*)(xx-1)*ac1*1.0d7,EN,degeneracy(iyz)*cur(ee,nee,xx,iyz)
+      end do
+      write(10,*)
+      write(20,*)
+      write(30,*)
+      write(60,*)
+      write(40,*)
+      write(50,*)EN,degeneracy(iyz)*trans(ee,nee,1,iyz),degeneracy(iyz)*trans(ee,nee,2,iyz)
+      write(51,*)EN,degeneracy(iyz)*trans(ee,nee,3,iyz),degeneracy(iyz)*trans(ee,nee,4,iyz)
+   end do
+end do
+do xx=1,ncx_d-1
+   ttr=0.0_dp
+   do ee=1,Nsub
+      do nee=1,Nop
+         ttr=ttr+degeneracy(iyz)*w(ee)*cur(ee,nee,xx,iyz)
+      end do
+   end do
+   write(41,*)(xx-1)*ac1*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
+end do
 end if
 
 
-    CLOSE (UNIT=10)
-    CLOSE (UNIT=20)
-    CLOSE (UNIT=60)
-    CLOSE (UNIT=30)
-    CLOSE (UNIT=40)
-    CLOSE (UNIT=41)
-    CLOSE (UNIT=50)
-    CLOSE (UNIT=51)
-    CLOSE (UNIT=61)
-    CLOSE (UNIT=62)
+CLOSE (UNIT=10)
+CLOSE (UNIT=20)
+CLOSE (UNIT=60)
+CLOSE (UNIT=30)
+CLOSE (UNIT=40)
+CLOSE (UNIT=41)
+CLOSE (UNIT=50)
+CLOSE (UNIT=51)
+CLOSE (UNIT=61)
+CLOSE (UNIT=62)
 
 !!!stop
 
@@ -1142,25 +1139,25 @@ do nee=1,Nop
       do xx=1,ncx_d-1
          sumt=0.0_dp
          do iyz=1,nkyz
-            if(k_selec(iyz))     sumt=sumt+cur(ee,nee,xx,iyz)
+            if(k_selec(iyz))     sumt=sumt+cur(ee,nee,xx,iyz)*degeneracy(iyz)
          end do
-         write(40,*)(xx-1)*ac1*1.0d7,EN,sumt
+         write(40,*)(xx-1)*ac1*1.0d7,EN,sumt/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
       end do
       
       do  xx=1,ncx_d-2
          sumt=0.0_dp
          do iyz=1,nkyz
-            if(k_selec(iyz)) sumt=sumt-cur(ee,nee,xx,iyz)+cur(ee,nee,xx+1,iyz)
+            if(k_selec(iyz)) sumt=sumt+(cur(ee,nee,xx+1,iyz)-cur(ee,nee,xx,iyz))*degeneracy(iyz)
          end do
-         write(42,*)(xx)*ac1*1.0d7,EN,sumt
+         write(42,*)(xx)*ac1*1.0d7,EN,sumt/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
       end do
       
       do  xx=1,ncx_d-2
          sumt=0.0_dp
          do iyz=1,nkyz
-            if(k_selec(iyz)) sumt=sumt-cur(ee,nee,xx,iyz)+cur(ee,nee,xx+1,iyz)
+            if(k_selec(iyz)) sumt=sumt+(cur(ee,nee,xx+1,iyz)-cur(ee,nee,xx,iyz))*degeneracy(iyz)
          end do
-         write(43,*)(xx)*ac1*1.0d7,EN,-EN*sumt
+         write(43,*)(xx)*ac1*1.0d7,EN,-EN*sumt/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
       end do
       
       write(30,*)
@@ -1204,14 +1201,12 @@ do xx=1,ncx_d-1
       if(k_selec(iyz))then
          do ee=1,Nsub
             do nee=1,Nop
-               emin_local=en_global(ee) 
-               EN=emin+emin_local+dble(nee-1)*Eop
-               ttr=ttr+w(ee)*cur(ee,nee,xx,iyz)*Eop
+               ttr=ttr+degeneracy(iyz)*w(ee)*cur(ee,nee,xx,iyz)
             end do
          end do
       end if
    end do
-   write(41,*)(xx-1)*ac1*1.0d7,ttr
+   write(41,*)(xx-1)*ac1*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
 end do
 close(30)
 close(40)

@@ -524,7 +524,7 @@ if( nband_val(im)>0)     bb_ev(ikx)=E(nband_val(im))
          ii=nband_val((im))+k
       end if
 
-      open(unit=300+k,file='Edisp_'//TRIM(STRINGA(ii))//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+      open(unit=300+k,file=TRIM(outdir)//'Edisp_'//TRIM(STRINGA(ii))//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
       do i=1,nm
          do ikx=1,n+1
             write(300+k,*)dble(ikx-1-n/2)/dble(n),hkl(ikx,ii)
