@@ -548,9 +548,10 @@ if(phonons)then
            if(k_selec(jyz))then
               
               do iyz =1,nkyz ! index of k_yz'
-                 ii = ind_kyz(  k_vec(2:3,iyz) - k_vec(2:3,jyz) ) ! this is the idex of q_yz = k_yz' - k_yz
-                 if(k_selec(ii))then
-                    
+                 if(k_selec(iyz))then
+                 
+                    ii = ind_kyz(  k_vec(2:3,jyz) - k_vec(2:3,iyz) ) ! this is the idex of q_yz = k_yz - k_yz'
+                 
                     do ll=1,nqmodes
                        do ix=1,nkx
                           NdE=ceiling(omega_q(ind_q(ix,ii),ll)/Eop)
@@ -561,18 +562,18 @@ if(phonons)then
                                 
                                 A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
                                 
-                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser(nee+NdE,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                                 call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))                                
-                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee+NdE,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                                 call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
                                 
                              END DO
 
                                 sigma_lesser_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)+&
-                                     degeneracy(ii)/g_spin/dble(NCY*NCZ*nkx)*&
+                                     degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx)*&
                                      CC(1:nmax,1:nmax,1:Ncx_d)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
                                 sigma_greater_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)+&
-                                     degeneracy(ii)/g_spin/dble(NCY*NCZ*nkx)*&
+                                     degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx)*&
                                      DD(1:nmax,1:nmax,1:Ncx_d)*( bose(NdE*Eop/(BOLTZ*TEMP)) ) 
                              
                           end if
@@ -583,18 +584,18 @@ if(phonons)then
                                 
                                 A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
                                 
-                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser(nee-NdE,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                                 call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))                                                                
-                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                                 call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))                                
                                 
                              END DO
                              
                                 sigma_lesser_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)+&
-                                     degeneracy(ii)/g_spin/dble(NCY*NCZ*nkx)*&
+                                     degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx)*&
                                      CC(1:nmax,1:nmax,1:Ncx_d)*( bose(NdE*Eop/(BOLTZ*TEMP))  )
                                 sigma_greater_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)+&
-                                     degeneracy(ii)/g_spin/dble(NCY*NCZ*nkx)*&
+                                     degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx)*&
                                      DD(1:nmax,1:nmax,1:Ncx_d)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
                                                                                        
                           end if
@@ -628,7 +629,7 @@ if(phonons)then
      
               do iyz = 1,NKYZ ! this is the idex of k_yz' 
                  if(k_selec(iyz))then
-                    ii = ind_kyz( k_vec(2:3,iyz) - k_vec(2:3,jyz) ) ! this is the idex of q_yz = k_yz' - k_yz
+                    ii = ind_kyz( k_vec(2:3,jyz) - k_vec(2:3,iyz) ) ! this is the idex of q_yz = k_yz - k_yz'
               
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!! g-type optical phonon !!!!!!!!!!!!!!!!!!!!!
@@ -644,18 +645,18 @@ if(phonons)then
                        
                              A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
                        
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                              call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee+Nop_g,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                              call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
                              
                           end do
 
                           sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                                CC(1:nmax,1:nmax,1:ncx_d)*( n_bose_g + 1.0_dp )
                           sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                                DD(1:nmax,1:nmax,1:ncx_d)*( n_bose_g )
                     
                        END IF
@@ -669,34 +670,34 @@ if(phonons)then
                              
                              A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
                              
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                              call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee+Nop_g,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                              call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
                              
                           END DO
 
                           sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                                CC(1:nmax,1:nmax,1:ncx_d)*( n_bose_g + 1.0_dp )
                           sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                                DD(1:nmax,1:nmax,1:ncx_d)*( n_bose_g )
                    
                           DO xx=1,Ncx_d
                              
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                              call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee-Nop_g,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                              call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
                              
                           END DO
                           
                           sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                                CC(1:nmax,1:nmax,1:ncx_d)*( n_bose_g )
                           sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                                DD(1:nmax,1:nmax,1:ncx_d)*( n_bose_g + 1.0_dp )
                           
                        ELSE 
@@ -705,18 +706,18 @@ if(phonons)then
                              
                              A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
                              
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                              call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee-Nop_g,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                              call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
                              
                           END DO
                           
                           sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                                CC(1:nmax,1:nmax,1:ncx_d)*( n_bose_g )
                           sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                                DD(1:nmax,1:nmax,1:ncx_d)*( n_bose_g + 1.0_dp )
                           
                        END IF
@@ -731,18 +732,18 @@ if(phonons)then
                        
                        A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
                        
-                       call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                       call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                        call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                       call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee,1:nm(xx),1:nm(xx),xx,ii),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                       call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                        call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
    
                     END DO
                     
                     sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                         Dac*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                         Dac*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                          CC(1:nmax,1:nmax,1:ncx_d)
                     sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                         Dac*degeneracy(ii)/g_spin/dble(NCY*NCZ)*&
+                         Dac*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                          DD(1:nmax,1:nmax,1:ncx_d)
                     
                  end if
