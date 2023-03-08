@@ -178,6 +178,8 @@ DO gg=0, NUMVG
          vg=VGMIN+(1.0d0*gg)*DELTAVG
          bz=BZMIN+(1.0d0*bb)*DELTABZ
          potelectr=vg-workgate
+         potelectr11=-mus
+         potelectr12=-mud
         
          write(*,*)'potelectr=',potelectr
 

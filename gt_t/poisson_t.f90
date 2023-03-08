@@ -133,7 +133,7 @@ SUBROUTINE poisson_nonlin_selfconsistent(pot3D,EC3D,EV3D,outer_rho,outer_drho,Fn
     ZZ(:)=0.0_dp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    write(*,*)'POISSON ALLOCATION SUCCESSFUL!!'
+    write(*,*)'POISSON ALLOCATION SUCCESSFUL!'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -329,13 +329,13 @@ SUBROUTINE poisson_nonlin_selfconsistent(pot3D,EC3D,EV3D,outer_rho,outer_drho,Fn
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        IF(whichkind_3D_ord(list_3D_ord(prev_plane,nel)).eq.1) THEN !
+        IF(whichkind_3D_ord(list_3D_ord(prev_plane,nel)) == 1) THEN !
            rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
                 epsilon_3D(nel)*A(jj+1,prev_plane)*&
                 potelectr 
         END IF
         
-        IF(whichkind_3D_ord(list_3D_ord(next_plane,nel)).eq.1) THEN !
+        IF(whichkind_3D_ord(list_3D_ord(next_plane,nel)) == 1) THEN !
            
            rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
                 epsilon_3D(nel)*A(jj+1,next_plane)*&
@@ -343,10 +343,53 @@ SUBROUTINE poisson_nonlin_selfconsistent(pot3D,EC3D,EV3D,outer_rho,outer_drho,Fn
            
         END IF
         
-        IF(whichkind_3D_ord(list_3D_ord(out_plane,nel)).eq.1) THEN !
+        IF(whichkind_3D_ord(list_3D_ord(out_plane,nel)) == 1) THEN !
            rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
                 epsilon_3D(nel)*A(jj+1,out_plane)*&
                 potelectr 
+        END IF
+        
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        IF(whichkind_3D_ord(list_3D_ord(prev_plane,nel)) == 11) THEN !
+           rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
+                epsilon_3D(nel)*A(jj+1,prev_plane)*&
+                potelectr11 
+        END IF
+        
+        IF(whichkind_3D_ord(list_3D_ord(next_plane,nel)) == 11) THEN !
+           rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
+                epsilon_3D(nel)*A(jj+1,next_plane)*&
+                potelectr11
+        END IF
+        
+        IF(whichkind_3D_ord(list_3D_ord(out_plane,nel)) == 11) THEN !
+           rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
+                epsilon_3D(nel)*A(jj+1,out_plane)*&
+                potelectr11
+        END IF
+        
+        
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        IF(whichkind_3D_ord(list_3D_ord(prev_plane,nel)) == 12) THEN !
+           rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
+                epsilon_3D(nel)*A(jj+1,prev_plane)*&
+                potelectr12 
+        END IF
+        
+        IF(whichkind_3D_ord(list_3D_ord(next_plane,nel)) == 12) THEN !
+           rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
+                epsilon_3D(nel)*A(jj+1,next_plane)*&
+                potelectr12
+        END IF
+        
+        IF(whichkind_3D_ord(list_3D_ord(out_plane,nel)) == 12) THEN !
+           rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
+                epsilon_3D(nel)*A(jj+1,out_plane)*&
+                potelectr12 
         END IF
         
      END IF
@@ -478,7 +521,7 @@ end subroutine multYSMP
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-SUBROUTINE pot_init2(POT3D,which,map,nx,ny,nz,lwork,potelectr)
+SUBROUTINE pot_init2(POT3D,which,map,nx,ny,nz,lwork)
 
 IMPLICIT NONE
 
@@ -491,7 +534,6 @@ INTEGER,  INTENT(IN) :: ny
 INTEGER,  INTENT(IN) :: nz
 INTEGER,  INTENT(IN) :: lwork
 INTEGER              :: ii, x_index
-REAL(DP), INTENT(IN) :: potelectr
 
  POT3D=0.0
  DO ii=0, nx*ny*nz-1
@@ -500,8 +542,6 @@ REAL(DP), INTENT(IN) :: potelectr
 IF(which(ii).le.0)THEN
 
 if(chtype.eq.'n')then
-!write(*,*)ii,ny*nz,x_index,x_index/Ndeltax,x_index/Ndeltax+1
-!      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-(mud-mus)/(source_len+2*spacer+gate_len+drain_len)*(x_index)-mus-potelectr
 
    IF(x_index.le.source_len)THEN
       POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-mus
@@ -513,12 +553,12 @@ if(chtype.eq.'n')then
    ELSEIF(x_index .gt. source_len .and. &
       x_index .le. source_len+2*spacer+gate_len)THEN
      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-0.1_dp
-      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-(mud-mus)/(2*spacer+gate_len)*(x_index-source_len)-mus!-potelectr
+      POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax+1))-(mud-mus)/(2*spacer+gate_len)*(x_index-source_len)-mus
      endif
    
 elseif(chtype.eq.'p')then
 
-      POT3D(map(ii))=ref_ev(imat(x_index/Ndeltax+1))-(mud-mus)/(source_len+2*spacer+gate_len+drain_len)*(x_index)-mus-potelectr
+      POT3D(map(ii))=ref_ev(imat(x_index/Ndeltax+1))-(mud-mus)/(source_len+2*spacer+gate_len+drain_len)*(x_index)-mus
 elseif(chtype.eq.'t')then
    
    IF(x_index.le.source_len)THEN

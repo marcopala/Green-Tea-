@@ -71,7 +71,7 @@ MODULE indata
 
   REAL(DP), ALLOCATABLE :: dop_vec(:)
   INTEGER,  ALLOCATABLE :: coul(:)
-  REAL(DP)              :: potelectr, potelectr0
+  REAL(DP)              :: potelectr, potelectr11, potelectr12
   REAL(DP), ALLOCATABLE ::   epsilon_3D(:)  ! dielectric constant for each element
   INTEGER, ALLOCATABLE  :: nodelectr(:) 
   INTEGER, ALLOCATABLE  :: map_3D(:) !Transformation map between the two orders
@@ -105,7 +105,7 @@ MODULE indata
   LOGICAL  :: bot_gate
   LOGICAL  :: lft_gate
   LOGICAL  :: rgt_gate
-  LOGICAL  :: schottky_source
+  LOGICAL  :: schottky_source, schottky_drain
   LOGICAL  :: onlyT
   LOGICAL  :: in_pot
   LOGICAL  :: magnetic
@@ -252,7 +252,8 @@ MODULE indata
        &  top_gate,                            &
        &  bot_gate,                            &
        &  lft_gate,                            &
-       &  rgt_gate                            
+       &  rgt_gate,                            &
+       &  schottky_source, schottky_drain
   NAMELIST /indata_device/                     &
        &  chtype,                              &
        &  DIEL_SC,                             &      
@@ -380,7 +381,9 @@ CONTAINS
     top_gate=.false.
     bot_gate=.false.
     lft_gate=.false.
-    rgt_gate=.false.     
+    rgt_gate=.false.
+    schottky_source=.false.
+    schottky_drain=.false. 
     DIEL_SC=1.0d0
     DIEL_OX=1.0d0
     DIEL_O2=1.0d0
@@ -470,6 +473,7 @@ CONTAINS
        ihh=0
        do i=1,num_het
           read(*,*)j,mat_0(i),mat_1(i)
+          write(*,*)j,mat_0(i),mat_1(i)
           ihh(mat_1(i),mat_0(i))=j
        end do
 
@@ -675,7 +679,10 @@ NUMBOUNDOLD=0
 
 !!! change june 2021
 IF(schottky_source)THEN
-   NUMBOUND_3D=NUMBOUND_3D+source_len*NTOT_X*NTOT_Y*NTOT_Z   
+   NUMBOUND_3D=NUMBOUND_3D+source_len*NTOT_Y*NTOT_Z   
+END IF
+IF(schottky_drain)THEN
+   NUMBOUND_3D=NUMBOUND_3D+drain_len*NTOT_Y*NTOT_Z   
 END IF
 !!! 
 IF(lft_gate)THEN
@@ -730,9 +737,11 @@ write(*,*)'Total number of gate nodes',NUMBOUND_3D
     list_3D(:,:)=0
     ALLOCATE(epsilon_3D(0:NUMEL_3D-1))
     epsilon_3D(:)=0.0_dp 
-    IF(NUMELECT_3D.gt.0)THEN
+
     potelectr=0.0_dp
-    END IF
+    potelectr11=0.0_dp
+    potelectr12=0.0_dp
+
     ALLOCATE(type_3D(1:NTOT_X-1,1:NTOT_Y-1,1:NTOT_Z-1))
     type_3D=0
 
@@ -769,6 +778,12 @@ IF(schottky_source)THEN
    END IF
 END IF
 
+IF(schottky_drain)THEN
+   IF((plane_index.gt.(source_len+2*spacer+gate_len)))THEN
+      whichkind_3D(ii)=12 !set nodes
+   END IF
+END IF
+
 IF((plane_index.gt.(source_len+spacer)).and.(plane_index.le.(source_len+spacer+gate_len)))THEN
 !Gated area
 IF(rgt_gate)THEN
@@ -793,7 +808,7 @@ END IF
 END IF
 END IF
 
-!!!IF(plane_index.eq.0)whichkind_3D(ii)=1 !! THE DIRICHLECT NODES ARE LOCATED AT THE SOURCE (FIRST SLICE)
+!!!!!IF(plane_index.eq.0)whichkind_3D(ii)=1 !! THE DIRICHLECT NODES ARE LOCATED AT THE SOURCE (FIRST SLICE)
 
 END DO
 write(*,*)'number of zero whichkind',jj
@@ -916,6 +931,10 @@ jj=0
     !///// schottky ////////////
     DO ii=0,NUMN_3D-1
        IF(whichkind_3D(ii).eq.11) THEN
+          map_3D(ii)=jj
+          jj=jj+1
+       END IF
+       IF(whichkind_3D(ii).eq.12) THEN
           map_3D(ii)=jj
           jj=jj+1
        END IF
@@ -1121,13 +1140,17 @@ END SUBROUTINE indata_CONNECTIVITY
  y_index=mod(mod(ii,ny*nz),ny) +1
  z_index=mod(ii,ny*nz)/ny +1
  
- IF(which(ii).ge.1)THEN
- potA(x_index,y_index,z_index)=potelectr
+ IF(which(ii) == 1)THEN
+    potA(x_index,y_index,z_index)=-potelectr
+ ELSE IF(which(ii) == 11)THEN
+    potA(x_index,y_index,z_index)=-potelectr11
+ ELSE IF(which(ii) == 12)THEN
+    potA(x_index,y_index,z_index)=-potelectr12
  ELSE
- potA(x_index,y_index,z_index)=potB(map(ii))
+    potA(x_index,y_index,z_index)=potB(map(ii))
  END IF
  
-!!!! IMPOSE NEUMANN conditions for the potential seen by GREEN
+!!!! IMPOSE NEUMANN conditions for the potential seen by the GREEN module
   pota(1:NX,1,1:NZ)  = pota(1:NX,2,1:NZ)
   pota(1:NX,NY,1:NZ) = pota(1:NX,NY-1,1:NZ)
   pota(1:NX,1:NY,1)  = pota(1:NX,1:NY,2)
