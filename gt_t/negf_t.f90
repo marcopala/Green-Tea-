@@ -173,6 +173,13 @@ allocate(con(NKYZ),cone(NKYZ),conb(NKYZ))
 NMAX=maxval(NM)
 write(*,*)'NMAX',NMAX
 
+comp_ch=0
+do xx=1,NCX_D
+   if( schottky_source .and. xx <= source_len/Ndeltax ) comp_ch(xx)=11
+   if( schottky_drain  .and. xx > (source_len+2*spacer+gate_len)/Ndeltax ) comp_ch(xx)=12
+end do
+
+
 allocate(Hi(NMAX,NMAX,ncx_d,nkyz))
 Hi=0.0_dp
 
@@ -274,8 +281,7 @@ deallocate(CR)
 
 !$omp end parallel
 
-   
-if(allocated(U))deallocate(U)
+   if(allocated(U))deallocate(U)
 
 end if
 
@@ -290,6 +296,7 @@ allocate(subband(nsol,ncx_d,nkyz))
 allocate(emin_yz(NKYZ),emax_yz(NKYZ))
 emin_yz=0.0_dp
 emax_yz=0.0_dp
+
 
 do iyz=1,NKYZ
 if(k_selec(iyz))then
@@ -321,9 +328,7 @@ do xx=1,ncx_d
         transpose(conjg(TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))))*exp(cmplx(0.0_dp,-1.0_dp)*kappax*2.0_dp*pi)
    call SUB_DEF_Z0_GEN(ref_index+1,ref_index+nsolc,NM(xx),A, B, subband(nsolv+1:nsolv+nsolc,xx,iyz))
 
-   
-   deallocate(A)
-
+   deallocate(A,B)
 end do
 !$omp end do nowait
 !$omp end parallel
@@ -331,6 +336,7 @@ end do
 if(nsolv==0 .and. chtype /= 'n')then
    write(*,*)'pb w nsolv or chtype'
 end if
+
 
 !! neutrality point
 if(.not.allocated(neutr))allocate(neutr(ncx_d))
@@ -381,6 +387,7 @@ enddo
      enddo
   enddo
 
+  write(*,*)
   write(*,*)iyz,'emin =',emin_yz(iyz),'emax =',emax_yz(iyz)
 end if
 end do  ! end of loop over kyz
@@ -403,7 +410,8 @@ end do  ! end of loop over kyz
   write(*,*)'Emin=',emin,'Emax=',emax
   write(*,*)'Nop=',Nop
   write(*,*)
-  write(*,*)'mus=',mus,'mud=',mud
+  write(*,*)'mus=',mus
+  write(*,*)'mud=',mud
   write(*,*)
   
   allocate(flag(Nop,NKYZ))
@@ -572,7 +580,7 @@ if(phonons)then
      !$omp sigma_lesser_ph,sigma_greater_ph,g_lesser,g_greater,SCBA_iter,Eop,temp,omega_q,ind_q,nqmodes,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy)
 
      allocate(A(NMAX,NMAX),B(NMAX,NMAX),CC(NMAX,NMAX,Ncx_d),DD(NMAX,NMAX,Ncx_d))
-     !$omp do 
+     
      DO nee=1,Nop
         do jyz = 1,NKYZ   ! index of k_yz 
            if(k_selec(jyz))then
@@ -586,50 +594,43 @@ if(phonons)then
                        do ix=1,nkx
                           NdE=ceiling(omega_q(ind_q(ix,ii),ll)/Eop)
                           
-                          if(nee+NdE <= Nop .and. nee+NdE >= 1)then
+                          !$omp do
+                          DO xx=1,Ncx_d
+                             A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
                              
-                             DO xx=1,Ncx_d
-                                
-                                A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
-                                
-                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                                call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))                                
-                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                                call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
-                                
-                             END DO
-
-                                sigma_lesser_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)+&
-                                     degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx)*&
-                                     CC(1:nmax,1:nmax,1:Ncx_d)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
-                                sigma_greater_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)+&
-                                     degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx)*&
-                                     DD(1:nmax,1:nmax,1:Ncx_d)*( bose(NdE*Eop/(BOLTZ*TEMP)) ) 
+                             IF(nee <= Nde)THEN
+                                IF(nee <= Nop-Nde)THEN
+                                   ! E+Eop
+                                   CC(1:nm(xx),1:nm(xx),xx)=g_lesser(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
+                                   DD(1:nm(xx),1:nm(xx),xx)=g_greater(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) ) 
+                                END IF
+                             ELSE
+                                IF(nee <= Nop-Nde)THEN
+                                   ! E+Eop and E-Eop
+                                   CC(1:nm(xx),1:nm(xx),xx)=g_lesser(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp ) + &
+                                        g_lesser(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP))  )
+                                   DD(1:nm(xx),1:nm(xx),xx)=g_greater(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) ) + &
+                                        g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
+                                ELSE 
+                                   ! E-Eop
+                                   CC(1:nm(xx),1:nm(xx),xx)=g_lesser(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) )
+                                   DD(1:nm(xx),1:nm(xx),xx)=g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp ) 
+                                END IF
+                             END IF
                              
-                          end if
-                    
-                          if(nee-NdE <= Nop .and. nee-NdE >= 1)then
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),CC(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))                                
+                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),DD(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
                              
-                             DO xx=1,Ncx_d
-                                
-                                A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
-                                
-                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                                call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))                                                                
-                                call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                                call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))                                
-                                
-                             END DO
+                             sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
+                                  degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx) * CC(1:nm(xx),1:nm(xx),xx)
+                             sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
+                                  degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx) * DD(1:nm(xx),1:nm(xx),xx)
                              
-                                sigma_lesser_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)+&
-                                     degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx)*&
-                                     CC(1:nmax,1:nmax,1:Ncx_d)*( bose(NdE*Eop/(BOLTZ*TEMP))  )
-                                sigma_greater_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:Ncx_d,jyz)+&
-                                     degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx)*&
-                                     DD(1:nmax,1:nmax,1:Ncx_d)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
-                                                                                       
-                          end if
-                          
+                          END DO
+                          !$omp end do nowait
+                                                    
                        end do
                     end do
                  end if
@@ -638,7 +639,7 @@ if(phonons)then
         end do
   
      END DO
-     !$omp end do nowait ! end of self-energies calculation
+
   
      DEALLOCATE(A,B,CC,DD)
 
@@ -652,7 +653,7 @@ if(phonons)then
      !$omp g_lesser,g_greater,SCBA_iter,Dop_g,n_bose_g,Dac,Eop,temp,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy,derror,scba_tolerance)
      
      allocate(A(NMAX,NMAX),B(NMAX,NMAX),CC(NMAX,NMAX,Ncx_d),DD(NMAX,NMAX,Ncx_d))
-     !$omp do
+    
      DO nee=1,Nop
         do jyz = 1,NKYZ   ! index of k_yz 
            if(k_selec(jyz))then
@@ -664,124 +665,70 @@ if(phonons)then
                     ii = ind_kyz( k_vec(2:3,jyz) - k_vec(2:3,iyz) ) ! this is the idex of q_yz = k_yz - k_yz'
               
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!! g-type optical phonon !!!!!!!!!!!!!!!!!!!!!
+!!!!!! acoustic + optical phonons !!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
               
                     n_bose_g=1.0_dp/(EXP((Nop_g*Eop)/(BOLTZ*TEMP)) - 1.0_dp)
               
+                    !$omp do
+                    do xx=1,ncx_d
+                       
                     IF(nee.le.Nop_g)THEN
                        IF(nee.le.Nop-Nop_g)THEN
                           ! E+Eop_g
-                
-                          do xx=1,ncx_d
                        
                              A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
+                             CC(1:nm(xx),1:nm(xx),xx)=Dop_g*g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g + 1.0_dp ) +&
+                                  Dac*g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
+
+                             DD(1:nm(xx),1:nm(xx),xx)=Dop_g*g_greater (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g ) +&
+                                  Dac*g_greater (nee,1:nm(xx),1:nm(xx),xx,iyz)
                        
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             
-                          end do
- 
-                          sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                               CC(1:nmax,1:nmax,1:ncx_d)*( n_bose_g + 1.0_dp )
-                          sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                               DD(1:nmax,1:nmax,1:ncx_d)*( n_bose_g )
- 
-                       END IF
+                          END IF
                        
                     ELSE
                        
                        IF(nee.le.Nop-Nop_g)THEN
                           ! E+Eop_g and E-Eop_g
-                          
-                          DO xx=1,Ncx_d
-                             
+                                                     
                              A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
-                             
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             
-                          END DO
-
-                          sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                               CC(1:nmax,1:nmax,1:ncx_d)*( n_bose_g + 1.0_dp )
-                          sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                               DD(1:nmax,1:nmax,1:ncx_d)*( n_bose_g )
-
-                          DO xx=1,Ncx_d
-                             
-                             A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
-                             
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             
-                          END DO
-                          
-                          sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                               CC(1:nmax,1:nmax,1:ncx_d)*( n_bose_g )
-                          sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                               DD(1:nmax,1:nmax,1:ncx_d)*( n_bose_g + 1.0_dp )
-                          
+                             CC(1:nm(xx),1:nm(xx),xx)=Dop_g*g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g + 1.0_dp ) +&
+                                  Dop_g*g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g )  + &
+                                  Dac*g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
+                                                    
+                             DD(1:nm(xx),1:nm(xx),xx)=Dop_g*g_greater (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g ) +&
+                                  Dop_g*g_greater (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g +1.0_dp )  + &
+                                  Dac*g_greater (nee,1:nm(xx),1:nm(xx),xx,iyz)
+                                                                           
                        ELSE 
                           ! E-Eop_g
-                          DO xx=1,Ncx_d
-                             
                              A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
-                             
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             
-                          END DO
-                          
-                          sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                               CC(1:nmax,1:nmax,1:ncx_d)*( n_bose_g )
-                          sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                               Dop_g*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                               DD(1:nmax,1:nmax,1:ncx_d)*( n_bose_g + 1.0_dp )
-                          
+                             CC(1:nm(xx),1:nm(xx),xx)=Dop_g*g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g )  + &
+                                  Dac*g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
+                            
+                             DD(1:nm(xx),1:nm(xx),xx)=Dop_g*g_greater (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g +1.0_dp )  + &
+                                  Dac*g_greater (nee,1:nm(xx),1:nm(xx),xx,iyz)
+
+                          END IF
                        END IF
-                    END IF
-                    
-    
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!! Acoustic !!!!!!!!!!!!!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
-                    DO xx=1,Ncx_d
                        
-                       A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
-                       
-                       call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                       call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                       call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                       call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
-   
-                    END DO
+                    call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),CC(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                    call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))                                
+                    call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),DD(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                    call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
                     
-                    sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                         Dac*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                         CC(1:nmax,1:nmax,1:ncx_d)
-                    sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)=sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)+&
-                         Dac*degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                         DD(1:nmax,1:nmax,1:ncx_d)
-                    
-                 end if
-              end do
+                    sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
+                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
+                         CC(1:nm(xx),1:nm(xx),xx)
+                    sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
+                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
+                         DD(1:nm(xx),1:nm(xx),xx)
+                             
+                 end do
+                 !$omp end do nowait
+                 
+              end if
+           end do
 
            else
         sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)  = sigma_lesser_ph_prev(nee,1:nmax,1:nmax,1:ncx_d,jyz)
@@ -791,7 +738,6 @@ if(phonons)then
 end do
      
 end DO
-     !$omp end do nowait ! end of self-energies calculation
   
      DEALLOCATE(A,B,CC,DD)
 
@@ -1079,12 +1025,6 @@ if(.not.onlyT)then
    Write(*,*) 'Transforming the carrier density',', ikyz =',iyz
 
    t1=SECNDS(0.0)
-
-   comp_ch=0   
-   do xx=1,NCX_D
-      if( schottky_source .and. xx <= source_len/Ndeltax ) comp_ch(xx)=11
-      if( schottky_drain  .and. xx > (source_len+2*spacer+gate_len)/Ndeltax ) comp_ch(xx)=12  
-   end do
    
    call omp_set_num_threads(Nomp)
   !$omp parallel default(none) private(xx,n,i,j,ix,iy,iz,dens_yz,dens_z) &
