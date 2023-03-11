@@ -82,7 +82,7 @@ REAL(DP)                 :: tr,tre,ttr,sumt,kappax,tmp,n_2D
 COMPLEX(DP), allocatable :: Hi(:,:,:,:),pot(:,:)
 COMPLEX(dp), allocatable :: dosn(:,:,:,:),dosp(:,:,:,:)
 COMPLEX(dp), allocatable :: U(:,:), GBB(:,:), Gcc(:,:), A(:,:), B(:,:), C(:,:),D(:,:),CC(:,:,:),DD(:,:,:)
-REAL(DP), allocatable    :: subband(:,:,:), neutr(:)
+REAL(DP), allocatable    :: subband(:,:,:), neutr(:,:)
 REAL(dp), allocatable    :: pt(:), CR(:,:), Ry(:), Rz(:), dens_yz(:,:),dens_z(:,:)
 REAL(dp), allocatable    :: omega(:,:), derror(:,:,:)
 
@@ -298,8 +298,12 @@ emin_yz=0.0_dp
 emax_yz=0.0_dp
 
 
+!! neutrality point for the semiconductors
+if(.not.allocated(neutr))allocate(neutr(ncx_d,nkyz))
+
 do iyz=1,NKYZ
-if(k_selec(iyz))then
+   if(k_selec(iyz))then
+      
 call omp_set_num_threads(NCX_D) 
 
 !$omp parallel default(none) private(xx,ref_index,kappax,A,B) &
@@ -338,18 +342,15 @@ if(nsolv==0 .and. chtype /= 'n')then
 end if
 
 
-!! neutrality point
-if(.not.allocated(neutr))allocate(neutr(ncx_d))
 do xx=1,ncx_d
    if(nsolv>0)then
-      neutr(xx)=(subband(nsolv,xx,iyz)+subband(nsolv+1,xx,iyz))/2.0_dp
+      neutr(xx,iyz)=(subband(nsolv,xx,iyz)+subband(nsolv+1,xx,iyz))/2.0_dp
    else
-      neutr(xx)=subband(nsolv+1,xx,iyz)-100.0d-3
+      neutr(xx,iyz)=subband(nsolv+1,xx,iyz)-100.0d-3
    end if
-   !write(219,*)xx,neutr(xx)
 enddo
 
-  epsilon=max(2*Nop_g*Eop,2*(BOLTZ*TEMP))
+  epsilon=max(5*Nop_g*Eop,5*(BOLTZ*TEMP))
 
   SELECT CASE (chtype)
   CASE ('n')
@@ -389,6 +390,7 @@ enddo
 
   write(*,*)
   write(*,*)iyz,'emin =',emin_yz(iyz),'emax =',emax_yz(iyz)
+  
 end if
 end do  ! end of loop over kyz
 
@@ -416,7 +418,6 @@ end do  ! end of loop over kyz
   
   allocate(flag(Nop,NKYZ))
   
-!!!!!!!!!!!!do iyz=1,NKYZ
 
   IF(Nop.eq.0)THEN
      write(*,*) 'NOP null, stopping...'
@@ -487,15 +488,6 @@ if(phonons)then
            if(k_selec(iyz))then
               
             
-!!$              do nee=1,nop
-!!$                 EN=emin+emin_local+dble(nee-1)*Eop
-!!$                 DO xx=1,Ncx_d
-!!$                    write(3200+scba_iter,*)xx,En, traccia(aimag(sigma_lesser_ph_prev(nee,1:nm(xx),1:nm(xx),xx,iyz)))
-!!$                    write(3300+scba_iter,*)xx,En, traccia(-aimag(sigma_greater_ph_prev(nee,1:nm(xx),1:nm(xx),xx,iyz)))
-!!$                 end do
-!!$              end do
-!!$              close(3200+scba_iter)
-!!$              close(3300+scba_iter)
                  
               
            !$omp parallel default(none)  private(jyz,ii,ll,ix,nee,xx,pp,nn,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,A,B,C,D) &
@@ -525,30 +517,18 @@ if(phonons)then
            end do
            
 !!$           DO xx=1,Ncx_d
-!!$              write(3200+scba_iter,*)xx,En, traccia(aimag(sigma_lesser_ph_prev(nee,1:nm(xx),1:nm(xx),xx,iyz)))
-!!$              write(3300+scba_iter,*)xx,En, traccia(-aimag(sigma_greater_ph_prev(nee,1:nm(xx),1:nm(xx),xx,iyz)))
-!!$              
-!!$              call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,sigma_lesser_ph_prev(nee,1:NM(xx),1:NM(xx),xx,iyz),nm(xx),g_greater_diag_local(1:NM(xx),1:NM(xx),xx),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))
-!!$              write(3400+scba_iter,*)xx,En, traccia(dble(A(1:nm(xx),1:nm(xx))))
-!!$              call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,sigma_greater_ph_prev(nee,1:NM(xx),1:NM(xx),xx,iyz),nm(xx),g_lesser_diag_local(1:NM(xx),1:NM(xx),xx),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))
-!!$              write(3500+scba_iter,*)xx,En, traccia(dble(A(1:nm(xx),1:nm(xx))))
-!!$              
-!!$              write(3800+scba_iter,*)xx,En, derror(nee,xx,iyz)
+!!$              write(3200+scba_iter+10*(iyz-1),*)xx,En, traccia(aimag(sigma_lesser_ph_prev(nee,1:nm(xx),1:nm(xx),xx,iyz)))
+!!$              write(3300+scba_iter+10*(iyz-1),*)xx,En, traccia(-aimag(sigma_greater_ph_prev(nee,1:nm(xx),1:nm(xx),xx,iyz)))
+!!$              write(3400+scba_iter+10*(iyz-1),*)xx,En, traccia(aimag(g_lesser(nee,1:nm(xx),1:nm(xx),xx,iyz)))
+!!$              write(3500+scba_iter+10*(iyz-1),*)xx,En, traccia(-aimag(g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz)))
 !!$           end do
-!!$           write(3200+scba_iter,*)
-!!$           write(3300+scba_iter,*)
-!!$           write(3400+scba_iter,*)
-!!$           write(3500+scba_iter,*)
-!!$           DO xx=1,Ncx_d-2
-!!$              write(3600+scba_iter,*)xx,En, (cur(ee,nee,xx+1,iyz)-cur(ee,nee,xx,iyz))
-!!$              write(3700+scba_iter,*)xx,En, En*(cur(ee,nee,xx+1,iyz)-cur(ee,nee,xx,iyz))
-!!$           END DO
-!!$           write(3600+scba_iter,*)
-!!$           write(3700+scba_iter,*)
-!!$           write(3800+scba_iter,*)
-                 
+!!$          write(3200+scba_iter+10*(iyz-1),*)
+!!$          write(3300+scba_iter+10*(iyz-1),*)
+!!$          write(3400+scba_iter+10*(iyz-1),*)
+!!$          write(3500+scba_iter+10*(iyz-1),*)
+
         end if
-        end do  ! end do nee
+     end do  ! end do nee
         !$omp end do nowait
   
         DEALLOCATE(g_lesser_diag_local)
@@ -557,12 +537,11 @@ if(phonons)then
         DEALLOCATE(A,B,C,D)
         
         !$omp end parallel
-!!$              close(3200+scba_iter)
-!!$              close(3300+scba_iter)
-!!$              close(3400+scba_iter)
-!!$              close(3600+scba_iter)
-!!$              close(3700+scba_iter)
-!!$              close(3800+scba_iter)
+        
+!!$      close(3200+scba_iter+10*(iyz-1))
+!!$      close(3300+scba_iter+10*(iyz-1))
+!!$      close(3400+scba_iter+10*(iyz-1))
+!!$      close(3500+scba_iter+10*(iyz-1))
      end if
   end do !End of the loop over ( kyz + qyz )
   t2=SECNDS(t1)
@@ -578,26 +557,19 @@ if(phonons)then
         
      !$omp parallel default(none)  private(NdE,ll,ix,ii,iyz,jyz,nee,xx,A,B,CC,DD) shared(Nop,nmax,nkx,nkyz,g_spin,ncx_d,ncy,ncz,nm, &
      !$omp sigma_lesser_ph,sigma_greater_ph,g_lesser,g_greater,SCBA_iter,Eop,temp,omega_q,ind_q,nqmodes,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy)
-
-     allocate(A(NMAX,NMAX),B(NMAX,NMAX),CC(NMAX,NMAX,Ncx_d),DD(NMAX,NMAX,Ncx_d))
-     
+     allocate(A(NMAX,NMAX),B(NMAX,NMAX),CC(NMAX,NMAX,Ncx_d),DD(NMAX,NMAX,Ncx_d))     
      DO nee=1,Nop
         do jyz = 1,NKYZ   ! index of k_yz 
            if(k_selec(jyz))then
-              
               do iyz =1,nkyz ! index of k_yz'
                  if(k_selec(iyz))then
-                 
                     ii = ind_kyz(  k_vec(2:3,jyz) - k_vec(2:3,iyz) ) ! this is the idex of q_yz = k_yz - k_yz'
-                 
                     do ll=1,nqmodes
                        do ix=1,nkx
                           NdE=ceiling(omega_q(ind_q(ix,ii),ll)/Eop)
-                          
                           !$omp do
                           DO xx=1,Ncx_d
                              A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
-                             
                              IF(nee <= Nde)THEN
                                 IF(nee <= Nop-Nde)THEN
                                    ! E+Eop
@@ -617,17 +589,14 @@ if(phonons)then
                                    DD(1:nm(xx),1:nm(xx),xx)=g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp ) 
                                 END IF
                              END IF
-                             
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),CC(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))                                
-                             call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),DD(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                             call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             
-                             sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
+                   call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),CC(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                   call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
+                   call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),DD(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                   call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
+                             sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz) =sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz) +&
                                   degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx) * CC(1:nm(xx),1:nm(xx),xx)
                              sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
                                   degeneracy(iyz)/g_spin/dble(NCY*NCZ*nkx) * DD(1:nm(xx),1:nm(xx),xx)
-                             
                           END DO
                           !$omp end do nowait
                                                     
@@ -863,12 +832,12 @@ do iyz=1,NKYZ !loop over kyz
      SELECT CASE (chtype)
      CASE ('t') 
         do xx=1,ncx_d    
-           if(EN .ge. neutr(xx))then 
+           if(EN .ge. neutr(xx,iyz))then 
 
               dosn(1:NM(xx),1:NM(xx),xx,iyz)=dosn(1:NM(xx),1:NM(xx),xx,iyz)+&
                    degeneracy(iyz)*w(ee)*(g_lesser_diag_local(1:NM(xx),1:NM(xx),xx))/(2.0_dp*pi)
 
-           else if(EN .lt. neutr(xx))then 
+           else if(EN .lt. neutr(xx,iyz))then 
 
               dosp(1:NM(xx),1:NM(xx),xx,iyz)=dosp(1:NM(xx),1:NM(xx),xx,iyz)+&
                    degeneracy(iyz)*w(ee)*(g_greater_diag_local(1:NM(xx),1:NM(xx),xx))/(2.0_dp*pi)
@@ -877,7 +846,7 @@ do iyz=1,NKYZ !loop over kyz
         enddo
      CASE ('n')           
         do xx=1,ncx_d
-           if(EN .ge. neutr(xx))then 
+           if(EN .ge. neutr(xx,iyz))then 
 
               dosn(1:NM(xx),1:NM(xx),xx,iyz)=dosn(1:NM(xx),1:NM(xx),xx,iyz)+&
                    degeneracy(iyz)*w(ee)*(g_lesser_diag_local(1:NM(xx),1:NM(xx),xx))/(2.0_dp*pi)
@@ -886,7 +855,7 @@ do iyz=1,NKYZ !loop over kyz
         enddo
      CASE ('p')
         do xx=1,ncx_d
-           if(EN .lt. neutr(xx))then
+           if(EN .lt. neutr(xx,iyz))then
 
               dosp(1:NM(xx),1:NM(xx),xx,iyz)=dosp(1:NM(xx),1:NM(xx),xx,iyz)+&
                    degeneracy(iyz)*w(ee)*(g_greater_diag_local(1:NM(xx),1:NM(xx),xx))/(2.0_dp*pi)
@@ -1757,7 +1726,7 @@ subroutine oldsancho(nm,E,H00,H10,Id,G00)
 
   nmax=100
 
-  z = E+cmplx(0.0_dp,1.0d-2,kind=dp)
+  z = E+cmplx(0.0_dp,1.0d-3,kind=dp)
 
 
   H_BB = H00
