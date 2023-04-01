@@ -1,6 +1,6 @@
 ! Copyright or © or Copr. Marco Pala (February 24, 2022)
 
-! e-mail: marco.pala@cnrs.fr
+! e-mail:  marco.pala@c2n.upsaclay.fr ;  marco.pala@cnrs.fr
 
 ! This software is a computer program whose purpose is 
 ! to perform self-consistent simulations of nanosystems with a full ab initio approach

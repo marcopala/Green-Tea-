@@ -1,6 +1,6 @@
 ! Copyright or © or Copr. Marco Pala (February 24, 2022)
 
-! e-mail: marco.pala@cnrs.fr
+! e-mail:  marco.pala@c2n.upsaclay.fr ;  marco.pala@cnrs.fr
 
 ! This software is a computer program whose purpose is 
 ! to perform self-consistent simulations of nanosystems with a full ab initio approach
@@ -47,8 +47,8 @@ MODULE indata
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Input parameters!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  INTEGER :: nband_v,ni,nf,ncell,nk1,nkplus,mm1,mplus,nkx_add,mm2,nm2,nmod,NKGt,NMODES
-  INTEGER :: nx,ny,nz,Ndx,Ndy,Ndz,nkx,nkyz,nky,nkz,ngt,Ncy,Ncz
+  INTEGER :: nband_v,ni,nf,ncell,nk1,nkplus,mplus,nkx_add,mm2,nm2,mm1,nm1,nm0,nmod,NKGt,NMODES
+  INTEGER :: nx,ny,nz,Ndx,Ndy,Ndz,nkx,nkyz,nky,nkz,ngt,Ncy,Ncz,ihet,imat
   INTEGER :: NEK
   INTEGER :: Nomp
   INTEGER, ALLOCATABLE :: nbnd_add(:)
@@ -66,7 +66,7 @@ MODULE indata
   LOGICAL :: refine, gap_corr
   LOGICAL :: domag, lspinorb, okvan
   
-  CHARACTER(LEN=100) :: outdir, indir2
+  CHARACTER(LEN=100) :: outdir, indir0,indir1
   CHARACTER(LEN=100) :: input_file_DFT
            
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -82,6 +82,7 @@ MODULE indata
        &  Nky,                                 &
        &  Nkz
   NAMELIST /indata_basis/                      &
+       &  imat,                                &
        &  nband_v,                             &
        &  ni,                                  &
        &  nf,                                  &
@@ -93,9 +94,11 @@ MODULE indata
        &  Ecut,                                &
        &  delta_gap
   NAMELIST /indata_basis2/                     &
-       &  nm2,                                 &
-       &  mm2,                                 &   
-       &  indir2
+       &  ihet,                                &
+       &  nm0,                                 &  
+       &  nm1,                                 &   
+       &  indir0,                              &   
+       &  indir1
   NAMELIST /indata_cell/                       &
        &  ac1,                                 &
        &  ac2,                                 &
@@ -135,6 +138,7 @@ CONTAINS
     Nkx_add=0
 
     READ(*,NML=indata_dimensionality)
+    imat=1 !default value
     READ(*,NML=indata_basis)
 
     gap_corr=.false.
@@ -158,6 +162,7 @@ CONTAINS
        end if
     end if
     
+    ihet=1 !default value
     if(ncell==2)READ(*,NML=indata_basis2)
 
     READ(*,NML=indata_cell)

@@ -1,6 +1,6 @@
 ! Copyright or © or Copr. Marco Pala (February 24, 2022)
 
-! e-mail: marco.pala@cnrs.fr
+! e-mail:  marco.pala@c2n.upsaclay.fr ;  marco.pala@cnrs.fr
 
 ! This software is a computer program whose purpose is 
 ! to perform self-consistent simulations of nanosystems with a full ab initio approach
@@ -136,7 +136,7 @@ MODULE indata
   REAL(DP), ALLOCATABLE :: deg_kx(:), deg_ky(:), deg_kz(:), deg_kyz(:), kv_max(:,:), kc_min(:,:), off_set(:)
 
   LOGICAL,  ALLOCATABLE :: k_selec(:)
-  LOGICAL               :: phonons, dfpt, vec_field_new, vec_field_old
+  LOGICAL               :: phonons, dfpt!, vec_field_new, vec_field_old
   
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
@@ -176,7 +176,7 @@ MODULE indata
   
   INTEGER               :: num_mat, num_reg, num_het, nqs, nqmodes
   INTEGER,  ALLOCATABLE :: imat(:), ihet(:), nc_reg(:), typ_mat(:), ind_q(:,:)
-  INTEGER,  ALLOCATABLE :: nm_mat(:), mat_1(:), mat_0(:),ihh(:,:)
+  INTEGER,  ALLOCATABLE :: nm_mat(:), mat_l(:), mat_r(:), ihh(:,:)
   REAL(DP), ALLOCATABLE :: ref_ev(:),ref_ec(:)
   REAL(DP), ALLOCATABLE :: omega_q(:,:),x_q(:,:)
 
@@ -186,6 +186,7 @@ MODULE indata
   INTEGER  :: Nsub,Nomp
   REAL(DP) :: Dac, Dac_e
   REAL(DP) :: Dac_h
+  REAL(DP) :: seuil
   REAL(DP) :: SCBA_alpha
   REAL(DP) :: SCBA_tolerance
   INTEGER  :: SCBA_max_iter
@@ -294,13 +295,14 @@ MODULE indata
        &  SCBA_alpha,                          &
        &  SCBA_tolerance,                      &
        &  SCBA_max_iter,                       &
+       &  seuil,                               &  
        &  TEMP,                                &
        &  NKT,                                 &
        &  eta                            
   NAMELIST /indata_stimulus/                   &
        &  in_Pot,                              &
-       &  vec_field_new,                       &
-       &  vec_field_old,                       &
+!       &  vec_field_new,                       &
+!       &  vec_field_old,                       &
        &  onlyT,                               &
        &  VGMIN,                               &
        &  VGMAX,                               &
@@ -359,8 +361,8 @@ CONTAINS
     CHARACTER(20) :: comment
     
 !!! DEFAULT VALUES !!!
-    vec_field_new=.FALSE.
-    vec_field_old=.FALSE.
+!    vec_field_new=.FALSE.
+!    vec_field_old=.FALSE.
     onlyT=.false.
     in_pot=.false.
     dfpt=.false.
@@ -405,6 +407,7 @@ CONTAINS
     Nop_g=1
     Dac=0.0_dp
     Nsub=3
+    seuil=1.0d0
     SCBA_alpha=1.0_dp
     SCBA_max_iter=50
     SCBA_tolerance=1.0d-3
@@ -468,13 +471,14 @@ CONTAINS
     if(num_het>0)then
        READ(*,*)comment
        write(*,*)comment
-    allocate(mat_0(num_het),mat_1(num_het))
+       allocate(mat_l(num_het),mat_r(num_het))
+       mat_l=0
+       mat_r=0
        allocate(ihh(num_mat,num_mat))
        ihh=0
        do i=1,num_het
-          read(*,*)j,mat_0(i),mat_1(i)
-          write(*,*)j,mat_0(i),mat_1(i)
-          ihh(mat_1(i),mat_0(i))=j
+          read(*,*)j,mat_l(i),mat_r(i)
+          ihh(mat_l(i),mat_r(i))=j
        end do
 
     end if
@@ -483,13 +487,12 @@ CONTAINS
        if(imat(i) == imat(i-1))then
           ihet(i)=imat(i)
        else
-          ihet(i)= num_mat+ihh(imat(i),imat(i-1))
+          ihet(i)= num_mat+ihh(imat(i-1),imat(i))
        end if
     end do
     ihet(nc+1)=imat(nc)
-    
     allocate(ref_ec(num_mat),ref_ev(num_mat))
-    !!!stop
+    
 
     READ(*,NML=indata_doping)
     READ(*,NML=indata_gate)
@@ -560,7 +563,7 @@ CONTAINS
     do i=1,num_mat
        read(*,*)j,nm_mat(i),nband_val(i),off_set(i)
     end do
-
+   
     READ(*,NML=indata_cell)
 
     write(*,*)  'ac1 =',ac1

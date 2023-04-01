@@ -1,6 +1,6 @@
 ! Copyright or © or Copr. Marco Pala (February 24, 2022)
 
-! e-mail: marco.pala@cnrs.fr
+! e-mail:  marco.pala@c2n.upsaclay.fr ;  marco.pala@cnrs.fr
 
 ! This software is a computer program whose purpose is 
 ! to perform self-consistent simulations of nanosystems with a full ab initio approach
@@ -67,6 +67,7 @@ complex(dp)               :: tmp, zdotc
 real(4) :: t1,t2
 
 external zdotc
+
 !\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 !\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 !\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -321,7 +322,7 @@ deallocate(C)
    allocate(Si(iyz,im)%H(NM_mat(im),NM_mat(im)))
    allocate(C(NM,NM))
    call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,A,nrx*ngt*npol,A,nrx*ngt*npol,beta,C,NM)
-   Si(iyz,im)%H=(C+transpose(conjg(C)))/2.0_dp
+   Si(iyz,im)%H=(C+transpose(dconjg(C)))/2.0_dp
    deallocate(C)
    
    call A_POWER( 0.5_dp,nm,Si(iyz,im)%H,Si_p05(iyz,im)%H)
@@ -382,16 +383,16 @@ end if
   ! end do
    deallocate(C)
    
-   !do i=1,NM_mat(im)
-   !   do j=1,NM_mat(im)
-   !      write(729,*)i,j,abs(Si(iyz,im)%H(i,j))
-   !      write(700+iyz,*)i,j,dble(Si(iyz,im)%H(i,j))
-   !      write(800+iyz,*)i,j,dimag(Si(iyz,im)%H(i,j))
-   !   end do
-   !   write(700+iyz,*)
-   !      write(729,*)
-   !      write(800+iyz,*)
-   !end do
+   do i=1,NM_mat(im)
+      do j=1,NM_mat(im)
+         write(729,*)i,j,abs(Si(iyz,im)%H(i,j))
+         write(700+iyz,*)i,j,dble(Si(iyz,im)%H(i,j))
+         write(800+iyz,*)i,j,dimag(Si(iyz,im)%H(i,j))
+      end do
+      write(700+iyz,*)
+      write(729,*)
+      write(800+iyz,*)
+   end do
    !do i=1,NM_mat(im)
    !   do j=1,NM_mat(im)
    !      write(749,*)i,j,abs(Si_p05(iyz,im)%H(i,j))
@@ -433,66 +434,53 @@ do im=1,num_mat
    close(13)
    HL(iyz,im)%H=(HL(iyz,im)%H+transpose(conjg(HL(iyz,im)%H)))/2.0_dp
    HL(iyz,im)%H = HL(iyz,im)%H + off_set(im)*Si(iyz,im)%H  !!! offset of the material
-   
-   allocate(TL(iyz,im)%H(NM_mat(im),NM_mat(im)))
+   write(*,*)im,'offset=',off_set(im)
+   allocate(TL(iyz,im)%H(NM_mat(im),NM_mat(im)))   !!! H10
    nm=NM_mat(im)
    if(magnetic)then
-   open(unit=13,file=TRIM(inputdir)//'H01_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-   write(*,*)'reading ',TRIM(inputdir)//'H01_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
+      open(unit=13,file=TRIM(inputdir)//'H01_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+      write(*,*)'reading ',TRIM(inputdir)//'H01_'//TRIM(updw)//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
    else
-   open(unit=13,file=TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-   write(*,*)'reading ',TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
+      open(unit=13,file=TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+      write(*,*)'reading ',TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat'
    endif
+   allocate(A(nm,nm))
    do i=1,nm
       do j=1,nm
          read(13,*)tmp
-         TL(iyz,im)%H(i,j)=tmp
+         A(i,j)=tmp
       end do
    end do
    close(13)
-  
+   TL(iyz,im)%H=transpose(dconjg(A))!!! this transforms H01 into H10
+   deallocate(A)
 end do
-if(num_mat>=2)then
+
+if(num_het > 0)then
 
    l=num_mat
    do im=1,num_het
-      l=l+1
-      allocate(TL(iyz,l)%H(NM_mat(mat_1(im)),NM_mat(mat_0(im))))
-      
+      l=l+1 
+      write(*,*)'het n. =',im,', NM_mat lft =',NM_mat(mat_l(im))
+      write(*,*)'het n. =',im,', NM_mat rgt =',NM_mat(mat_r(im))
+      allocate(A(NM_mat(mat_l(im)),NM_mat(mat_r(im))))
       open(unit=13,file=TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nhet_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-!      if(htype(im) .eq. 'n')then
-         do i=1,NM_mat(mat_1(im))
-            do j=1,NM_mat(mat_0(im))
-               read(13,*)tmp
-               TL(iyz,l)%H(i,j)=tmp
-            end do
+      do i=1,NM_mat(mat_l(im))
+         do j=1,NM_mat(mat_r(im))
+            read(13,*)A(i,j)
          end do
- !     else if(htype(im) .eq. 'c')then
- !        do j=1,NM_mat(mat_0(im))
- !           do i=1,NM_mat(mat_1(im))
- !              read(13,*)tmp
- !              TL(iyz,l)%H(i,j)=conjg(tmp)
- !           end do
- !        end do
- !     else
- !        write(*,*)'wrong htype'
- !        exit
- !     end if
+      end do
       close(13)
-      
+      allocate(TL(iyz,l)%H(NM_mat(mat_r(im)),NM_mat(mat_l(im)))) !!! H10 for the HJ
+      TL(iyz,l)%H=transpose(dconjg(A)) !!!! H01 -> H10
+      deallocate(A)
    end do
 
 end if
-
-
-
-
-
-
+   
 
 n=40
 allocate(bb_ev(n+1),bb_ec(n+1))
-
 
 do im=1,num_mat
    M=min(nband_val(im)+10,nm)
@@ -548,8 +536,8 @@ do ikx=n/2+1,n
       kv_max(iyz,im)=dble(ikx-1-n/2)/dble(n)
    end if
 end do
-write(*,*)iyz,'kc_min',kc_min(iyz,im),refec
-write(*,*)iyz,'kv_max',kv_max(iyz,im),refev
+write(*,*)iyz,im,'kc_min',kc_min(iyz,im),refec
+write(*,*)iyz,im,'kv_max',kv_max(iyz,im),refev
 deallocate(hkl)
 
 end do
@@ -578,7 +566,7 @@ KGt_kyz(1:4,1:Ngt,iyz)=KGt(1:4,1:1*Ngt)
 end do ! endo do iyz
 
 
-if(.not. onlyT .or. phonons .or. vec_field_new)then
+if(.not. onlyT .or. phonons )then
 
 
 !!$do im=1,num_mat
@@ -595,6 +583,9 @@ if(.not.allocated(Uk)) allocate(Uk(NGt*npol,(nry)*(nrz),NKYZ))
 
 do im=1,num_mat
 !if(schottky_type(im)==0)then
+   write(*,*)
+   write(*,*)'material n.',im
+   write(*,*)
    
    NM=NM_mat(im)
 
@@ -728,17 +719,17 @@ if(iyz==1)then
         transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kc_min(iyz,im)*2.0_dp*pi)
    call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) !!!call SUB_DEF_Z(1,NM,NM,A,E,B)
    ref_ec(im)=E(nband_val(im)+1)
-   write(*,*)'ref_ec at Kyz=0 ',nband_val(im)+1,ref_ec(im)
+   write(*,*)'ref_ec at the first Kyz = ',nband_val(im)+1,ref_ec(im)
 if (nband_val(im)>0)then
    A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)+&
         transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)
    call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) !!!call SUB_DEF_Z(1,NM,NM,A,E,B)
    ref_ev(im)=E(nband_val(im))
 end if
-   write(*,*)'ref_ev at Kyz=0 ',nband_val(im),ref_ev(im)
+   write(*,*)'ref_ev at the first Kyz = ',nband_val(im),ref_ev(im)
 
    E_GAP=ref_ec(im)-ref_ev(im)
-   write(*,*)'E_GAP at Kyz=0 = ',e_gap
+   write(*,*)'E_GAP at the first Kyz = ',e_gap
    
    deallocate(A,HLL,TLL,C)
    deallocate(E)
@@ -948,11 +939,10 @@ if(k_selec(jj))then
             A(i,j)=0.0_dp
             do m=1,NM
                do n=1,NM
-                  
-                 ! if(abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) ) < 1.0d-3 )then !!! delta(k_x+q_x=k_x')
+                  if(abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) ) < 1.0d-3 )then !!! delta(k_x+q_x=k_x')
                      A(i,j) = A(i,j) + &
                           Si_p05(iyz,im)%H(i,n) *  el_ph_mat( ind_bnd(iyz,im)%i(n), ind_bnd(jj,im)%i(m), ind_k(jx,jyz) , ll) * Si_p05(jj,im)%H(m,j)
-                 ! end if
+                  end if
                end do
             end do
             el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)
@@ -1020,11 +1010,10 @@ if (.not. dfpt) then
                      do m=1,NM
                         do n=1,NM
                                                       
-!                           if( abs( in_kx(iyz,im)%n(n) - kq_vec(1,jx+(jyz-1)*nkx) - in_kx(jj,im)%n(m) ) < 1.0d-3) then
+                           if( abs( in_kx(iyz,im)%n(n) - kq_vec(1,jx+(jyz-1)*nkx) - in_kx(jj,im)%n(m) ) < 1.0d-3) then
                               A(i,j) = A(i,j) + &
                                    Si_p05(iyz,im)%H(i,n) * C(n,m) * Si_p05(jj,im)%H(m,j)
-                                   !                                  Si_p05(iyz,im)%H(i,n) * C(n,m) * Si_p05(jj,im)%H(m,j) 
-!                           end if
+                           end if
                            
                         end do
                      end do
@@ -1328,66 +1317,66 @@ end if
 
 
 
-if(vec_field_old)then
-do im=1,num_mat
-do iyz=1,Nkyz
-if( k_selec(iyz))then
-      
-allocate(AJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
-allocate(BJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
-allocate(CJ(iyz,im)%K(NM,NM,NRX,NRZ))
-  
-AJ(iyz,im)%K=0.0_dp
-BJ(iyz,im)%K=0.0_dp
-CJ(iyz,im)%K=0.0_dp
-
-write(*,*) 
-write(*,*) 'reading the connection matrices (vec_field_old option is enabled)'
-write(*,*) '...'
-
-t1=SECNDS(0.0)
-open(unit=13,file=TRIM(inputdir)//'AJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-do iz=1,NRZ
-do ix=1,NRX
-do nn=1,NM
-do mm=1,NM
-read(13,*)AJ(iyz,im)%K(mm,nn,ix,iz)
-end do
-end do
-end do
-end do
-close(13)
-open(unit=13,file=TRIM(inputdir)//'BJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-do iz=1,NRZ
-do ix=1,NRX
-do nn=1,NM
-do mm=1,NM
-read(13,*)BJ(iyz,im)%K(mm,nn,ix,iz)
-end do
-end do
-end do
-end do
-close(13)
-open(unit=13,file=TRIM(inputdir)//'CJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-do iz=1,NRZ
-do ix=1,NRX
-do nn=1,NM
-do mm=1,NM
-read(13,*)CJ(iyz,im)%K(mm,nn,ix,iz)
-end do
-end do
-end do
-end do
-close(13)
-
-end if
-end do
-end do
-
-t2=SECNDS(t1)
-write(*,*) 'done in ',t2,'s'
-write(*,*) 
-end if
+!!$if(vec_field_old)then
+!!$do im=1,num_mat
+!!$do iyz=1,Nkyz
+!!$if( k_selec(iyz))then
+!!$      
+!!$allocate(AJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
+!!$allocate(BJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
+!!$allocate(CJ(iyz,im)%K(NM,NM,NRX,NRZ))
+!!$  
+!!$AJ(iyz,im)%K=0.0_dp
+!!$BJ(iyz,im)%K=0.0_dp
+!!$CJ(iyz,im)%K=0.0_dp
+!!$
+!!$write(*,*) 
+!!$write(*,*) 'reading the connection matrices (vec_field_old option is enabled)'
+!!$write(*,*) '...'
+!!$
+!!$t1=SECNDS(0.0)
+!!$open(unit=13,file=TRIM(inputdir)//'AJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+!!$do iz=1,NRZ
+!!$do ix=1,NRX
+!!$do nn=1,NM
+!!$do mm=1,NM
+!!$read(13,*)AJ(iyz,im)%K(mm,nn,ix,iz)
+!!$end do
+!!$end do
+!!$end do
+!!$end do
+!!$close(13)
+!!$open(unit=13,file=TRIM(inputdir)//'BJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+!!$do iz=1,NRZ
+!!$do ix=1,NRX
+!!$do nn=1,NM
+!!$do mm=1,NM
+!!$read(13,*)BJ(iyz,im)%K(mm,nn,ix,iz)
+!!$end do
+!!$end do
+!!$end do
+!!$end do
+!!$close(13)
+!!$open(unit=13,file=TRIM(inputdir)//'CJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
+!!$do iz=1,NRZ
+!!$do ix=1,NRX
+!!$do nn=1,NM
+!!$do mm=1,NM
+!!$read(13,*)CJ(iyz,im)%K(mm,nn,ix,iz)
+!!$end do
+!!$end do
+!!$end do
+!!$end do
+!!$close(13)
+!!$
+!!$end if
+!!$end do
+!!$end do
+!!$
+!!$t2=SECNDS(t1)
+!!$write(*,*) 'done in ',t2,'s'
+!!$write(*,*) 
+!!$end if
 
 
 if(phonons)then
@@ -1531,7 +1520,7 @@ end subroutine coefficienti
    call zgemm('n','c',nm,nm,nm,alpha,B,nm,U,nm,beta,C,nm)
    call zgemm('n','n',nm,nm,nm,alpha,U,nm,C,nm,beta,B,nm)
 
-   B=(B+transpose(conjg(B)))/2.0_dp
+!   B=(B+transpose(dconjg(B)))/2.0_dp
    
    deallocate(U,C)
    deallocate(E)
@@ -1550,8 +1539,8 @@ end subroutine coefficienti
 
    vv=v
 
-   if(abs(v(1))>0.5_dp+1.0d-3) vv(1)=abs(abs(v(1))-1.0_dp)
-   if(abs(v(2))>0.5_dp+1.0d-3) vv(1)=abs(abs(v(2))-1.0_dp)
+   if(abs(v(1))>0.5_dp) vv(1)=abs(abs(v(1))-1.0_dp)
+   if(abs(v(2))>0.5_dp) vv(2)=abs(abs(v(2))-1.0_dp)
    
    do iz=1,nkz
       do iy=1,nky
