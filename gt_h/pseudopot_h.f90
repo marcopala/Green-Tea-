@@ -1655,8 +1655,11 @@ end if   !end if ncell==1
 
 if(allocated(Si)) deallocate(Si)
 if(allocated(psi_add))deallocate(psi_add)
-deallocate(HLLL,TLLL)
+if(allocated(HLLL))deallocate(HLLL)
+if(allocated(TLLL))deallocate(TLLL)
 if(allocated(PSI_MOD)) deallocate(PSI_MOD)
+if(allocated(HLL))deallocate(HLL)
+if(allocated(TLL))deallocate(TLL)
 write(*,*)
 write(*,*)'END Kyz number =',iyz
 write(*,*)
