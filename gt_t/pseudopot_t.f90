@@ -48,8 +48,8 @@ implicit none
   
 character(len=80) :: comment
 integer(k15), allocatable :: miller_2D(:,:), ind_k(:,:)
-integer                   :: i,ikx,iyz,jx,jyz,ii,j,l,k,m,n,mm,nn,ll,nrx0,ncell,m1,ix,iy,iz
-integer                   :: nm,nadd,nbnd,ngmax,n2,n3,jgt,ip,im,jj,kk,iq,nksq
+integer                   :: i,ikx,iyz,jyz,ii,j,l,k,m,n,mm,nn,ll,nrx0,ncell,m1,ix,jx,iy,iz
+integer                   :: nm,nadd,nbnd,ngmax,n2,n3,jgt,igt,ip,im,jj,kk,iq,nksq
 
 real(dp)                  :: a_1(3),a_2(3),a_3(3)
 real(dp)                  :: b_1(3),b_2(3),b_3(3)
@@ -139,8 +139,8 @@ write(*,*)'NRZ',nrz
 
 
 Ngt=0
-do n2=-nry/2,nry/2!-maxval(miller(2,:)),maxval(miller(2,:))
-do n3=-nrz/2,nrz/2!maxval(miller(3,:)),maxval(miller(3,:))
+do n2=-nry/2,nry/2 !-maxval(miller(2,:)),maxval(miller(2,:))
+do n3=-nrz/2,nrz/2 !maxval(miller(3,:)),maxval(miller(3,:))
 vec(2:3)=n2*b_2(2:3)+n3*b_3(2:3)
 
 if(t0*dot_product(vec(2:3),vec(2:3))*(2.0_dp*pi/a0)**2 <= 1.0_dp*Ecutoff) then ! eV
@@ -156,12 +156,12 @@ allocate(miller_2D(3,Ngt))
 miller_2D=0
 
 j=0
-do n2=-nry/2,nry/2!-maxval(miller(2,:)),maxval(miller(2,:))
-do n3=-nrz/2,nrz/2!-maxval(miller(3,:)),maxval(miller(3,:))
+do n2=-nry/2,nry/2 !-maxval(miller(2,:)),maxval(miller(2,:))
+do n3=-nrz/2,nrz/2 !-maxval(miller(3,:)),maxval(miller(3,:))
 vec(2:3)=n2*b_2(2:3)+n3*b_3(2:3) !!!! THIS IMPLIES THAT b_1 is orthonal to the transverse plane
 
 if(t0*dot_product(vec(2:3),vec(2:3))*(2.0_dp*pi/a0)**2 <= 1.0_dp*Ecutoff)then ! eV
-!if(t0*vec(2)**2*(2.0_dp*pi/a0)**2 <= Ecutoff .and. t0*vec(3)**2*(2.0_dp*pi/a0)**2 <= Ecutoff )then 
+!!!if(t0*vec(2)**2*(2.0_dp*pi/a0)**2 <= Ecutoff .and. t0*vec(3)**2*(2.0_dp*pi/a0)**2 <= Ecutoff )then 
    j=j+1
    miller_2D(2,j)=n2
    miller_2D(3,j)=n3
@@ -185,7 +185,7 @@ write(*,*)'max miller_2D 3',maxval(miller_2D(3,:))
 
 allocate(Gx(nrx))
 Gx=0.0_dp
-do i=-nrx/2,nrx/2-1!maxval(miller(1,:)),maxval(miller(1,:))!-1
+do i=-nrx/2,nrx/2-1 !maxval(miller(1,:)),maxval(miller(1,:))!-1
    m1=i
    if ( m1 < 0 ) then
      m1 = m1 + nrx + 1
@@ -247,9 +247,7 @@ write(*,*)'a0/Dz',a0/Dz,Dz
 
 do iyz=1,Nkyz  ! Loops over the transverse k vectors
 !if(k_selec(iyz))then
-   
-write(*,*)'ikyz',iyz
-
+   write(*,*)'ikyz',iyz
    ky(iyz-((iyz-1)/nky))=k_vec(2,iyz)
    write(*,*)'iky',iyz-((iyz-1)/nky),ky(iyz-((iyz-1)/nky))    !!!! iyz = iy + (iz-1)*nky
    kz(1+((iyz-1)/nky))=k_vec(3,iyz)
@@ -299,24 +297,26 @@ do im=1,num_mat
    end if
    close(13)
 
-if(allocated(C))deallocate(C)
-allocate(C(NM,NM))
-C=0.0_dp
-call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,A,nrx*ngt*npol,A,nrx*ngt*npol,beta,C,NM)
-do i=1,nm
-   do j=1,nm
-      write(329,*)i,j,abs(C(i,j))
-   end do
-   write(329,*)
-end do
-allocate(E(nm))
-call sub_def_Z0(1,NM,NM,C,E)
-do i=1,nm
-   write(330,*)i,e(i)
-end do
-deallocate(E)
-deallocate(C)
-
+   !!! debugging line
+!!$if(allocated(C))deallocate(C)
+!!$allocate(C(NM,NM))
+!!$C=0.0_dp
+!!$call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,A,nrx*ngt*npol,A,nrx*ngt*npol,beta,C,NM)
+!!$do i=1,nm
+!!$   do j=1,nm
+!!$      write(329,*)i,j,abs(C(i,j))
+!!$   end do
+!!$   write(329,*)
+!!$end do
+!!$allocate(E(nm))
+!!$call sub_def_Z0(1,NM,NM,C,E)
+!!$do i=1,nm
+!!$   write(330,*)i,e(i)
+!!$end do
+!!$deallocate(E)
+!!$deallocate(C)
+   !!end debugging lines
+   
    allocate(Si_p05(iyz,im)%H(NM_mat(im),NM_mat(im)))
    allocate(Si_m05(iyz,im)%H(NM_mat(im),NM_mat(im)))
    allocate(Si(iyz,im)%H(NM_mat(im),NM_mat(im)))
@@ -328,92 +328,41 @@ deallocate(C)
    call A_POWER( 0.5_dp,nm,Si(iyz,im)%H,Si_p05(iyz,im)%H)
    call A_POWER(-0.5_dp,nm,Si(iyz,im)%H,Si_m05(iyz,im)%H)
 
- !!!  call ortonorma(nrx*ngt*npol,NM,A,ULCBB(iyz,im)%H)
-   ULCBB(iyz,im)%H=A
+!!!!!!!!!  call ortonorma(nrx*ngt*npol,NM,A,ULCBB(iyz,im)%H)
+   ULCBB(iyz,im)%H=A   !!! this is the matrix containing the URBFs
 !!!!!!!!!
-if(phonons)then
-   PSIBB(iyz,im)%H=A !!! I am stocking the psi to rebuild the unk
-do ip=1,npol
-   do j=1,NM  
-      do ix=1,Nrx
-         do jgt=1,NGt 
-            PSIBB(iyz,im)%H(jgt+(ix-1)*NGt+(ip-1)*Ngt*nrx,j)=A(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)&
-                 *exp(-cmplx(0.0_dp,1.0_dp)*in_kx(iyz,im)%n(j)*2.0_dp*pi*dble(ix-1)/dble(Nrx))
+   if(phonons)then
+      PSIBB(iyz,im)%H=A !!! I am stocking the psi to rebuild the unk
+      do ip=1,npol
+         do j=1,NM  
+            do ix=1,Nrx
+               PSIBB(iyz,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,j)=&
+                    A(1+(ix-1)*ngt+(ip-1)*Ngt*nrx:ngt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)&
+                    *exp(-cmplx(0.0_dp,1.0_dp)*in_kx(iyz,im)%n(j)*2.0_dp*pi*dble(ix-1)/dble(Nrx))
+            end do
          end do
       end do
-   end do
-end do
 end if
 !!!!!!!!   
-   allocate(C(nm,nm))
-   call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,PSIBB(iyz,im)%H,nrx*ngt*npol,PSIBB(iyz,im)%H,nrx*ngt*npol,beta,C,NM)
-  
-!   do i=1,NM_mat(im)
-!      do j=1,NM_mat(im)
-!         write(759,*)i,j,abs(C(i,j))
-!         write(750+iyz,*)i,j,dble(C(i,j))
-!         write(850+iyz,*)i,j,dimag(C(i,j))
-!      end do
-!      write(750+iyz,*)
-!      write(850+iyz,*)
-!      write(759,*)
-!   end do
 
-   call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,ULCBB(iyz,im)%H,nrx*ngt*npol,ULCBB(iyz,im)%H,nrx*ngt*npol,beta,C,NM)
-  
-!   do i=1,NM_mat(im)
-!      do j=1,NM_mat(im)
-!         write(739,*)i,j,abs(C(i,j))
-!         write(720+iyz,*)i,j,dble(C(i,j))
-!         write(820+iyz,*)i,j,dimag(C(i,j))
-!      end do
-!      write(720+iyz,*)
-!      write(820+iyz,*)
-!      write(739,*)
+!do i=1,NM_mat(im)
+!   do j=1,NM_mat(im)
+!      write(749,*)i,j,abs(Si_p05(iyz,im)%H(i,j))
+!      write(750,*)i,j,abs(Si(iyz,im)%H(i,j))
 !   end do
- 
-  ! call A_POWER(-0.5_dp,nm,Si(iyz,im)%H,C)
-  ! do i=1,NM_mat(im)
-  !    do j=1,NM_mat(im)
-  !       write(720+iyz,*)i,j,dble(C(i,j))
-  !       write(820+iyz,*)i,j,dimag(C(i,j))
-  !    end do
-  !    write(720+iyz,*)
-  !    write(820+iyz,*)
-  ! end do
-   deallocate(C)
-   
-   do i=1,NM_mat(im)
-      do j=1,NM_mat(im)
-         write(729,*)i,j,abs(Si(iyz,im)%H(i,j))
-         write(700+iyz,*)i,j,dble(Si(iyz,im)%H(i,j))
-         write(800+iyz,*)i,j,dimag(Si(iyz,im)%H(i,j))
-      end do
-      write(700+iyz,*)
-      write(729,*)
-      write(800+iyz,*)
-   end do
-   !do i=1,NM_mat(im)
-   !   do j=1,NM_mat(im)
-   !      write(749,*)i,j,abs(Si_p05(iyz,im)%H(i,j))
-   !      write(710+iyz,*)i,j,dble(Si_p05(iyz,im)%H(i,j))
-   !      write(810+iyz,*)i,j,dimag(Si_p05(iyz,im)%H(i,j))
-   !   end do
-   !   write(710+iyz,*)
-    !  write(810+iyz,*)
-    !  write(749,*)
-   !end do
+!   write(749,*)
+!   write(750,*)
+!end do
       
 
    
-   deallocate(A)
+deallocate(A)
 end do
 end do
 
 
 do iyz=1,Nkyz
 !if(k_selec(iyz))then
-   
 do im=1,num_mat
    nm=NM_mat(im)
    write(*,*)iyz,'im',im,nm
@@ -461,8 +410,8 @@ if(num_het > 0)then
    l=num_mat
    do im=1,num_het
       l=l+1 
-      write(*,*)'het n. =',im,', NM_mat lft =',NM_mat(mat_l(im))
-      write(*,*)'het n. =',im,', NM_mat rgt =',NM_mat(mat_r(im))
+      write(*,*)'het n. =',im,mat_l(im),', NM_mat lft =',NM_mat(mat_l(im))
+      write(*,*)'het n. =',im,mat_r(im),', NM_mat rgt =',NM_mat(mat_r(im))
       allocate(A(NM_mat(mat_l(im)),NM_mat(mat_r(im))))
       open(unit=13,file=TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nhet_'//TRIM(STRINGA(im))//'.dat',status='unknown')
       do i=1,NM_mat(mat_l(im))
@@ -483,10 +432,10 @@ n=40
 allocate(bb_ev(n+1),bb_ec(n+1))
 
 do im=1,num_mat
+   NM=nm_mat(im)
    M=min(nband_val(im)+10,nm)
    allocate(hkl(n+1,M))
-   NM=nm_mat(im)
-
+   
    allocate(E(M))
    allocate(A(NM,NM),HLLL(NM,NM),TLLL(NM,NM),C(NM,NM))
    HLLL=HL(iyz,im)%H
@@ -496,11 +445,11 @@ do im=1,num_mat
    do ikx=1,n+1
       A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
            transpose(conjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-      call SUB_DEF_Z0_GEN(1,M,NM,A,C,E)!!!call SUB_DEF_Z0(1,M,NM,A,E)
+      call SUB_DEF_Z0_GEN(1,M,NM,A,C,E)
       do k=1,M
          hkl(ikx,k)=e(k)
       end do
-if( nband_val(im)>0)     bb_ev(ikx)=E(nband_val(im))
+      if( nband_val(im)>0)     bb_ev(ikx)=E(nband_val(im))
       bb_ec(ikx)=E(nband_val(im)+1)
    end do
    deallocate(A,HLLL,TLLL,C)
@@ -517,8 +466,8 @@ if( nband_val(im)>0)     bb_ev(ikx)=E(nband_val(im))
          do ikx=1,n+1
             write(300+k,*)dble(ikx-1-n/2)/dble(n),hkl(ikx,ii)
          end do
-         close(300+k)
       end do
+      close(300+k)
    end do
 
 
@@ -562,27 +511,15 @@ end if
 
 KGt_kyz(1:4,1:Ngt,iyz)=KGt(1:4,1:1*Ngt)
 
-!end if
 end do ! endo do iyz
 
 
 if(.not. onlyT .or. phonons )then
 
-
-!!$do im=1,num_mat
-!!$!if(schottky_type(im)==0)then      
-!!$do iyz=1,Nkyz
-!!$!if(k_selec(iyz))then
-!!$
-!!$!end if
-!!$end do
-!!$!end if
-!!$end do
-!!$!stop
 if(.not.allocated(Uk)) allocate(Uk(NGt*npol,(nry)*(nrz),NKYZ))
 
 do im=1,num_mat
-!if(schottky_type(im)==0)then
+
    write(*,*)
    write(*,*)'material n.',im
    write(*,*)
@@ -590,11 +527,10 @@ do im=1,num_mat
    NM=NM_mat(im)
 
    do iyz=1,Nkyz
-!if(k_selec(iyz))then
+      !if(k_selec(iyz))then
       
       allocate(U_psi(iyz,im)%K(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))
       
-!      write(*,*)'Size of U_psi',iyz,im, (dble(NM_mat(im))**2)*dble(Ndeltay+1)*dble(Ndeltaz+1)*dble(nrx)*16.0d-9,'Gb'
       
 !!!! INTERPOLATION ON THE COARSE GRID
       
@@ -609,7 +545,7 @@ do im=1,num_mat
       end do
       if(npol>1)      Uk(1+NGt:npol*NGt,1:NRY*NRZ,iyz)=Uk(1:NGt,1:NRY*NRZ,iyz)
 
-call omp_set_num_threads(Nomp)
+      call omp_set_num_threads(Nomp)
 
 !$omp parallel default(none) private(ix,iy,iz,ip,i,j,jgt,dens_z,dens_yz,A,B,C) &
 !$omp shared(iyz,im,ney,nez,nm,nrx,nry,nrz,ndeltay,ndeltaz,dx,dy,dz,npol,ngt,Uk,ULCBB,U_psi)
@@ -624,7 +560,6 @@ allocate(C(NM*NM,(nry)*(nrz)))
 
 !$omp do 
 do ix=1,Nrx
-!   write(*,*)'ix',ix
 
    do ip=1,npol
       do jgt=1,Ngt
@@ -634,15 +569,7 @@ do ix=1,Nrx
       end do
    end do
    call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz,iyz),NGt*npol,beta,A,NM)
-   
-!!$!!   do iy=1,NRY
-!!$!!      do iz=1,NRZ
-!!$!!         do i=1,NM
-!!$!!            A(i,iy+(iz-1)*(nry))=A(i,iy+(iz-1)*(nry))*exp(-cmplx(0.0_dp,1.0_dp)*ELCH/HBAR*Hz(ix)*1.0d-4*dx*dy*dble(iy-iz))   !!! bz is in Tesla
-!!$!!         end do
-!!$!!      end do
-!!$!!   end do
-   
+
    do i=1,NM
       do j=1,NM
          C(i+(j-1)*NM,:)=conjg(A(i,:))*A(j,:)
@@ -693,18 +620,21 @@ do ix=1,Nrx
          dens_yz(1:NM*NM,i,:)=dens_yz(1:NM*NM,i,:)+dens_z(1:NM*NM,iy,:)/dble(2*Ney(i))
       end do
    end do
-
+   
+   !$omp critical 
    U_psi(iyz,im)%K(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1,ix)=dens_yz(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1)
+   !$omp end critical
    
 end do !end do ix
- !$omp end do
+
+!$omp end do
 
 deallocate(A,B,C)
 deallocate(dens_z,dens_yz)
 !$omp end parallel
 
-       t2=SECNDS(t1)
-!        WRITE(*,*)'Time spent to compute the interpolation (s)',t2
+t2=SECNDS(t1)
+WRITE(*,*)'Time spent to compute the interpolation (s)',t2
        
 !stop
  
@@ -736,7 +666,7 @@ end if
 end if
 
 write(*,*)'End ikyz =',iyz
-!end if
+
 end do ! end do iyz
 
 do iyz=1,Nkyz
@@ -749,13 +679,13 @@ do iyz=1,Nkyz
       
       A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*kc_min(iyz,im)*2.0_dp*pi)+&
            transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kc_min(iyz,im)*2.0_dp*pi)
-      call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) !!!call SUB_DEF_Z(1,NM,NM,A,E,B)
+      call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) 
       ref_ec(im)=E(nband_val(im)+1)
       write(*,*)'ref_ec at the first Kyz =',nband_val(im)+1,ref_ec(im)
       if (nband_val(im)>0)then
          A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)+&
               transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)
-         call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) !!!call SUB_DEF_Z(1,NM,NM,A,E,B)
+         call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) 
          ref_ev(im)=E(nband_val(im))
       end if
       write(*,*)'ref_ev at the first Kyz =',nband_val(im),ref_ev(im)
@@ -774,13 +704,17 @@ write(*,*)
 write(*,*)'Computing the el-ph matrix'
 t1=SECNDS(0.0)
 
-if(dfpt)then
+!!! this part implements the use of el-ph matrix elements computed by QE within the DFPT. This is a work in progress, its use is for developpers and is not yet completely tested. 
+if(dfpt)then 
 write(*,*)
-write(*,*)'Reading the DFPT el-ph matrix file'
+write(*,*)'Reading the DFPT el-ph matrix file' 
+write(*,*)
+write(*,*)'WARNING: this is a work in progress, not yet validated' 
+write(*,*)
 
 
 open(unit=13,file=TRIM(input_file_DFPT),status='unknown')
-read(13,'(A)') comment!nbnd
+read(13,'(A)') comment
 read(13,'(I)')nbnd
 write(*,*)comment, nbnd
 read(13,'(A)') comment
@@ -838,13 +772,7 @@ do iq=1,nqs
    read(13,*) comment !'hbar omega (Ryd):',shape(w2)
    do ll=1,nqmodes
       read(13,*) i,omega_q(iq,ll) !j,  dsqrt(abs(w2( j )))
-      !write(*,*) i,omega_q(iq,ll)
-      !if(omega_q(iq,ll)<0.0_dp)then
-      !   omega_q(iq,ll)=0.0_dp
-      !else
-      !   omega_q(iq,ll)=ryd*dsqrt(omega_q(iq,ll)) !omega in eV
-      !end if
-      
+            
       omega_q(iq,ll)=ryd*dsqrt(abs(omega_q(iq,ll))) !omega in eV
       write(*,*) 'omega_q',iq,ll,omega_q(iq,ll)
    end do
@@ -939,13 +867,20 @@ if(k_selec(jj))then
             A(i,j)=0.0_dp
             do m=1,NM
                do n=1,NM
-                  if(abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) ) < 1.0d-3 )then !!! delta(k_x+q_x=k_x')
-                     A(i,j) = A(i,j) + &
-                          Si_p05(iyz,im)%H(i,n) *  el_ph_mat( ind_bnd(iyz,im)%i(n), ind_bnd(jj,im)%i(m), ind_k(jx,jyz) , ll) * Si_p05(jj,im)%H(m,j)
-                  end if
+!!$                  if(abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) ) < 1.0d-3 .or. &
+!!$                     abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) + 1.0_dp) < 1.0d-3 .or. &
+!!$                     abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) - 1.0_dp) < 1.0d-3 )then !!! delta(k_x+q_x=k_x')
+!!$                     A(i,j) = A(i,j) + &
+!!$                          Si_p05(iyz,im)%H(i,n) *  el_ph_mat( ind_bnd(iyz,im)%i(n), ind_bnd(jj,im)%i(m), ind_k(jx,jyz) , ll) * Si_p05(jj,im)%H(m,j)
+!!$!                          el_ph_mat( ind_bnd(iyz,im)%i(i), ind_bnd(jj,im)%i(n), ind_k(jx,jyz) , ll) * Si_p05(jj,im)%H(n,m) * Si_m05(jj,im)%H(m,j)
+!!$                  end if                 
+   !               A(i,j) = A(i,j) + &
+   !                    Si(iyz,im)%H(i,n) *  el_ph_mat( ind_bnd(iyz,im)%i(n), ind_bnd(jj,im)%i(m), ind_k(jx,jyz) , ll) * Si(jj,im)%H(m,j)
+                  
                end do
             end do
-            el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)
+            !       el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)
+              el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=el_ph_mat( ind_bnd(iyz,im)%i(i), ind_bnd(jj,im)%i(j), ind_k(jx,jyz) , ll)
             write(40000+1000*jyz+100*jx+ll,*)i,j,abs(A(i,j))
             write(4000+100*jyz+ll,*)i,j,abs(A(i,j))
          end do
@@ -964,7 +899,6 @@ end if
 end do
 end do
 deallocate(A)
-   !deallocate(AA)
   
 end do !end iq
 close(13)
@@ -979,63 +913,79 @@ deallocate(xkadd)
 deallocate(ind_k)
 
 end if
-
+!!! end of the dfpt part
 
 if (.not. dfpt) then
-   
-   allocate(A(NM,NM))
-   
-   do jx=1,1!nkx
-      do jyz=1,NKyz ! index of q_yz
-
-         if(k_selec(jyz))then
+      
+   do jyz=1,NKyz ! index of q_yz
+      
+      if(k_selec(jyz))then
          do iyz = 1,NKyz   ! index of k_yz
-         
+            
             if(k_selec(iyz))then
-
-               allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
-               el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
-            
-               jj = ind_kyz( k_vec(2:3,iyz) - kq_vec(2:3,jx+(jyz-1)*nkx) )  ! index of k_yz' = k_yz - q_yz 
-            
-               allocate(C(nm,nm))
-               call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,PSIBB(iyz,im)%H,nrx*ngt*npol,PSIBB(jj,im)%H,nrx*ngt*npol,beta,C,NM)
-   
-            do ll=1,1
                
-               do i=1,NM
-                  do j=1,NM
+               do jx=1,nkx+1
+                  
+                  allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
+                  el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
+                  
+                  jj = ind_kyz( k_vec(2:3,iyz) - kq_vec(2:3,1+(jyz-1)*nkx) )  ! index of k_yz' = k_yz - q_yz 
+                  
+                  allocate(C(nm,nm))
+                  C=0.0_dp
+                  ip=1 !!! no polarization is assumed
+                  nn=nkx
+                  
+                  call omp_set_num_threads(Nrx)
+                  !$omp parallel default(none) private(ix,n,m) &
+                  !$omp shared(nrx,nm,ngt,im,ip,jj,iyz,jx,nn,in_kx,PSIBB,C)
+                  
+                  !$omp do 
+                  do ix=1,Nrx
                      
-                     A(i,j) = 0.0_dp
                      do m=1,NM
                         do n=1,NM
-                                                      
-                           if( abs( in_kx(iyz,im)%n(n) - kq_vec(1,jx+(jyz-1)*nkx) - in_kx(jj,im)%n(m) ) < 1.0d-3) then
-                              A(i,j) = A(i,j) + &
-                                   Si_p05(iyz,im)%H(i,n) * C(n,m) * Si_p05(jj,im)%H(m,j)
-                           end if
-                           
+                           !$omp atomic
+                           C(n,m)=C(n,m)+zdotc(ngt,PSIBB(iyz,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,n),1, &
+                                PSIBB(jj,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,m),1) * &
+                                exp(-cmplx(0.0_dp,1.0_dp) * ( in_kx(iyz,im)%n(n) - in_kx(jj,im)%n(m) - dble(2*(jx-1)-nn)/dble(2*nn)  ) * &
+                                2.0_dp*pi*dble(ix-1)/dble(Nrx))
                         end do
                      end do
-                     !if(abs(A(i,j))<1d1)
-                     el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)/sqrt(ac1*ac2*ac3)
                      
-                     write(5000+100*iyz+jyz,*)i,j,abs(A(i,j))
                   end do
-               write(5000+100*iyz+jyz,*)
-            end do
+                  !$omp end do
+                  !$omp end parallel
+                  
+                  ll=1
+                  do i=1,NM
+                     do j=1,NM
+                        
+                        el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=C(i,j)
+                        
+                        !write(5000+100*iyz+10*jyz+jx,*)i,j,abs(C(i,j))
+                        !write(5000+200*iyz+10*jyz+jx,*)i,j,dble(C(i,j))
+                        !write(5000+300*iyz+10*jyz+jx,*)i,j,aimag(C(i,j))
+                        
+                     end do
+                     
+                     !write(5000+100*iyz+10*jyz+jx,*)
+                     !write(5000+200*iyz+10*jyz+jx,*)
+                     !write(5000+300*iyz+10*jyz+jx,*)
+                     
+                  end do
+                  deallocate(C)
+
+               end do
+
+
+               
+            end if
          end do
-          deallocate(C)
-         end if
-      end do
-   end if
-end do
-end do
-   deallocate(A)
-
+      end if
+   end do
    
-end if
-
+end if ! if not dfpt
 
 t2=SECNDS(t1)
 WRITE(*,*)'Time spent to compute the el-ph matrix (s)',t2
@@ -1043,270 +993,7 @@ write(*,*)
 
 endif  !end if phonons
 
-!stop
-
-
-!!$!!! field vector calculation
-!!$
-!!$if(vec_field_new)then
-!!$   
-!!$do iyz=1,NKyz
-!!$   if( k_selec(iyz) )then
-!!$
-!!$allocate(AJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
-!!$allocate(BJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
-!!$allocate(CJ(iyz,im)%K(NM,NM,NRX,NRZ))
-!!$  
-!!$AJ(iyz,im)%K=0.0_dp
-!!$BJ(iyz,im)%K=0.0_dp
-!!$CJ(iyz,im)%K=0.0_dp
-!!$write(*,*)'size of AJ (Gb)=',size(AJ(iyz,im)%K)*16.0d-9
-!!$
-!!$allocate(C(NM,nrx*nry*nrz))
-!!$write(*,*)'size of C =',size(C)*16.0d-9
-!!$
-!!$allocate(A(NM,(nry)*(nrz)))
-!!$allocate(B(NM,ngt*npol))
-!!$do ix=1,NRX
-!!$!   write(*,*)'ix',ix
-!!$   do ip=1,npol
-!!$      do jgt=1,Ngt
-!!$         do i=1,NM
-!!$            B(i,jgt+(ip-1)*ngt)=(conjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
-!!$         end do
-!!$      end do
-!!$   end do
-!!$   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz,iyz),NGt*npol,beta,A,NM)
-!!$   do iy=1,NRY
-!!$      do iz=1,NRZ
-!!$         i=ix+(iy-1)*nrx+(iz-1)*nry*nrx
-!!$         j=iy+(iz-1)*NRY
-!!$         C(1:NM,i)=A(1:NM,j)
-!!$      end do
-!!$   end do
-!!$   
-!!$   
-!!$   do iy=1,NRY
-!!$      do iz=1,NRZ
-!!$         write(200+iy,'(3E12.4)')dble(ix-1)*dx*1d7,dble(iz-1)*dz*1d7,abs(C(nband_val(1)+1,ix+(iy-1)*nrx+(iz-1)*nry*nrx))**2
-!!$      end do
-!!$      write(200+iy,*)
-!!$   end do
-!!$   do iz=1,NRZ
-!!$      tmp=0.0_dp
-!!$      do iy=1,NRY
-!!$         do n=1,nband_val(1)
-!!$            tmp=tmp+abs(C(n,ix+(iy-1)*nrx+(iz-1)*nry*nrx))**2
-!!$         end do
-!!$      end do
-!!$      write(200+iy+1,'(3E12.4)')dble(ix-1)*dx*1d7,dble(iz-1)*dz*1d7,tmp
-!!$   end do
-!!$   write(200+iy+1,*)
-!!$end do
-!!$
-!!$deallocate(A,B)
-!!$
-!!$
-!!$
-!!$write(*,*)
-!!$write(*,*)'computing the connection matrices between the URBF and '
-!!$write(*,*)'the real-space representation (vec_field_new option is enabled)'
-!!$write(*,*)'...'
-!!$write(*,*)
-!!$t1=SECNDS(0.0)
-!!$
-!!$!$omp parallel default(none) &
-!!$!$omp private(i,j,ix,iy,iz,n,nn,mm,jj,kk,tmp,tmp_vec) &
-!!$!$omp shared(iyz,im,NRX,NRY,NRZ,NM,HL,C,AJ,BJ,CJ)
-!!$allocate(tmp_vec(NM))
-!!$!$omp do
-!!$do iz=1,NRZ-1
-!!$!!!$   write(*,*)'iz=',iz
-!!$!!!$   do ix=1,NRX-1
-!!$!!!$      do n=1,NM
-!!$!!!$         
-!!$!!!$         tmp_vec(:)=0.0_dp
-!!$!!!$         do mm=1,NM
-!!$!!!$         tmp = 0.0_dp
-!!$!!!$         do jj=1,NRY
-!!$!!!$            do kk=1,NRZ
-!!$!!!$               j=ix+1+(jj-1)*nrx+(kk-1)*nry*nrx
-!!$!!!$               tmp = tmp + C(n,j)*conjg(C(mm,j))
-!!$!!!$            end do
-!!$!!!$         end do
-!!$!!!$         
-!!$!!!$         do nn=1,NM
-!!$!!!$         do iy=1,NRY
-!!$!!!$         i=ix+(iy-1)*nrx+(iz-1)*nry*nrx
-!!$!!!$         
-!!$!!!$         tmp_vec(:) = tmp_vec(:)+&
-!!$!!!$              HL(iyz,im)%H(nn,mm)*C(nn,i)*conjg(C(:,i))*tmp
-!!$!!!$         end do
-!!$!!!$         end do
-!!$!!!$         end do
-!!$!!!$         
-!!$!!!$         AJ(iyz,im)%K(:,n,ix,iz)=tmp_vec(:)
-!!$!!!$         
-!!$!!!$         
-!!$!!!$         tmp_vec(:)=0.0_dp
-!!$!!!$         do mm=1,NM
-!!$!!!$         tmp = 0.0_dp
-!!$!!!$         do jj=1,NRY
-!!$!!!$            do kk=1,NRX
-!!$!!!$               j=kk+(jj-1)*nrx+(iz)*nry*nrx
-!!$!!!$               tmp = tmp + C(n,j)*conjg(C(mm,j))
-!!$!!!$            end do
-!!$!!!$         end do         
-!!$!!!$         do nn=1,NM
-!!$!!!$         do iy=1,NRY
-!!$!!!$         i=ix+(iy-1)*nrx+(iz-1)*nry*nrx
-!!$!!!$            
-!!$!!!$         tmp_vec(:) = tmp_vec(:)+&
-!!$!!!$              HL(iyz,im)%H(nn,mm)*C(nn,i)*conjg(C(:,i))*tmp
-!!$!!!$         end do
-!!$!!!$         end do
-!!$!!!$         end do
-!!$!!!$         
-!!$!!!$         BJ(iyz,im)%K(:,n,ix,iz)=tmp_vec(:)
-!!$!!!$         
-!!$!!!$         
-!!$!!!$         
-!!$!!!$      end do
-!!$!!!$   end do
-!!$   
-!!$   do ix=1,NRX-1
-!!$      do n=1,NM
-!!$!!!$         tmp_vec(:)=0.0_dp
-!!$!!!$         do iy=1,NRY
-!!$!!!$            i=ix+(iy-1)*nrx+(iz-1)*nry*nrx
-!!$!!!$            tmp_vec(:) = tmp_vec(:)+&
-!!$!!!$                 C(:,i+1)*conjg(C(n,i))
-!!$!!!$         end do
-!!$!!!$      
-!!$!!!$         AJ(iyz,im)%K(:,n,ix,iz)=tmp_vec(:)
-!!$         do mm=1,NM
-!!$            tmp=0.0_dp
-!!$            do iy=1,NRY
-!!$               i=ix+(iy-1)*nrx+(iz-1)*nry*nrx
-!!$               tmp=tmp+C(mm,i+1)*conjg(C(n,i))
-!!$            end do
-!!$            AJ(iyz,im)%K(mm,n,ix,iz)=tmp
-!!$         end do
-!!$      end do
-!!$   end do
-!!$   
-!!$   do ix=1,NRX-1
-!!$      do n=1,NM
-!!$!!!$         tmp_vec(:)=0.0_dp
-!!$!!!$         do iy=1,NRY
-!!$!!!$            i=ix+(iy-1)*nrx+(iz-1)*nry*nrx
-!!$!!!$            tmp_vec(:) = tmp_vec(:)+&
-!!$!!!$                 C(:,i+nry*nrx)*conjg(C(n,i))
-!!$!!!$         end do
-!!$!!!$      
-!!$!!!$         BJ(iyz,im)%K(:,n,ix,iz)=tmp_vec(:)
-!!$         do mm=1,NM
-!!$            tmp=0.0_dp
-!!$            do iy=1,NRY
-!!$               i=ix+(iy-1)*nrx+(iz-1)*nry*nrx
-!!$               tmp=tmp+C(mm,i+nry*nrx)*conjg(C(n,i))
-!!$            end do
-!!$            BJ(iyz,im)%K(mm,n,ix,iz)=tmp
-!!$         end do
-!!$      end do
-!!$   end do
-!!$   
-!!$end do
-!!$!$omp end do
-!!$
-!!$
-!!$!$omp do
-!!$do iz=1,NRZ
-!!$
-!!$   do ix=1,NRX
-!!$      do n=1,NM
-!!$!!!$         tmp_vec(:)=0.0_dp
-!!$!!!$         do iy=1,NRY
-!!$!!!$            i=ix+(iy-1)*nrx+(iz-1)*nry*nrx
-!!$!!!$            tmp_vec(:) = tmp_vec(:)+&
-!!$!!!$                 C(:,i)*conjg(C(n,i))
-!!$!!!$         end do
-!!$!!!$      
-!!$!!!$         CJ(iyz,im)%K(:,n,ix,iz)=tmp_vec(:)
-!!$         do mm=1,NM
-!!$            tmp=0.0_dp
-!!$            do iy=1,NRY
-!!$               i=ix+(iy-1)*nrx+(iz-1)*nry*nrx
-!!$               tmp=tmp+C(mm,i)*conjg(C(n,i))
-!!$            end do
-!!$            CJ(iyz,im)%K(mm,n,ix,iz)=tmp
-!!$         end do
-!!$         
-!!$      end do
-!!$   end do
-!!$   
-!!$end do
-!!$ !$omp end do
-!!$
-!!$
-!!$deallocate(tmp_vec)
-!!$!$omp end parallel
-!!$t2=SECNDS(t1)
-!!$WRITE(*,*)'Time spent (s)',t2
-!!$deallocate(C)
-!!$
-!!$
-!!$do ix=1,NRX
-!!$   do iz=1,NRZ
-!!$      tmp=0.0_dp
-!!$      do n=1,nband_val(1)
-!!$         tmp=tmp+abs(CJ(iyz,im)%K(n,n,ix,iz))
-!!$      end do
-!!$      write(299,'(3E12.4)')dble(ix-1)*dx*1d7,dble(iz-1)*dz*1d7,tmp
-!!$   end do
-!!$   write(299,*)
-!!$end do
-!!$
-!!$open(unit=13,file=TRIM(inputdir)//'AJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-!!$do iz=1,NRZ
-!!$do ix=1,NRX
-!!$do nn=1,NM
-!!$do mm=1,NM
-!!$write(13,*)AJ(iyz,im)%K(mm,nn,ix,iz)
-!!$end do
-!!$end do
-!!$end do
-!!$end do
-!!$close(13)
-!!$open(unit=13,file=TRIM(inputdir)//'BJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-!!$do iz=1,NRZ
-!!$do ix=1,NRX
-!!$do nn=1,NM
-!!$do mm=1,NM
-!!$write(13,*)BJ(iyz,im)%K(mm,nn,ix,iz)
-!!$end do
-!!$end do
-!!$end do
-!!$end do
-!!$close(13)
-!!$open(unit=13,file=TRIM(inputdir)//'CJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-!!$do iz=1,NRZ
-!!$do ix=1,NRX
-!!$do nn=1,NM
-!!$do mm=1,NM
-!!$write(13,*)CJ(iyz,im)%K(mm,nn,ix,iz)
-!!$end do
-!!$end do
-!!$end do
-!!$end do
-!!$close(13)
-!!$
-!!$
-!!$end if
-!!$end do
-!!$end if  !!! end if vec_field_new
-
-
+!!!stop
 
 end do ! end do im
 
@@ -1315,68 +1002,6 @@ deallocate(Uk)
 end if
 
 
-
-
-!!$if(vec_field_old)then
-!!$do im=1,num_mat
-!!$do iyz=1,Nkyz
-!!$if( k_selec(iyz))then
-!!$      
-!!$allocate(AJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
-!!$allocate(BJ(iyz,im)%K(NM,NM,NRX-1,NRZ-1))
-!!$allocate(CJ(iyz,im)%K(NM,NM,NRX,NRZ))
-!!$  
-!!$AJ(iyz,im)%K=0.0_dp
-!!$BJ(iyz,im)%K=0.0_dp
-!!$CJ(iyz,im)%K=0.0_dp
-!!$
-!!$write(*,*) 
-!!$write(*,*) 'reading the connection matrices (vec_field_old option is enabled)'
-!!$write(*,*) '...'
-!!$
-!!$t1=SECNDS(0.0)
-!!$open(unit=13,file=TRIM(inputdir)//'AJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-!!$do iz=1,NRZ
-!!$do ix=1,NRX
-!!$do nn=1,NM
-!!$do mm=1,NM
-!!$read(13,*)AJ(iyz,im)%K(mm,nn,ix,iz)
-!!$end do
-!!$end do
-!!$end do
-!!$end do
-!!$close(13)
-!!$open(unit=13,file=TRIM(inputdir)//'BJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-!!$do iz=1,NRZ
-!!$do ix=1,NRX
-!!$do nn=1,NM
-!!$do mm=1,NM
-!!$read(13,*)BJ(iyz,im)%K(mm,nn,ix,iz)
-!!$end do
-!!$end do
-!!$end do
-!!$end do
-!!$close(13)
-!!$open(unit=13,file=TRIM(inputdir)//'CJ_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-!!$do iz=1,NRZ
-!!$do ix=1,NRX
-!!$do nn=1,NM
-!!$do mm=1,NM
-!!$read(13,*)CJ(iyz,im)%K(mm,nn,ix,iz)
-!!$end do
-!!$end do
-!!$end do
-!!$end do
-!!$close(13)
-!!$
-!!$end if
-!!$end do
-!!$end do
-!!$
-!!$t2=SECNDS(t1)
-!!$write(*,*) 'done in ',t2,'s'
-!!$write(*,*) 
-!!$end if
 
 
 if(phonons)then
@@ -1408,7 +1033,7 @@ do j=1,nkz
 end do
 
 
-!stop
+!!!stop
 
 end subroutine read_QE_output
 
@@ -1519,8 +1144,6 @@ end subroutine coefficienti
    
    call zgemm('n','c',nm,nm,nm,alpha,B,nm,U,nm,beta,C,nm)
    call zgemm('n','n',nm,nm,nm,alpha,U,nm,C,nm,beta,B,nm)
-
-!   B=(B+transpose(dconjg(B)))/2.0_dp
    
    deallocate(U,C)
    deallocate(E)

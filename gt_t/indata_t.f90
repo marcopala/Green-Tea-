@@ -628,7 +628,7 @@ CONTAINS
        write(*,*)'PHONONS OFF, balistic simulation'
     end if
 
-    if(phonons) allocate(el_ph_mtrx(NKyz,Nkx,NKyz,num_mat))
+    if(phonons) allocate(el_ph_mtrx(NKyz,Nkx+1,NKyz,num_mat))
     
     if(phonons)then
        allocate(in_kx(NKyz,num_mat))
