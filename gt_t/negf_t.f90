@@ -3,13 +3,12 @@
 ! e-mail: marco.pala@c2n.upsaclay.fr ;   marco.pala@c2n.upsaclay.fr
 
 ! This software is a computer program whose purpose is
-
 ! to perform self-consistent simulations of nanosystems with a full ab initio approach
 ! by using the density functional theory and the non-equilibrium Green's function method.
 
 ! This software is governed by the CeCILL license under French law and
 ! abiding by the rules of distribution of free software.  You can use, 
-! modify and/ or redistribute the software under the terms of the CeCILL
+! modify and/or redistribute the software under the terms of the CeCILL
 ! license as circulated by CEA, CNRS and INRIA at the following URL
 ! "http://www.cecill.info". 
 
@@ -17,7 +16,6 @@
 ! modify and redistribute granted by the license, users are provided only
 ! with a limited warranty and the software's author, the holder of the
 ! economic rights, and the successive licensors have only limited liability. 
-
 ! In this respect, the user's atention is drawn to the risks associated
 ! with loading,  using,  modifying and/or developing or reproducing the
 ! software by the user in light of its specific status of free software,
@@ -354,8 +352,8 @@ enddo
 
   SELECT CASE (chtype)
   CASE ('n')
-        emin_yz(iyz)=min(min(mud,mus),MINVAL(subband(nsolv+1,:,iyz)))-epsilon
-        emax_yz(iyz)=max(max(mus,mud),MAXVAL(subband(nsolv+1,:,iyz)))+NKT*(BOLTZ*TEMP)
+        emin_yz(iyz)=min(min(mud,mus),MINVAL(subband(nsolv+1,1:ncx_d,iyz)))-epsilon   
+        emax_yz(iyz)=max(max(mus,mud),MAXVAL(subband(nsolv+1,1:ncx_d,iyz)))+NKT*(BOLTZ*TEMP)
         
    CASE ('p')
         emin_yz(iyz)=min(min(mud,mus),MINVAL(subband(nsolv,:,iyz)))-NKT*(BOLTZ*TEMP)
@@ -619,7 +617,7 @@ if(phonons)then
   if (.not. dfpt) then
 
 
-     !$omp parallel default(none)  private(ii,ix,iyz,jyz,nee,xx,A,B,CC,DD) shared(Nop,nmax,nkx,nkyz,g_spin,ncx_d,ncy,ncz,nm,Nop_g,sigma_lesser_ph,sigma_greater_ph,sigma_lesser_ph_prev,sigma_greater_ph_prev, &
+     !$omp parallel default(none)  private(ii,ix,iyz,jyz,nee,xx,A,B,CC,DD) shared(Nop,nmax,nqx,nkyz,g_spin,ncx_d,ncy,ncz,nm,Nop_g,sigma_lesser_ph,sigma_greater_ph,sigma_lesser_ph_prev,sigma_greater_ph_prev, &
      !$omp g_lesser,g_greater,SCBA_iter,Dop_g,n_bose_g,Dac,Eop,temp,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy,derror,scba_tolerance)
      
      allocate(A(NMAX,NMAX),B(NMAX,NMAX),CC(NMAX,NMAX,Ncx_d),DD(NMAX,NMAX,Ncx_d))
@@ -642,61 +640,61 @@ if(phonons)then
 
                     CC=0.0_dp
                     DD=0.0_dp
-                    
+                                        
                     !$omp do
-                    do xx=1,ncx_d
+                   do xx=1,ncx_d
                        
-                    do ix=1,nkx+1   
-                    IF(nee.le.Nop_g)THEN
-                       IF(nee.le.Nop-Nop_g)THEN
-                          ! E+Eop_g
-                       
-                             A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
+                   IF(nee.le.Nop_g)THEN
+                      IF(nee.le.Nop-Nop_g)THEN
+                         ! E+Eop_g
+                         
+                      !!!! A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
                              
-                             CC(1:nm(xx),1:nm(xx),xx)=CC(1:nm(xx),1:nm(xx),xx)+&
-                                  Dop_g*g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g + 1.0_dp ) +&
-                                  Dac*g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
-
-                             DD(1:nm(xx),1:nm(xx),xx)=DD(1:nm(xx),1:nm(xx),xx)+&
-                                  Dop_g*g_greater (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g ) +&
-                                  Dac*g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz)
-                                                    
-                          END IF
+                         CC(1:nm(xx),1:nm(xx),xx)=CC(1:nm(xx),1:nm(xx),xx)+&
+                              Dop_g*g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g + 1.0_dp ) +&
+                              Dac*g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
+                         
+                         DD(1:nm(xx),1:nm(xx),xx)=DD(1:nm(xx),1:nm(xx),xx)+&
+                              Dop_g*g_greater (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g ) +&
+                              Dac*g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz)
+                         
+                      END IF
                        
                     ELSE
                        
                        IF(nee.le.Nop-Nop_g)THEN
                           ! E+Eop_g and E-Eop_g
-                                                     
-                             A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
+                          
+                          !!!!A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
                                    
-                             CC(1:nm(xx),1:nm(xx),xx)=CC(1:nm(xx),1:nm(xx),xx)+&
-                                  Dop_g*g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g + 1.0_dp ) +&
-                                  Dop_g*g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g )  + &
-                                  Dac*g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
+                          CC(1:nm(xx),1:nm(xx),xx)=CC(1:nm(xx),1:nm(xx),xx)+&
+                               Dop_g*g_lesser (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g + 1.0_dp ) +&
+                               Dop_g*g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g )  + &
+                               Dac*g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
                                                                       
-                             DD(1:nm(xx),1:nm(xx),xx)=DD(1:nm(xx),1:nm(xx),xx)+&
-                                  Dop_g*g_greater (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g ) + &
-                                  Dop_g*g_greater (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g +1.0_dp )  + &
-                                  Dac*g_greater (nee,1:nm(xx),1:nm(xx),xx,iyz)
+                          DD(1:nm(xx),1:nm(xx),xx)=DD(1:nm(xx),1:nm(xx),xx)+&
+                               Dop_g*g_greater (nee+Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*( n_bose_g ) + &
+                               Dop_g*g_greater (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g +1.0_dp )  + &
+                               Dac*g_greater (nee,1:nm(xx),1:nm(xx),xx,iyz)
                                    
                                                                            
                        ELSE 
                           ! E-Eop_g
-                             A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
+                            !!!! A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
                                    
-                             CC(1:nm(xx),1:nm(xx),xx)=CC(1:nm(xx),1:nm(xx),xx)+&
-                                  Dop_g*g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g )  + &
-                                  Dac*g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
-                                   
-                            
-                                   
-                             DD(1:nm(xx),1:nm(xx),xx)=DD(1:nm(xx),1:nm(xx),xx)+&
-                                  Dop_g*g_greater (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g +1.0_dp )  + &
+                          CC(1:nm(xx),1:nm(xx),xx)=CC(1:nm(xx),1:nm(xx),xx)+&
+                               Dop_g*g_lesser (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g )  + &
+                               Dac*g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
+                          
+                          DD(1:nm(xx),1:nm(xx),xx)=DD(1:nm(xx),1:nm(xx),xx)+&
+                               Dop_g*g_greater (nee-Nop_g,1:nm(xx),1:nm(xx),xx,iyz)*  ( n_bose_g +1.0_dp )  + &
                                   Dac*g_greater (nee,1:nm(xx),1:nm(xx),xx,iyz)
-                                   
-                          END IF
+                          
                        END IF
+                    END IF
+                    A=0.0_dp
+                    do ix=1,nqx+1
+                       A(1:nm(xx),1:nm(xx))=A(1:nm(xx),1:nm(xx))+el_ph_mtrx(jyz,ix,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))/sqrt(dble(nqx+1))   
                     end do
                        
                     call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),CC(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
@@ -705,11 +703,11 @@ if(phonons)then
                     call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
 
                     sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
-                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)/dble(nkx+1)*&
+                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                          CC(1:nm(xx),1:nm(xx),xx)
-
+                    
                     sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
-                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)/dble(nkx+1)*&
+                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
                          DD(1:nm(xx),1:nm(xx),xx)
                              
                  end do
@@ -729,7 +727,7 @@ end DO
   
      DEALLOCATE(A,B,CC,DD)
 
-    !$omp end parallel
+     !$omp end parallel
   end if
 
 t2=SECNDS(t1)
@@ -939,6 +937,8 @@ write(*,*)
 write(*,*)'Writing output files ...'
 write(*,*)
 
+   t1=SECNDS(0.0)
+
 do iyz=1,NKYZ  
 if(k_selec(iyz))then
   ! ==========  End of parallel resolution ===========================
@@ -1025,7 +1025,7 @@ if(.not.onlyT)then
    
    Write(*,*) 'Transforming the carrier density',', ikyz =',iyz
 
-   t1=SECNDS(0.0)
+  ! t1=SECNDS(0.0)
    
    call omp_set_num_threads(Nomp)
   !$omp parallel default(none) private(xx,n,i,j,ix,iy,iz,dens_yz,dens_z) &
@@ -1051,8 +1051,8 @@ if(.not.onlyT)then
                   if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
                end do
             end do
-            charge_n(1+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
-                 charge_n(1+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
+            charge_n(1+(xx-1)*Ndeltax+ix/ceiling(dble(Nrx)/dble(Ndeltax)),1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
+                 charge_n(1+(xx-1)*Ndeltax+ix/ceiling(dble(Nrx)/dble(Ndeltax)),1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
                  dens_yz(1:Ndeltay+1,1:Ndeltaz+1)
          end if
          if((chtype .eq. 'p') .or. (chtype .eq. 't'))then
@@ -1068,17 +1068,17 @@ if(.not.onlyT)then
                   if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
                end do
             end do
-            charge_p(1+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
-                 charge_p(1+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
+            charge_p(1+(xx-1)*Ndeltax+ix/ceiling(dble(Nrx)/dble(Ndeltax)),1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
+                 charge_p(1+(xx-1)*Ndeltax+ix/ceiling(dble(Nrx)/dble(Ndeltax)),1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
                  dens_yz(1:Ndeltay+1,1:Ndeltaz+1)
          end if
          
       end do
       
-      do j=2,Ndeltax
-         charge_n(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_n(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
-         charge_p(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_p(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
-      end do
+!      do j=2,Ndeltax
+!         charge_n(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_n(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
+!         charge_p(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_p(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
+!      end do
    end if
    end do
    !$omp end do nowait
@@ -1212,6 +1212,7 @@ deallocate(Hi)
 
 charge_n=charge_n/(DX*NCY*DY*NCZ*DZ)/(dble(Nrx)/dble(Ndeltax))
 charge_p=charge_p/(DX*NCY*DY*NCZ*DZ)/(dble(Nrx)/dble(Ndeltax))
+
 
 charge_n(NTOT_X,1:NTOT_Y,1:NTOT_Z)=charge_n(NTOT_X-1,1:NTOT_Y,1:NTOT_Z)
 charge_p(NTOT_X,1:NTOT_Y,1:NTOT_Z)=charge_p(NTOT_X-1,1:NTOT_Y,1:NTOT_Z)

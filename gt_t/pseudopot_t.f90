@@ -342,8 +342,11 @@ do im=1,num_mat
             end do
          end do
       end do
-end if
-!!!!!!!!   
+   end if
+!!!!!!!!
+
+
+   
 
 !do i=1,NM_mat(im)
 !   do j=1,NM_mat(im)
@@ -533,7 +536,7 @@ do im=1,num_mat
       
       
 !!!! INTERPOLATION ON THE COARSE GRID
-      
+     
       t1=SECNDS(0.0)
       
       do iy=1,NRY
@@ -546,7 +549,7 @@ do im=1,num_mat
       if(npol>1)      Uk(1+NGt:npol*NGt,1:NRY*NRZ,iyz)=Uk(1:NGt,1:NRY*NRZ,iyz)
 
       call omp_set_num_threads(Nomp)
-
+      
 !$omp parallel default(none) private(ix,iy,iz,ip,i,j,jgt,dens_z,dens_yz,A,B,C) &
 !$omp shared(iyz,im,ney,nez,nm,nrx,nry,nrz,ndeltay,ndeltaz,dx,dy,dz,npol,ngt,Uk,ULCBB,U_psi)
 
@@ -560,7 +563,7 @@ allocate(C(NM*NM,(nry)*(nrz)))
 
 !$omp do 
 do ix=1,Nrx
-
+write(*,*) 'ix =',ix
    do ip=1,npol
       do jgt=1,Ngt
          do i=1,NM
@@ -635,7 +638,7 @@ deallocate(dens_z,dens_yz)
 
 t2=SECNDS(t1)
 WRITE(*,*)'Time spent to compute the interpolation (s)',t2
-       
+
 !stop
  
 if(iyz==1)then
@@ -919,22 +922,22 @@ if (.not. dfpt) then
       
    do jyz=1,NKyz ! index of q_yz
       
-      if(k_selec(jyz))then
-         do iyz = 1,NKyz   ! index of k_yz
+      do iyz = 1,NKyz   ! index of k_yz
             
-            if(k_selec(iyz))then
+         if(k_selec(iyz))then
+            
+            do jx=1,nqx+1
                
-               do jx=1,nkx+1
-                  
-                  allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
-                  el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
-                  
-                  jj = ind_kyz( k_vec(2:3,iyz) - kq_vec(2:3,1+(jyz-1)*nkx) )  ! index of k_yz' = k_yz - q_yz 
-                  
+               allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
+               el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
+               
+               jj = ind_kyz( k_vec(2:3,iyz) - kq_vec(2:3,1+(jyz-1)*nkx) )  ! index of k_yz' = k_yz - q_yz 
+               
+               if(k_selec(jj))then
                   allocate(C(nm,nm))
                   C=0.0_dp
                   ip=1 !!! no polarization is assumed
-                  nn=nkx
+                  nn=nqx
                   
                   call omp_set_num_threads(Nrx)
                   !$omp parallel default(none) private(ix,n,m) &
@@ -976,13 +979,13 @@ if (.not. dfpt) then
                   end do
                   deallocate(C)
 
-               end do
+               end if
 
 
                
-            end if
-         end do
-      end if
+            end do
+         end if
+      end do
    end do
    
 end if ! if not dfpt

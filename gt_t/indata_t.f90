@@ -127,7 +127,7 @@ MODULE indata
   REAL(DP) :: TEMP
   INTEGER  :: NKT
 
-  INTEGER  :: nband,nband_c,nband_v,nk1,MM,ni,nf,nkx,nkx_d,Nk,nkyz,nky,nkz,nmod,nmodes_ph
+  INTEGER  :: nband,nband_c,nband_v,nk1,MM,ni,nf,nkx,nqx,Nk,nkyz,nky,nkz,nmod,nmodes_ph
   INTEGER  :: nx, ny, nz, NKGt, NMODES
   INTEGER  :: Nrx,Nry,Nrz,ngt,npol,Ncy,Ncz,Ncx_D
   integer,  allocatable :: Nez(:), Ney(:), Nex(:), nband_val(:), off_k_nvb(:)
@@ -680,7 +680,7 @@ vertical_offset=1 !(((tsc_h+2*tox_h)-(tsc_h+2*tox_h_ch))/2 + 1)
 NUMBOUND_3D=0
 NUMBOUNDOLD=0
 
-!!! change june 2021
+
 IF(schottky_source)THEN
    NUMBOUND_3D=NUMBOUND_3D+source_len*NTOT_Y*NTOT_Z   
 END IF
@@ -774,7 +774,6 @@ coord_3D(3,ii)=inplane_z*deltaz
 
 IF((inplane_y.eq.0).or.(inplane_z.eq.0).or.(inplane_y.eq.NTOT_Y-1).or.(inplane_z.eq.NTOT_Z-1))whichkind_3D(ii)=0 !Boundary node. Not un unknown for Schroedinger 2D
 
-!!! change june 2021
 IF(schottky_source)THEN
    IF((plane_index.le.(source_len)))THEN
       whichkind_3D(ii)=11 !set nodes
