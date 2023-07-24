@@ -263,6 +263,7 @@ MODULE indata
   NAMELIST /indata_dimensionality/             &
        &  Ncy,                                 &
        &  Ncz,                                 &
+       &  nqx,                                 &
        &  nkx,                                 &
        &  Nky,                                 &
        &  Nkz
@@ -338,6 +339,8 @@ CONTAINS
     write(*,*)'Ndeltax=',Ndeltax
     write(*,*)'Ndeltay=',Ndeltay
     write(*,*)'Ndeltaz=',Ndeltaz
+
+    WRITE(*,*)'NQX=',NQX
     
     WRITE(*,*)'NKX=',NKx
     WRITE(*,*)'NKY=',NKY
@@ -391,6 +394,7 @@ CONTAINS
     DIEL_O2=1.0d0
     ncy=1
     ncz=1
+    nqx=2
     nkx=2
     nky=1
     nkz=1
