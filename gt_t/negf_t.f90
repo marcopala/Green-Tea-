@@ -463,7 +463,7 @@ if(phonons)then
      SCBA_scalar=1.0_dp
      SCBA_iter=0  
 
-     ALLOCATE(derror(Nop,Ncx_D,nkyz),omega(Nop,Ncx_D))
+     ALLOCATE(derror(Nop,Ncx_D,nkyz),omega(1,1))
      derror=1.0_dp
      omega=0.0_dp
      ALLOCATE(g_lesser(Nop,NMAX,NMAX,ncx_d,NKYZ),g_greater(Nop,NMAX,NMAX,Ncx_d,NKYZ))
@@ -494,7 +494,7 @@ if(phonons)then
         !$omp do
         do nee=1,Nop
         
-        if(maxval(abs(derror(nee,:,iyz))) > scba_tolerance)then
+    !    if(maxval(abs(derror(nee,:,iyz))) > scba_tolerance)then
            EN=emin+emin_local+dble(nee-1)*Eop
      
            call RGF(scba_iter,NMAX,flag(nee,iyz),EN,mus,mud,Hi(1:NMAX,1:NMAX,1:Ncx_d,iyz),&
@@ -524,7 +524,7 @@ if(phonons)then
 !!$          write(3600+scba_iter+10*(ee-1),*)
 !!!!!!!!!!!!! END of debugging files
            
-       end if
+     !  end if
      end do  ! end do nee
      !$omp end do nowait
      DEALLOCATE(g_lesser_diag_local)
@@ -621,12 +621,12 @@ if(phonons)then
      !$omp g_lesser,g_greater,SCBA_iter,Dop_g,n_bose_g,Dac,Eop,temp,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy,derror,scba_tolerance)
      
      allocate(A(NMAX,NMAX),B(NMAX,NMAX),CC(NMAX,NMAX,Ncx_d),DD(NMAX,NMAX,Ncx_d))
-    
+     !$omp do
      DO nee=1,Nop
         do jyz = 1,NKYZ   ! index of k_yz 
            if(k_selec(jyz))then
 
-        if(maxval(abs(derror(nee,:,jyz))) > scba_tolerance)then
+       ! if(maxval(abs(derror(nee,:,jyz))) > scba_tolerance)then
           
               do iyz = 1,NKYZ ! this is the idex of k_yz' 
                  if(k_selec(iyz))then
@@ -641,7 +641,7 @@ if(phonons)then
                     CC=0.0_dp
                     DD=0.0_dp
                                         
-                    !$omp do
+                !!!!!    !$omp do
                    do xx=1,ncx_d
                        
                    IF(nee.le.Nop_g)THEN
@@ -711,20 +711,20 @@ if(phonons)then
                          DD(1:nm(xx),1:nm(xx),xx)
                              
                  end do
-                 !$omp end do nowait
+                 !!!! !$omp end do nowait
                  
               end if
            end do
 
-        else
-           sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)  = sigma_lesser_ph_prev(nee,1:nmax,1:nmax,1:ncx_d,jyz)
-           sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz) = sigma_greater_ph_prev(nee,1:nmax,1:nmax,1:ncx_d,jyz)
-     end if
-  end if
-end do
+        !else
+        !   sigma_lesser_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz)  = sigma_lesser_ph_prev(nee,1:nmax,1:nmax,1:ncx_d,jyz)
+        !   sigma_greater_ph(nee,1:nmax,1:nmax,1:ncx_d,jyz) = sigma_greater_ph_prev(nee,1:nmax,1:nmax,1:ncx_d,jyz)
+        !end if
+        end if
+  end do
      
 end DO
-  
+  !$omp end do nowait
      DEALLOCATE(A,B,CC,DD)
 
      !$omp end parallel
@@ -736,8 +736,10 @@ WRITE(*,*)'TIME SPENT TO COMPUTE SIGMA_LESSER_PH (s)',t2
 
   if(scba_scalar > 1.0d-3)then
      omega=0.0_dp
+     write(*,*)'omega=',omega
   else
      omega=1.0_dp-scba_alpha
+     write(*,*)'omega=',omega
   end if
   
   SCBA_f=0.0_dp
@@ -776,12 +778,12 @@ WRITE(*,*)'TIME SPENT TO COMPUTE SIGMA_LESSER_PH (s)',t2
   DO xx=1,Ncx_D
      DO jyz=1,NKYZ
         if(k_selec(jyz))then
-           do nee=1,Nop
-           sigma_lesser_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz) + &
-                (1.0d0-omega(nee,xx))*(sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)-sigma_lesser_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz))     
-           sigma_greater_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz) + &
-                (1.0d0-omega(nee,xx))*(sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)-sigma_greater_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz))
-        end do
+          ! do nee=1,Nop
+           sigma_lesser_ph_prev(1:Nop,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph_prev(1:Nop,1:nm(xx),1:nm(xx),xx,jyz) + &
+                (1.0d0-omega(1,1))*(sigma_lesser_ph(1:Nop,1:nm(xx),1:nm(xx),xx,jyz)-sigma_lesser_ph_prev(1:Nop,1:nm(xx),1:nm(xx),xx,jyz))     
+           sigma_greater_ph_prev(1:Nop,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph_prev(1:Nop,1:nm(xx),1:nm(xx),xx,jyz) + &
+                (1.0d0-omega(1,1))*(sigma_greater_ph(1:Nop,1:nm(xx),1:nm(xx),xx,jyz)-sigma_greater_ph_prev(1:Nop,1:nm(xx),1:nm(xx),xx,jyz))
+        !end do
         end if
      END DO
   END DO
@@ -1075,10 +1077,10 @@ if(.not.onlyT)then
          
       end do
       
-!      do j=2,Ndeltax
-!         charge_n(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_n(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
-!         charge_p(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_p(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
-!      end do
+!!!      do j=2,Ndeltax
+!!!         charge_n(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_n(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
+!!!         charge_p(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_p(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
+!!!      end do
    end if
    end do
    !$omp end do nowait

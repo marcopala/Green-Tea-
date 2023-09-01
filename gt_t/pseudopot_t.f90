@@ -465,10 +465,8 @@ do im=1,num_mat
       end if
 
       open(unit=300+k,file=TRIM(outdir)//'Edisp_'//TRIM(STRINGA(ii))//'_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(im))//'.dat',status='unknown')
-      do i=1,nm
-         do ikx=1,n+1
-            write(300+k,*)dble(ikx-1-n/2)/dble(n),hkl(ikx,ii)
-         end do
+      do ikx=1,n+1
+         write(300+k,*)dble(ikx-1-n/2)/dble(n),hkl(ikx,ii)
       end do
       close(300+k)
    end do

@@ -1043,7 +1043,6 @@ deallocate(HCC)
 
 deallocate(ind_cube)
 deallocate(betafunc)
-deallocate(Uh)
 
 t2=SECNDS(t1)
 write(*,*)'100% done in ',t2,' s'
@@ -1106,6 +1105,8 @@ HLLL=HLLL-ref*Si !!! THIS sets the zero energy point at the top of EV(Gamma)
 
 end if
 end if
+
+deallocate(Uh)
 
 if(ncell==1)then
 
@@ -1429,7 +1430,14 @@ do i=1,nmodes
          end if
       end do
    end do
-   write(*,*)'inds',i,inds(i)
+   
+   do ikx=1,nkx_add
+      if(in_kx(i) == xk_add(ikx) .and.  ind_bnd(i) == nbnd_add(ikx) ) then
+         inds(i)=nk1*mm1 + nn + ikx
+      end if
+   end do
+   
+      write(*,*)'inds',i,inds(i)
 end do
 
 
