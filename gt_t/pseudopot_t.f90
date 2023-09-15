@@ -924,7 +924,7 @@ if (.not. dfpt) then
             
          if(k_selec(iyz))then
             
-            do jx=1,nqx+1
+            do jx=1,nqx
                
                allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
                el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
@@ -959,8 +959,8 @@ if (.not. dfpt) then
                   !$omp end parallel
                   
                   ll=1
-                  do i=1,NM
-                     do j=1,NM
+                  do j=1,NM
+                     do i=1,NM
                         
                         el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=C(i,j)
                         
