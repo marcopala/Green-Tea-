@@ -1019,18 +1019,21 @@ if(.not.onlyT)then
   ! t1=SECNDS(0.0)
    
    call omp_set_num_threads(Nomp)
-  !$omp parallel default(none) private(xx,n,i,j,ix,iy,iz,dens_yz,dens_z) &
+  !$omp parallel default(none) private(xx,n,i,ii,j,ix,iy,iz,dens_yz,dens_z) &
   !$omp shared(chtype,iyz,imat,NCX_D,Nrx,Ndeltax,Ndeltay,Ndeltaz,NM,Ny,Nz,ac,Ry,Rz,dosn,dosp, &
-  !$omp U_PSI,DX,DY,DZ,charge_n,charge_p,Ney,Nez,NTOT_Y,NTOT_Z,to2_lft,to2_bot,comp_ch)
+  !$omp U_PSI,DX,DY,DZ,charge_n,charge_p,Nex,NTOT_Y,NTOT_Z,to2_lft,to2_bot,comp_ch)
 
    allocate(dens_yz(Ndeltay+1,Ndeltaz+1))
 
   !$omp do
    do xx=1,NCX_D
-   if(comp_ch(xx)==0)then
-      do ix=1,Nrx
-         if((chtype .eq. 'n') .or. (chtype .eq. 't'))then
-            dens_yz=0.0_dp
+
+      ix=0
+      do ii=1,Ndeltax
+         do n=1,Nex(ii)
+            ix=ix+1
+            if((chtype .eq. 'n') .or. (chtype .eq. 't'))then
+               dens_yz=0.0_dp
             do i=1,NM(xx)
                do j=1,NM(xx)
                   dens_yz(1:Ndeltay+1,1:Ndeltaz+1)=dens_yz(1:Ndeltay+1,1:Ndeltaz+1)+&
@@ -1042,9 +1045,9 @@ if(.not.onlyT)then
                   if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
                end do
             end do
-            charge_n(1+(xx-1)*Ndeltax+ix/ceiling(dble(Nrx)/dble(Ndeltax)),1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
-                 charge_n(1+(xx-1)*Ndeltax+ix/ceiling(dble(Nrx)/dble(Ndeltax)),1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
-                 dens_yz(1:Ndeltay+1,1:Ndeltaz+1)
+            charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
+            charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
+            dens_yz(1:Ndeltay+1,1:Ndeltaz+1)/dble(Nex(ii))
          end if
          if((chtype .eq. 'p') .or. (chtype .eq. 't'))then
             dens_yz=0.0_dp
@@ -1059,18 +1062,13 @@ if(.not.onlyT)then
                   if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
                end do
             end do
-            charge_p(1+(xx-1)*Ndeltax+ix/ceiling(dble(Nrx)/dble(Ndeltax)),1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
-                 charge_p(1+(xx-1)*Ndeltax+ix/ceiling(dble(Nrx)/dble(Ndeltax)),1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
-                 dens_yz(1:Ndeltay+1,1:Ndeltaz+1)
+            charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
+            charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
+            dens_yz(1:Ndeltay+1,1:Ndeltaz+1)/dble(Nex(ii))
          end if
-         
       end do
+   end do
       
-!!!      do j=2,Ndeltax
-!!!         charge_n(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_n(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
-!!!         charge_p(j+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)=charge_p(1+(xx-1)*Ndeltax,1:NTOT_y,1:NTOT_Z)
-!!!      end do
-   end if
    end do
    !$omp end do nowait
    
@@ -1201,8 +1199,9 @@ deallocate(subband)
 deallocate(Hi)
      
 
-charge_n=charge_n/(DX*NCY*DY*NCZ*DZ)/(dble(Nrx)/dble(Ndeltax))
-charge_p=charge_p/(DX*NCY*DY*NCZ*DZ)/(dble(Nrx)/dble(Ndeltax))
+
+charge_n=charge_n/(DX*DY*DZ)/dble(NCY*NCZ)
+charge_p=charge_p/(DX*DY*DZ)/dble(NCY*NCZ)
 
 
 charge_n(NTOT_X,1:NTOT_Y,1:NTOT_Z)=charge_n(NTOT_X-1,1:NTOT_Y,1:NTOT_Z)

@@ -238,7 +238,12 @@ write(*,*)'a0/Dz',a0/Dz,Dz
           if(dble(ix) <= dble(i)*dble(NRX)/dble(Ndeltax) .and. dble(ix) > dble(i-1)*dble(NRX)/dble(Ndeltax)) nex(i)=nex(i)+1
        end do
     end do
-
+    
+    if(sum(nex(:)) /= nrx )then
+       write(*,*)'pb wth nex and nrx'
+       stop
+    end if
+    
     allocate(kc_min(Nkyz,num_mat))
     allocate(kv_max(Nkyz,num_mat))
     write(*,*)'NPOL=',npol
