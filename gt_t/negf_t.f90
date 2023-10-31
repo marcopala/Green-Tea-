@@ -1204,8 +1204,9 @@ charge_n=charge_n/(DX*DY*DZ)/dble(NCY*NCZ)
 charge_p=charge_p/(DX*DY*DZ)/dble(NCY*NCZ)
 
 
-charge_n(NTOT_X,1:NTOT_Y,1:NTOT_Z)=charge_n(NTOT_X-1,1:NTOT_Y,1:NTOT_Z)
-charge_p(NTOT_X,1:NTOT_Y,1:NTOT_Z)=charge_p(NTOT_X-1,1:NTOT_Y,1:NTOT_Z)
+
+charge_n(NTOT_X,1:NTOT_Y,1:NTOT_Z)=charge_n((Ncx_d-1)*Ndeltax+1,1:NTOT_Y,1:NTOT_Z)
+charge_p(NTOT_X,1:NTOT_Y,1:NTOT_Z)=charge_p((Ncx_d-1)*Ndeltax+1,1:NTOT_Y,1:NTOT_Z)
 
 open(unit=10,file='caricx_'//TRIM(STRINGA(ext_iter))//'.dat',status='unknown')
 if(chtype == 'n')then
