@@ -201,8 +201,8 @@ allocate(U(Ngt,(Ny+1)*(Nz+1)))
 do iy=1,NY+1
    do iz=1,NZ+1
       j=iy+(iz-1)*(NY+1)
-      U(1:Ngt,j)=exp(cmplx(0.0_dp,-1.0_dp)*KGt_kyz(2,1:Ngt,iyz)*2.0_dp*pi/ac*Ry(iy)+&
-           cmplx(0.0_dp,-1.0_dp)*KGt_kyz(3,1:Ngt,iyz)*2.0_dp*pi/ac*Rz(iz))/sqrt(dble((Ny+1)*(Nz+1)))
+      U(1:Ngt,j)=exp(cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt_kyz(2,1:Ngt,iyz)*2.0_dp*pi/ac*Ry(iy)+&
+           cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt_kyz(3,1:Ngt,iyz)*2.0_dp*pi/ac*Rz(iz))/sqrt(dble((Ny+1)*(Nz+1)))
    end do
 end do
 
@@ -320,14 +320,14 @@ do xx=1,ncx_d
    if(nband_val(imat(xx))>0)then
       kappax=kv_max(iyz,imat(xx))
       A(1:NM(xx),1:NM(xx))=Hi(1:NM(xx),1:NM(xx),xx,iyz)+&
-           (TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx)))*exp(cmplx(0.0_dp,1.0_dp)*kappax*2.0_dp*pi)+&
-           transpose(dconjg(TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))))*exp(cmplx(0.0_dp,-1.0_dp)*kappax*2.0_dp*pi)
+           (TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx)))*exp(cmplx(0.0_dp,1.0_dp,kind(dp))*kappax*2.0_dp*pi)+&
+           transpose(dconjg(TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))))*exp(cmplx(0.0_dp,-1.0_dp,kind(dp))*kappax*2.0_dp*pi)
       call SUB_DEF_Z0_GEN(ref_index-nsolv+1,ref_index,NM(xx),A,B, subband(1:nsolv,xx,iyz))
    end if
    kappax=kc_min(iyz,imat(xx))
    A(1:NM(xx),1:NM(xx))=Hi(1:NM(xx),1:NM(xx),xx,iyz)+&
-        (TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx)))*exp(cmplx(0.0_dp,1.0_dp)*kappax*2.0_dp*pi)+&
-        transpose(dconjg(TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))))*exp(cmplx(0.0_dp,-1.0_dp)*kappax*2.0_dp*pi)
+        (TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx)))*exp(cmplx(0.0_dp,1.0_dp,kind(dp))*kappax*2.0_dp*pi)+&
+        transpose(dconjg(TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))))*exp(cmplx(0.0_dp,-1.0_dp,kind(dp))*kappax*2.0_dp*pi)
    call SUB_DEF_Z0_GEN(ref_index+1,ref_index+nsolc,NM(xx),A, B, subband(nsolv+1:nsolv+nsolc,xx,iyz))
 
    deallocate(A,B)
@@ -1324,7 +1324,7 @@ if(ff == 0)then
    allocate( sig(nmax,nmax), sigmal(nmax,nmax), sigmar(nmax,nmax), sigma_r_ph(nmax,nmax) )
    allocate( H00(nmax,nmax), H10(nmax,nmax), A(nmax,nmax), B(nmax,nmax), C(nmax,nmax), Id(nmax,nmax) )
    
-  z=cmplx(E,1.0d-6,kind=dp)
+  z=cmplx(E,0.0d-6,kind(dp))
 
   Gln=0.0_dp
   Glp=0.0_dp
@@ -1358,7 +1358,7 @@ if(ff == 0)then
      end do
   end do
   
-  if(traccia(dimag(G00(1:nm(l),1:nm(l)))) <= 0.0_dp)flag_nan=.true.
+!  if(traccia(dimag(G00(1:nm(l),1:nm(l)))) <= 0.0_dp)flag_nan=.true.
   if(flag_nan)call oldsancho(nm(l),E,H00(1:nm(l),1:nm(l)),transpose(dconjg(H10(1:nm(l),1:nm(l)))),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l)))
   flag_nan=.false.
   do i=1,nm(l)
@@ -1384,7 +1384,7 @@ if(ff == 0)then
   
   call zgemm('n','n',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),sig(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l))
   call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),A(1:nm(l),1:nm(l)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
-  !!!C(1:nm(l),1:nm(l))=(C(1:nm(l),1:nm(l))-transpose(dconjg(C(1:nm(l),1:nm(l)))))/2.0_dp
+  C(1:nm(l),1:nm(l))=(C(1:nm(l),1:nm(l))-transpose(dconjg(C(1:nm(l),1:nm(l)))))/2.0_dp
   Gln(1:nm(l),1:nm(l),l)=C(1:nm(l),1:nm(l))
 
   sig(1:nm(l),1:nm(l))=(sigmal(1:nm(l),1:nm(l))-transpose(dconjg(sigmal(1:nm(l),1:nm(l)))))*ferm(-zeta)
@@ -1392,7 +1392,7 @@ if(ff == 0)then
 
   call zgemm('n','n',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),sig(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l))
   call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),A(1:nm(l),1:nm(l)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
-  !!!C(1:nm(l),1:nm(l))=(C(1:nm(l),1:nm(l))-transpose(dconjg(C(1:nm(l),1:nm(l)))))/2.0_dp
+  C(1:nm(l),1:nm(l))=(C(1:nm(l),1:nm(l))-transpose(dconjg(C(1:nm(l),1:nm(l)))))/2.0_dp
   Glp(1:nm(l),1:nm(l),l)=C(1:nm(l),1:nm(l))
 
   !Gl(1:nm(l),1:nm(l),l)=(Gl(1:nm(l),1:nm(l),l)+transpose(conjg(Gl(1:nm(l),1:nm(l),l))))/2.0_dp + &
@@ -1421,7 +1421,7 @@ if(ff == 0)then
 
      call zgemm('n','n',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),C(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l)) 
      call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),A(1:nm(l),1:nm(l)),nm(l),beta,Gn(1:nm(l),1:nm(l)),nm(l))
-     !Gn(1:nm(l),1:nm(l))=(Gn(1:nm(l),1:nm(l))-transpose(dconjg(Gn(1:nm(l),1:nm(l)))))/2.0_dp
+     Gn(1:nm(l),1:nm(l))=(Gn(1:nm(l),1:nm(l))-transpose(dconjg(Gn(1:nm(l),1:nm(l)))))/2.0_dp
      Gln(1:nm(l),1:nm(l),l)=Gn(1:nm(l),1:nm(l))
 
      sig(1:nm(l-1),1:nm(l-1))=Glp(1:nm(l-1),1:nm(l-1),l-1)
@@ -1432,7 +1432,7 @@ if(ff == 0)then
 
      call zgemm('n','n',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),C(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l))
      call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),A(1:nm(l),1:nm(l)),nm(l),beta,Gp(1:nm(l),1:nm(l)),nm(l))
-     !Gp(1:nm(l),1:nm(l))=(Gp(1:nm(l),1:nm(l))-transpose(dconjg(Gp(1:nm(l),1:nm(l)))))/2.0_dp
+     Gp(1:nm(l),1:nm(l))=(Gp(1:nm(l),1:nm(l))-transpose(dconjg(Gp(1:nm(l),1:nm(l)))))/2.0_dp
      Glp(1:nm(l),1:nm(l),l)=Gp(1:nm(l),1:nm(l))
 
      !Gl(1:nm(l),1:nm(l),l)=(Gl(1:nm(l),1:nm(l),l)+transpose(conjg(Gl(1:nm(l),1:nm(l),l))))/2.0_dp + &
@@ -1471,7 +1471,7 @@ if(ff == 0)then
         end if
      end do
   end do
-  if(traccia(dimag(G00(1:nm(l),1:nm(l)))) <= 0.0_dp)flag_nan=.true.
+!  if(traccia(dimag(G00(1:nm(l),1:nm(l)))) <= 0.0_dp)flag_nan=.true.
   if(flag_nan)call oldsancho(nm(l),E,H00(1:nm(l),1:nm(l)),H10(1:nm(l),1:nm(l)),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l)))
   flag_nan=.false.
   do i=1,nm(l)
@@ -1511,7 +1511,7 @@ if(ff == 0)then
   call zgemm('n','n',nm(l),nm(l),nm(l),alpha,G00(1:nm(l),1:nm(l)),nm(l),sig(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l)) 
   call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),G00(1:nm(l),1:nm(l)),nm(l),beta,Gn(1:nm(l),1:nm(l)),nm(l)) 
 
-  !!!!Gn(1:nm(l),1:nm(l))=(Gn(1:nm(l),1:nm(l))-transpose(dconjg(Gn(1:nm(l),1:nm(l)))))/2.0_dp
+  Gn(1:nm(l),1:nm(l))=(Gn(1:nm(l),1:nm(l))-transpose(dconjg(Gn(1:nm(l),1:nm(l)))))/2.0_dp
   ndens(1:nm(l),1:nm(l),l)=Gn(1:nm(l),1:nm(l))
 
   call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),Glp(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l))
@@ -1523,7 +1523,7 @@ if(ff == 0)then
   call zgemm('n','n',nm(l),nm(l),nm(l),alpha,G00(1:nm(l),1:nm(l)),nm(l),sig(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l))
   call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),G00(1:nm(l),1:nm(l)),nm(l),beta,Gp(1:nm(l),1:nm(l)),nm(l))
 
-  !!!Gp(1:nm(l),1:nm(l))=(Gp(1:nm(l),1:nm(l))-transpose(dconjg(Gp(1:nm(l),1:nm(l)))))/2.0_dp
+  Gp(1:nm(l),1:nm(l))=(Gp(1:nm(l),1:nm(l))-transpose(dconjg(Gp(1:nm(l),1:nm(l)))))/2.0_dp
   pdens(1:nm(l),1:nm(l),l)=Gp(1:nm(l),1:nm(l))
 
   ldos(1:nm(l),1:nm(l),l) = G00(1:nm(l),1:nm(l))
@@ -1603,9 +1603,9 @@ if(ff == 0)then
      Gp(1:nm(l),1:nm(l)) = Gp(1:nm(l),1:nm(l))+C(1:nm(l),1:nm(l))-transpose(dconjg(C(1:nm(l),1:nm(l))))   !!! G<_i,i
      !-------------------------
 
-     !!!Gn(1:nm(l),1:nm(l))=(Gn(1:nm(l),1:nm(l))-transpose(dconjg(Gn(1:nm(l),1:nm(l)))))/2.0_dp
+     Gn(1:nm(l),1:nm(l))=(Gn(1:nm(l),1:nm(l))-transpose(dconjg(Gn(1:nm(l),1:nm(l)))))/2.0_dp
      ndens(1:nm(l),1:nm(l),l)=Gn(1:nm(l),1:nm(l))
-     !!!Gp(1:nm(l),1:nm(l))=(Gp(1:nm(l),1:nm(l))-transpose(dconjg(Gp(1:nm(l),1:nm(l)))))/2.0_dp
+     Gp(1:nm(l),1:nm(l))=(Gp(1:nm(l),1:nm(l))-transpose(dconjg(Gp(1:nm(l),1:nm(l)))))/2.0_dp
      pdens(1:nm(l),1:nm(l),l)=Gp(1:nm(l),1:nm(l))
      ldos(1:nm(l),1:nm(l),l) = G00(1:nm(l),1:nm(l))
      !!!ldos(1:nm(l),1:nm(l),l)=(G00(1:nm(l),1:nm(l))+transpose(conjg(G00(1:nm(l),1:nm(l)))))/2.0_dp + &
@@ -1628,7 +1628,7 @@ if(ff == 0)then
   tre=-traccia(dble(B(1:nm(l),1:nm(l))-C(1:nm(l),1:nm(l))))
   
   if ( ff /= 0 ) then
-     write(*,*)'ignoring E =',E
+     !write(*,*)'ignoring E =',E
      tr=0.0_dp
      tre=0.0_dp
      ndens=0.0_dp
@@ -1664,7 +1664,7 @@ subroutine sancho(nm,E,H00,H10,S,G00)
   integer :: nmax = 100
   COMPLEX(DP) :: z
   real(dp), intent(IN) :: E
-  REAL(DP) :: TOL=1.0D-15, error
+  REAL(DP) :: TOL=1.0D-19, error
 
   COMPLEX(DP), INTENT(IN) :: H00(nm,nm), H10(nm,nm), S(nm,nm)
   COMPLEX(DP), INTENT(OUT) :: G00(nm,nm)
@@ -1680,7 +1680,7 @@ subroutine sancho(nm,E,H00,H10,S,G00)
   Allocate( B(nm,nm) )
   Allocate( C(nm,nm) )
   
-  z = cmplx(E,eta,kind=dp)
+  z = cmplx(E,eta,kind(dp))
   
   H_BB = H00  
   H_10 = H10
@@ -1704,7 +1704,9 @@ subroutine sancho(nm,E,H00,H10,S,G00)
      H_10 = A
 
      error = abs( sum(sum(H_10, dim=2), dim=1) ) + abs(sum(sum(H_01, dim=2), dim=1) )
-!     write(*,*)i,E,error
+!     error = traccia(abs(A(1:nm,1:nm)))
+     
+     !     write(*,*)i,E,error
      IF ( abs(error) .lt. TOL ) THEN
         EXIT
      END IF
@@ -1740,7 +1742,7 @@ subroutine oldsancho(nm,E,H00,H10,Id,G00)
   integer i,nmax
   COMPLEX(DP) :: z
   real(dp), intent(IN) :: E
-  REAL(DP) :: TOL=1.0D-12, error
+  REAL(DP) :: TOL=1.0D-19, error
 
   COMPLEX(DP), INTENT(IN) :: H00(nm,nm), H10(nm,nm), Id(nm,nm)
   COMPLEX(DP), INTENT(OUT) :: G00(nm,nm)
@@ -1758,9 +1760,9 @@ subroutine oldsancho(nm,E,H00,H10,Id,G00)
 
   nmax=100
 
-  z = E+cmplx(0.0_dp,1.0d-3,kind=dp)
+  z = E+cmplx(0.0_dp,eta**(0.5_dp),kind(dp))
 
-
+  write(*,*)'using old sancho',E
   H_BB = H00
   H_10 = H10
   H_01 = TRANSPOSE( DCONJG( H10 ) )

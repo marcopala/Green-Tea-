@@ -284,8 +284,8 @@ do im=1,num_mat
       do ip=1,npol
          do jgt=1,Ngt
             do ix=1,nrx   
-               read(13,*)tmp
-               A(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)=tmp
+               read(13,'(2e25.15)')tmp1,tmp2
+               A(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)=cmplx(tmp1,tmp2,kind(dp))
             end do
          end do
       end do
@@ -343,7 +343,7 @@ do im=1,num_mat
             do ix=1,Nrx
                PSIBB(iyz,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,j)=&
                     A(1+(ix-1)*ngt+(ip-1)*Ngt*nrx:ngt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)&
-                    *exp(-cmplx(0.0_dp,1.0_dp)*in_kx(iyz,im)%n(j)*2.0_dp*pi*dble(ix-1)/dble(Nrx))
+                    *exp(-cmplx(0.0_dp,1.0_dp,kind(dp))*in_kx(iyz,im)%n(j)*2.0_dp*pi*dble(ix-1)/dble(Nrx))
             end do
          end do
       end do
@@ -384,12 +384,12 @@ do im=1,num_mat
    end if
    do i=1,nm
       do j=1,nm
-         read(13,*)tmp
-         HL(iyz,im)%H(i,j)=tmp
+         read(13,'(2e25.15)')tmp1,tmp2
+         HL(iyz,im)%H(i,j)=cmplx(tmp1,tmp2,kind(dp))
       end do
    end do
    close(13)
-   HL(iyz,im)%H=(HL(iyz,im)%H+transpose(conjg(HL(iyz,im)%H)))/2.0_dp
+   HL(iyz,im)%H=(HL(iyz,im)%H+transpose(dconjg(HL(iyz,im)%H)))/2.0_dp
    HL(iyz,im)%H = HL(iyz,im)%H + off_set(im)*Si(iyz,im)%H  !!! offset of the material
    write(*,*)im,'offset=',off_set(im)
    allocate(TL(iyz,im)%H(NM_mat(im),NM_mat(im)))   !!! H10
@@ -404,8 +404,8 @@ do im=1,num_mat
    allocate(A(nm,nm))
    do i=1,nm
       do j=1,nm
-         read(13,*)tmp
-         A(i,j)=tmp
+         read(13,'(2e25.15)')tmp1,tmp2
+         A(i,j)=cmplx(tmp1,tmp2,kind(dp))
       end do
    end do
    close(13)
@@ -424,7 +424,8 @@ if(num_het > 0)then
       open(unit=13,file=TRIM(inputdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nhet_'//TRIM(STRINGA(im))//'.dat',status='unknown')
       do i=1,NM_mat(mat_l(im))
          do j=1,NM_mat(mat_r(im))
-            read(13,*)A(i,j)
+            read(13,'(2e25.15)')tmp1,tmp2
+            A(i,j)=cmplx(tmp1,tmp2,kind(dp))
          end do
       end do
       close(13)
@@ -452,7 +453,7 @@ do im=1,num_mat
    
    do ikx=1,n+1
       A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
-           transpose(conjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+           transpose(dconjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
       call SUB_DEF_Z0_GEN(1,M,NM,A,C,E)
       do k=1,M
          hkl(ikx,k)=e(k)
@@ -545,8 +546,8 @@ do im=1,num_mat
       do iy=1,NRY
          do iz=1,NRZ
             j=iy+(iz-1)*(NRY)
-            Uk(1:NGt,j,iyz)=exp( cmplx(0.0_dp,-1.0_dp)*KGt_kyz(2,1:NGt,iyz)*2.0_dp*pi/a0*dble(iy)*Dy+&
-                            cmplx(0.0_dp,-1.0_dp)*KGt_kyz(3,1:NGt,iyz)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
+            Uk(1:NGt,j,iyz)=exp( cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt_kyz(2,1:NGt,iyz)*2.0_dp*pi/a0*dble(iy)*Dy+&
+                            cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt_kyz(3,1:NGt,iyz)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
          end do
       end do
       if(npol>1)      Uk(1+NGt:npol*NGt,1:NRY*NRZ,iyz)=Uk(1:NGt,1:NRY*NRZ,iyz)
@@ -570,7 +571,7 @@ write(*,*) 'ix =',ix
    do ip=1,npol
       do jgt=1,Ngt
          do i=1,NM
-            B(i,jgt+(ip-1)*ngt)=(conjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+            B(i,jgt+(ip-1)*ngt)=(dconjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
          end do
       end do
    end do
@@ -578,7 +579,7 @@ write(*,*) 'ix =',ix
 
    do i=1,NM
       do j=1,NM
-         C(i+(j-1)*NM,:)=conjg(A(i,:))*A(j,:)
+         C(i+(j-1)*NM,:)=dconjg(A(i,:))*A(j,:)
       end do
    end do
 
@@ -652,13 +653,13 @@ if(iyz==1)then
    C=SI(iyz,im)%H
 
    A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*kc_min(iyz,im)*2.0_dp*pi)+&
-        transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kc_min(iyz,im)*2.0_dp*pi)
+        transpose(dconjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kc_min(iyz,im)*2.0_dp*pi)
    call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) !!!call SUB_DEF_Z(1,NM,NM,A,E,B)
    ref_ec(im)=E(nband_val(im)+1)
    write(*,*)'ref_ec at the first Kyz = ',nband_val(im)+1,ref_ec(im)
 if (nband_val(im)>0)then
    A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)+&
-        transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)
+        transpose(dconjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)
    call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) !!!call SUB_DEF_Z(1,NM,NM,A,E,B)
    ref_ev(im)=E(nband_val(im))
 end if
@@ -684,13 +685,13 @@ do iyz=1,Nkyz
       C=SI(iyz,im)%H
       
       A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*kc_min(iyz,im)*2.0_dp*pi)+&
-           transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kc_min(iyz,im)*2.0_dp*pi)
+           transpose(dconjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kc_min(iyz,im)*2.0_dp*pi)
       call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) 
       ref_ec(im)=E(nband_val(im)+1)
       write(*,*)'ref_ec at the first Kyz =',nband_val(im)+1,ref_ec(im)
       if (nband_val(im)>0)then
          A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)+&
-              transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)
+              transpose(dconjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*kv_max(iyz,im)*2.0_dp*pi)
          call SUB_DEF_Z0_GEN(1,NM,NM,A,C,E) 
          ref_ev(im)=E(nband_val(im))
       end if
@@ -799,9 +800,9 @@ do iq=1,nqs
                   read(13,*) tmp1,tmp2
                   !!! this should cover the acoustic branches !!!
                   if(ll.le.3)then
-                     el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2)
+                     el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2,kind(dp))
                   else
-                     el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)
+                     el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2,kind(dp))
                   endif
                end do
             end do
@@ -822,7 +823,7 @@ do iq=1,nqs
             do jj = 1,nbnd
                read(13,*) tmp1,tmp2
 
-               el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2)
+               el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2,kind(dp))
                
             end do
          end do
@@ -954,7 +955,7 @@ if (.not. dfpt) then
                            !$omp atomic
                            C(n,m)=C(n,m)+zdotc(ngt,PSIBB(iyz,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,n),1, &
                                 PSIBB(jj,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,m),1) * &
-                                exp(-cmplx(0.0_dp,1.0_dp) * ( in_kx(iyz,im)%n(n) - in_kx(jj,im)%n(m) - dble(2*(jx-1)-nn)/dble(2*nn)  ) * &
+                                exp(-cmplx(0.0_dp,1.0_dp,kind(dp)) * ( in_kx(iyz,im)%n(n) - in_kx(jj,im)%n(m) - dble(2*(jx-1)-nn)/dble(2*nn)  ) * &
                                 2.0_dp*pi*dble(ix-1)/dble(Nrx))
                         end do
                      end do

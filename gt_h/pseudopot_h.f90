@@ -64,7 +64,7 @@ integer, allocatable :: ind_kx(:), ind_bnd(:), inds(:)
 real(dp) :: a_1(3),a_2(3),a_3(3)
 real(dp) :: b_1(3),b_2(3),b_3(3)
 real(dp) :: vec(3),t0,a0
-real(dp) :: Ecutoff,ref
+real(dp) :: Ecutoff,ref,tmp1,tmp2
 real(4) :: t1,t2
 
 real(dp), allocatable :: x_at(:), y_at(:), z_at(:), Gvec(:,:), R_at(:,:)
@@ -526,7 +526,7 @@ do ikx=1,nkx
    do m1=1,nrx
       do n=1,Nkx*nrx
          Uh(m1+(ikx-1)*nrx,n)=&
-              exp(dcmplx(0.0_dp,1.0_dp)*(k_vec(1,ikx+(iyz-1)*nkx)+Gx(m1))*(2.0_dp*pi)*dble(n-1)/dble(nrx))/sqrt(dble(Nkx*nrx))
+              exp(cmplx(0.0_dp,1.0_dp,kind(dp))*(k_vec(1,ikx+(iyz-1)*nkx)+Gx(m1))*(2.0_dp*pi)*dble(n-1)/dble(nrx))/sqrt(dble(Nkx*nrx))
       end do
    end do
 end do
@@ -600,8 +600,8 @@ do iy=1,NRY
    do iz=1,NRZ
       j=iy+(iz-1)*(NRY)
       do jp=1,npol
-      U(1+(jp-1)*NGt:jp*NGt,j)=exp( cmplx(0.0_dp,-1.0_dp)*KGt(2,1:NGt)*2.0_dp*pi/a0*dble(iy)*Dy+&
-           cmplx(0.0_dp,-1.0_dp)*KGt(3,1:NGt)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
+      U(1+(jp-1)*NGt:jp*NGt,j)=exp( cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt(2,1:NGt)*2.0_dp*pi/a0*dble(iy)*Dy+&
+           cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt(3,1:NGt)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
    end do
    end do
 end do
@@ -694,7 +694,7 @@ if(.not. refine)then
    write(*,*)'Writing PPSI files...'
    do j=1,NM
       do i=1,Nrx*Ngt*npol
-         write(13,*)PSI_MOD(i,j)!PSI_OLD(i,j)!PSI_MOD(i,j)
+         write(13,'(2e25.15)')PSI_MOD(i,j)
       end do
    end do
    write(*,*)'done'
@@ -703,17 +703,12 @@ else if(refine)then
    write(*,*)'reading PPSI files...',Nrx*Ngt*npol
    do j=1,NM
       do i=1,Nrx*Ngt*npol
-         read(13,*)PSI_MOD(i,j)!PSI_OLD(i,j)!PSI_MOD(i,j)
+         read(13,'(2e25.15)')tmp1,tmp2
+         PSI_MOD(i,j)=cmplx(tmp1,tmp2,kind(dp))
       end do
    end do
    write(*,*)'done'
-   !write(*,*)shape(PSI_mod),nrx*Ngt*npol
-!t1=SECNDS(0.0)
-!write(*,*)'Starting the orthonormalization...'
-!   call ortonorma(nrx*Ngt*npol,NM,psi_old,PSI_mod)
-!t2=SECNDS(t1)
-!write(*,'(a,F7.3,a)')' Orthonormalization done in ',t2,' s'
-!psi_mod=psi_old
+
 end if
 close(13)
 end if
@@ -781,7 +776,8 @@ if(ncell==2)then
    open(unit=13,file=nome,status='unknown')
    do j=1,NM1
       do i=1,Nrx*Ngt*npol
-         read(13,*)PSI_MOD_1(i,j)
+         read(13,'(2e25.15)')tmp1,tmp2
+         PSI_MOD_1(i,j)=cmplx(tmp1,tmp2,kind(dp))
       end do
    end do
    close(13)
@@ -790,7 +786,8 @@ if(ncell==2)then
    open(unit=13,file=nome,status='unknown')
    do j=1,NM0
       do i=1,Nrx*Ngt*npol
-         read(13,*)PSI_MOD_0(i,j)
+         read(13,'(2e25.15)')tmp1,tmp2
+         PSI_MOD_0(i,j)=cmplx(tmp1,tmp2,kind(dp))
       end do
    end do
    close(13)
@@ -1067,7 +1064,7 @@ if(ncell==2)then
    open(unit=13,file=TRIM(outdir)//'H01_nkyz_'//TRIM(STRINGA(iyz))//'_nhet_'//TRIM(STRINGA(ihet))//'.dat',status='unknown')
    do i=1,nm0
       do j=1,nm1
-         write(13,*)HV(i,j)
+         write(13,'(2e25.15)')HV(i,j)
       end do
    end do
    close(13)
@@ -1121,13 +1118,14 @@ open(unit=13,file=TRIM(outdir)//'HH00_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM
 if(.not. refine)then
    do i=1,nm
       do j=1,nm
-         write(13,*)HLLL(i,j)
+         write(13,'(2e25.15)')HLLL(i,j)
       end do
    end do
 else if(refine)then
    do i=1,nm
       do j=1,nm
-         read(13,*)HLLL(i,j)
+         read(13,'(2e25.15)')tmp1,tmp2
+         HLLL(i,j)=cmplx(tmp1,tmp2,kind(dp))
       end do
    end do
 end if
@@ -1139,13 +1137,14 @@ open(unit=13,file=TRIM(outdir)//'HH01_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM
 if(.not. refine)then
 do i=1,nm
    do j=1,nm
-      write(13,*)TLLL(i,j)
+      write(13,'(2e25.15)')TLLL(i,j)
    end do
 end do
 else if(refine)then
 do i=1,nm
    do j=1,nm
-      read(13,*)TLLL(i,j)
+      read(13,'(2e25.15)')tmp1,tmp2
+      TLLL(i,j)=cmplx(tmp1,tmp2,kind(dp))
    end do
 end do
 end if
@@ -1358,7 +1357,7 @@ do j=1,nkx
 end do
 end do
 if(i /= nk1)then
-   write(*,*)'pb with nk1'
+   write(*,*)'pb with nk1',i,nk1
    stop
 end if
 
@@ -1510,7 +1509,7 @@ end do
       end if
       do j=1,NModes
          do i=1,Nrx*Ngt*npol
-            write(13,*)PSI_MOD(i,inds(j))
+            write(13,'(2e25.15)')PSI_MOD(i,inds(j))
          end do
       end do
       do j=1,NModes
@@ -1593,7 +1592,7 @@ else
 end if
 do i=1,nm
    do j=1,nm
-      write(13,*)HLLL(inds(i),inds(j))
+      write(13,'(2e25.15)')HLLL(inds(i),inds(j))
    end do
 end do
 close(13)
@@ -1614,7 +1613,7 @@ close(13)
    end if
    do i=1,nm
       do j=1,nm
-         write(13,*)TLLL(inds(i),inds(j))
+         write(13,'(2e25.15)')TLLL(inds(i),inds(j))
       end do
    end do
    close(13)
