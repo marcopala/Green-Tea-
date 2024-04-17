@@ -103,6 +103,23 @@ read(10,*) a_1(:), a_2(:), a_3(:)
 
  a0=a_1(1)*bohr
 
+ if(abs(1.0_dp - a_1(1)*bohr/ac1) > 1.0d-6) then
+    write(*,*)'Severe warning: ac1 is not the same of the QE simulation'
+    write(*,*)a_1(1)*bohr, ac1, 1.0_dp - a_1(1)*bohr/ac1
+    stop
+ end if
+ if(abs(1.0_dp - a_2(2)*bohr/ac2) > 1.0d-6) then
+    write(*,*)'Severe warning: ac2 is not the same of the QE simulation'
+    write(*,*)a_2(2)*bohr, ac2, 1.0_dp - a_2(2)*bohr/ac2
+    stop
+ end if
+ 
+ if(abs(1.0_dp - a_3(3)*bohr/ac3) > 1.0d-6) then
+    write(*,*)'Severe warning: ac1 is not the same of the QE simulation'
+    write(*,*)a_3(3)*bohr, ac3, 1.0_dp - a_3(3)*bohr/ac3
+    stop
+ end if
+ 
 write(*,*)
 write(*,*)' Lattice parameter a0 = ', a0, 'cm'
 write(*,*)
@@ -358,8 +375,7 @@ do i=1,NGt
    ind_miller_2D(miller_2D(2,i),miller_2D(3,i))=i
 end do
 
-!ncell=1!2!4!1!3
-nrx0=nrx!/ncell
+nrx0=nrx
 if(mod(nrx,nrx0)/=0)then
    write(*,*)'nrx0problem',nrx,nrx0,ecut
    stop
