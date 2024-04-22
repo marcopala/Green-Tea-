@@ -152,7 +152,6 @@ open(unit=10,file=TRIM(outdir)//'potz.dat',status='unknown')
  enddo
 close(10)
 
-
 allocate(con(NKYZ),cone(NKYZ),conb(NKYZ))
   con=0.0_dp
   cone=0.0_dp

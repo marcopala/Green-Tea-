@@ -177,11 +177,10 @@ DO gg=0, NUMVG
          mud=-(VDMIN+(1.0d0*ss)*DELTAVD)
          vg=VGMIN+(1.0d0*gg)*DELTAVG
          bz=BZMIN+(1.0d0*bb)*DELTABZ
-         potelectr=vg-workgate
+         potelectr=vg
          potelectr11=-mus
          potelectr12=-mud
         
-         write(*,*)'potelectr=',potelectr
 
          DO ii=1, NTOT_X
             if( ii <= NTOT_X ) Hz(ii) = bz - bz*(ii-NTOT_X+drain_len)/dble(drain_len) ! drain

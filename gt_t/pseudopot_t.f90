@@ -895,7 +895,7 @@ if(k_selec(jj))then
          write(4000+100*jyz+ll,*)
       end do
    enddo
-    !!!stop
+!!!stop
 endif
 endif
 !           endif

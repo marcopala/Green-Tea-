@@ -95,7 +95,7 @@ SUBROUTINE poisson_nonlin_selfconsistent(pot3D,EC3D,EV3D,outer_rho,outer_drho,Fn
     REAL(DP)              :: XX(1:8), YY(1:8), ZZ(1:8)
     REAL(DP)              :: xi,yi,zi,xj,yj,zj
     INTEGER, ALLOCATABLE  :: IPIV(:)
-    INTEGER               :: ii,jj,nel,icc,count
+    INTEGER               :: ii,jj,ig,nel,icc,count
     INTEGER               :: prev_plane, next_plane, out_plane
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -332,23 +332,49 @@ SUBROUTINE poisson_nonlin_selfconsistent(pot3D,EC3D,EV3D,outer_rho,outer_drho,Fn
         IF(whichkind_3D_ord(list_3D_ord(prev_plane,nel)) == 1) THEN !
            rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
                 epsilon_3D(nel)*A(jj+1,prev_plane)*&
-                potelectr 
+                (potelectr-workgate)
         END IF
         
         IF(whichkind_3D_ord(list_3D_ord(next_plane,nel)) == 1) THEN !
            
            rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
                 epsilon_3D(nel)*A(jj+1,next_plane)*&
-                potelectr
+                (potelectr-workgate)
            
         END IF
         
         IF(whichkind_3D_ord(list_3D_ord(out_plane,nel)) == 1) THEN !
            rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
                 epsilon_3D(nel)*A(jj+1,out_plane)*&
-                potelectr 
+                (potelectr-workgate) 
         END IF
         
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if(add_gate)then
+           do ig=1,num_add_gate
+
+              IF(whichkind_3D_ord(list_3D_ord(prev_plane,nel)) == 20+ig) THEN !
+                 rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
+                      epsilon_3D(nel)*A(jj+1,prev_plane)*&
+                      (gate_pot(ig)-workgate) 
+              END IF
+              
+              IF(whichkind_3D_ord(list_3D_ord(next_plane,nel)) == 20+ig) THEN !
+                 rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
+                      epsilon_3D(nel)*A(jj+1,next_plane)*&
+                      (gate_pot(ig)-workgate)
+                 
+              END IF
+              
+              IF(whichkind_3D_ord(list_3D_ord(out_plane,nel)) == 20+ig) THEN !
+                 rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
+                      epsilon_3D(nel)*A(jj+1,out_plane)*&
+                      (gate_pot(ig)-workgate)
+              END IF
+              
+           end do
+        end if
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

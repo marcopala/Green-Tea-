@@ -101,11 +101,17 @@ MODULE indata
 
   INTEGER  :: spacer
 
+  INTEGER  :: num_add_gate
+  LOGICAL  :: add_gate
   LOGICAL  :: top_gate
   LOGICAL  :: bot_gate
   LOGICAL  :: lft_gate
   LOGICAL  :: rgt_gate
   LOGICAL  :: schottky_source, schottky_drain
+
+  INTEGER,  allocatable :: gate_xi(:), gate_xf(:), gate_z(:)
+  REAL(DP), allocatable :: gate_pot(:)
+
   LOGICAL  :: onlyT
   LOGICAL  :: in_pot
   LOGICAL  :: magnetic
@@ -254,7 +260,7 @@ MODULE indata
        &  bot_gate,                            &
        &  lft_gate,                            &
        &  rgt_gate,                            &
-       &  schottky_source, schottky_drain
+       &  schottky_source, schottky_drain, add_gate, num_add_gate
   NAMELIST /indata_device/                     &
        &  chtype,                              &
        &  DIEL_SC,                             &      
@@ -387,8 +393,10 @@ CONTAINS
     bot_gate=.false.
     lft_gate=.false.
     rgt_gate=.false.
+    add_gate=.false.
     schottky_source=.false.
-    schottky_drain=.false. 
+    schottky_drain=.false.
+    num_add_gate=0
     DIEL_SC=1.0d0
     DIEL_OX=1.0d0
     DIEL_O2=1.0d0
@@ -444,7 +452,7 @@ CONTAINS
     READ(*,*)comment
     write(*,*)comment
     do i=1,num_reg
-       read(*,*)j,nc_reg(i),typ_mat(i)
+       read(*,*)j,nc_reg(j),typ_mat(j)
     end do
     !check coherence of the inputs
     do i=1,num_reg
@@ -481,7 +489,7 @@ CONTAINS
        allocate(ihh(num_mat,num_mat))
        ihh=0
        do i=1,num_het
-          read(*,*)j,mat_l(i),mat_r(i)
+          read(*,*)j,mat_l(j),mat_r(j)
           ihh(mat_l(i),mat_r(i))=j
        end do
 
@@ -500,6 +508,28 @@ CONTAINS
 
     READ(*,NML=indata_doping)
     READ(*,NML=indata_gate)
+
+    if ( add_gate ) then
+       if(num_add_gate <= 0)then
+          write(*,*)'pb w num_add_gate',num_add_gate
+          stop
+       end if
+       write(*,*)
+       write(*,*)'++++++++++++++++'
+       write(*,*)'WARNING: ADDITIONAL GATES OPTION IS TURNED ON'
+       write(*,*)'USE THIS CAREFULLY: gate nodes SHOULD NOT SUPERIMPOSE with the ones of another gate'
+       write(*,*)'++++++++++++++++'
+       write(*,*)
+       allocate(gate_xi(num_add_gate), gate_xf(num_add_gate), gate_z(num_add_gate),gate_pot(num_add_gate))
+       READ(*,*)comment
+       write(*,*)comment
+       do i=1,num_add_gate
+          read(*,*) j, gate_xi(j), gate_xf(j), gate_z(j), gate_pot(j)
+          write(*,*)j, gate_xi(j), gate_xf(j), gate_z(j), gate_pot(j)
+       end do
+       write(*,*)
+    end if
+   
     READ(*,NML=indata_device)
     READ(*,NML=indata_dimensionality)
     READ(*,*)comment
@@ -565,7 +595,7 @@ CONTAINS
     write(*,*)comment
     allocate(nm_mat(num_mat),nband_val(num_mat),off_set(num_mat))
     do i=1,num_mat
-       read(*,*)j,nm_mat(i),nband_val(i),off_set(i)
+       read(*,*)j,nm_mat(j),nband_val(j),off_set(j)
     end do
    
     READ(*,NML=indata_cell)
@@ -651,7 +681,7 @@ SUBROUTINE indata_structure_init()
 
 IMPLICIT NONE
 
-INTEGER :: icc,ii,jj,offset,vertical_offset,lateral_offset,plane_index,inplane_y,inplane_z,type
+INTEGER :: icc,ii,jj,ig,offset,vertical_offset,lateral_offset,plane_index,inplane_y,inplane_z,type
 
 icc=0
 
@@ -710,6 +740,16 @@ NUMBOUNDOLD=NUMBOUND_3D
 IF(bot_gate)THEN
 NUMBOUND_3D=NUMBOUND_3D+(gate_len)*NTOT_Y*vertical_offset
 icc=icc+1
+END IF
+IF(add_gate)THEN
+   do ig=1,num_add_gate
+      if(gate_xf(ig)<gate_xi(ig))then
+         write(*,*)'pb w gate_xf and gate_xi',gate_xf(ig),gate_xi(ig)
+         stop
+      end if
+      NUMBOUND_3D=NUMBOUND_3D+(gate_xf(ig) - gate_xi(ig) )*Ndeltax*NTOT_Y*vertical_offset
+      icc=icc+1
+   end do
 END IF
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
@@ -804,7 +844,8 @@ END IF
 END IF
 IF(bot_gate)THEN
 IF(inplane_z.le.(vertical_offset-1))THEN
-whichkind_3D(ii)=1 !Gate node
+   whichkind_3D(ii)=1 !Gate node
+    write(*,*)inplane_z,ii,whichkind_3D(ii)
 END IF
 END IF
 IF(top_gate)THEN
@@ -813,6 +854,17 @@ whichkind_3D(ii)=1 !Gate node
 END IF
 END IF
 END IF
+!!!! ADDITIONAL GATES
+if(add_gate)then
+   do ig=1,num_add_gate
+      IF((plane_index .gt. ( gate_xi(ig)*Ndeltax )).and.(plane_index.le.( gate_xf(ig)*Ndeltax )))THEN
+         IF( inplane_z  == gate_z(ig))THEN
+            whichkind_3D(ii)=20+ig !Gate node with pinned potential
+            write(*,*)ig,inplane_z,ii,whichkind_3D(ii)
+         END IF
+      END IF
+   end do
+end if
 
 !!!!!IF(plane_index.eq.0)whichkind_3D(ii)=1 !! THE DIRICHLECT NODES ARE LOCATED AT THE SOURCE (FIRST SLICE)
 
@@ -914,33 +966,43 @@ END DO
 jj=0
     !//// Unknows Schro+Poisson////
     DO ii=0,NUMN_3D-1
-       IF(whichkind_3D(ii).eq.-1) THEN
+       IF(whichkind_3D(ii) == -1) THEN
           map_3D(ii)=jj
           jj=jj+1
        END IF
     END DO
     !//// Unknowns Poisson //////
     DO ii=0,NUMN_3D-1   
-       IF(whichkind_3D(ii).eq.0) THEN
+       IF(whichkind_3D(ii) == 0) THEN
           map_3D(ii)=jj
           jj=jj+1
        END IF
     END DO
     !///// gate ////////////
     DO ii=0,NUMN_3D-1
-       IF(whichkind_3D(ii).eq.1) THEN
+       IF(whichkind_3D(ii) == 1) THEN
           map_3D(ii)=jj
           jj=jj+1
        END IF
     END DO
-    
+    !///// add gate ////////////
+    if(add_gate)then
+       DO ii=0,NUMN_3D-1
+          do ig = 1, num_add_gate
+             IF(whichkind_3D(ii) == 20+ig) THEN
+                map_3D(ii)=jj
+                jj=jj+1
+             END IF
+          end do
+       END DO
+    end if
     !///// schottky ////////////
     DO ii=0,NUMN_3D-1
-       IF(whichkind_3D(ii).eq.11) THEN
+       IF(whichkind_3D(ii) == 11) THEN
           map_3D(ii)=jj
           jj=jj+1
        END IF
-       IF(whichkind_3D(ii).eq.12) THEN
+       IF(whichkind_3D(ii) == 12) THEN
           map_3D(ii)=jj
           jj=jj+1
        END IF
@@ -1136,7 +1198,7 @@ END SUBROUTINE indata_CONNECTIVITY
  INTEGER,  INTENT(IN)  :: ny
  INTEGER,  INTENT(IN)  :: nz
  INTEGER,  INTENT(IN)  :: lwork
- INTEGER               :: ii,x_index,y_index,z_index
+ INTEGER               :: ii,ig,x_index,y_index,z_index
 
  potA=0.0_dp
  
@@ -1145,13 +1207,17 @@ END SUBROUTINE indata_CONNECTIVITY
  x_index=ii/(ny*nz) +1
  y_index=mod(mod(ii,ny*nz),ny) +1
  z_index=mod(ii,ny*nz)/ny +1
- 
+
  IF(which(ii) == 1)THEN
     potA(x_index,y_index,z_index)=-potelectr
  ELSE IF(which(ii) == 11)THEN
     potA(x_index,y_index,z_index)=-potelectr11
  ELSE IF(which(ii) == 12)THEN
     potA(x_index,y_index,z_index)=-potelectr12
+ ELSE IF(which(ii) == 21 .and. num_add_gate >= 1)THEN
+    potA(x_index,y_index,z_index)=-gate_pot(1)
+ ELSE IF(which(ii) == 22 .and. num_add_gate >= 1)THEN
+    potA(x_index,y_index,z_index)=-gate_pot(2)
  ELSE
     potA(x_index,y_index,z_index)=potB(map(ii))
  END IF
