@@ -220,6 +220,7 @@ DO gg=0, NUMVG
         write(*,*)'////////////////////////////////////////////////////////////////'
         if(.not. in_pot)then
            write(*,*)'Poisson init guess'
+           write(*,*)'in_sol=',in_sol
            call pot_init(POT_3D,whichkind_3D,map_3D,ntot_x,ntot_y,ntot_z,lwork_3D)
            write(*,*)'POT INIT DONE',mus,mud
         else

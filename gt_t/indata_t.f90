@@ -375,6 +375,7 @@ CONTAINS
 !    vec_field_old=.FALSE.
     onlyT=.false.
     in_pot=.false.
+    in_sol=.false.
     dfpt=.false.
     tox_top=0
     tox_bot=0

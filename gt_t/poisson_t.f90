@@ -678,7 +678,9 @@ elseif(chtype.eq.'t')then
       POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax))-mud 
    END IF
 
-elseif(in_sol)then
+end if
+
+if(in_sol)then
    
    IF(x_index.le.source_len)THEN
       POT3D(map(ii))=source_sol
