@@ -108,12 +108,13 @@ MODULE indata
   LOGICAL  :: lft_gate
   LOGICAL  :: rgt_gate
   LOGICAL  :: schottky_source, schottky_drain
+  REAL(DP) :: source_sol, channel_sol, drain_sol
 
   INTEGER,  allocatable :: gate_xi(:), gate_xf(:), gate_z(:)
   REAL(DP), allocatable :: gate_pot(:)
 
   LOGICAL  :: onlyT
-  LOGICAL  :: in_pot
+  LOGICAL  :: in_pot, in_sol
   LOGICAL  :: magnetic
 
   CHARACTER(2) :: updw
@@ -307,9 +308,9 @@ MODULE indata
        &  NKT,                                 &
        &  eta                            
   NAMELIST /indata_stimulus/                   &
-       &  in_Pot,                              &
-!       &  vec_field_new,                       &
-!       &  vec_field_old,                       &
+       &  in_pot,                              &   
+       &  in_sol,                              &
+       &  source_sol, channel_sol, drain_sol,  &
        &  onlyT,                               &
        &  VGMIN,                               &
        &  VGMAX,                               &
@@ -428,6 +429,9 @@ CONTAINS
     NUMBZ=1
     BZMIN=0.0_dp
     BZMAX=0.0_dp
+    source_sol=0.0_dp
+    channel_sol=0.0_dp
+    drain_sol=0.0_dp
 !!!!!!!!!!!!!!!!!!!!!!!!!!
     
     
@@ -596,6 +600,7 @@ CONTAINS
     allocate(nm_mat(num_mat),nband_val(num_mat),off_set(num_mat))
     do i=1,num_mat
        read(*,*)j,nm_mat(j),nband_val(j),off_set(j)
+       write(*,*)j,nm_mat(j),nband_val(j),off_set(j)
     end do
    
     READ(*,NML=indata_cell)

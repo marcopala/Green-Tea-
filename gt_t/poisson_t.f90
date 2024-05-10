@@ -1,6 +1,6 @@
 ! Copyright or © or Copr. Marco Pala (February 24, 2022)
 
-! e-mail:  marco.pala@c2n.upsaclay.fr ;  marco.pala@cnrs.fr
+! e-mail: marco.pala@uniud.it ;  marco.pala@c2n.upsaclay.fr
 
 ! This software is a computer program whose purpose is 
 ! to perform self-consistent simulations of nanosystems with a full ab initio approach
@@ -678,6 +678,18 @@ elseif(chtype.eq.'t')then
       POT3D(map(ii))=ref_ec(imat(x_index/Ndeltax))-mud 
    END IF
 
+elseif(in_sol)then
+   
+   IF(x_index.le.source_len)THEN
+      POT3D(map(ii))=source_sol
+   ELSEIF(x_index .gt. source_len+2*spacer+gate_len .and. &
+        x_index .le. source_len+2*spacer+gate_len+drain_len)THEN
+      POT3D(map(ii))=drain_sol
+   ELSEIF(x_index .gt. source_len .and. &
+      x_index .le. source_len+2*spacer+gate_len)THEN
+      POT3D(map(ii))=channel_sol
+   END IF
+   
 end if
    
 END IF

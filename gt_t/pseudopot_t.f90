@@ -301,6 +301,15 @@ do im=1,num_mat
       end do
    end if
    close(13)
+   do j=1,NM
+      do ip=1,npol
+         do jgt=1,Ngt
+            do ix=1,nrx   
+               write(1000+iyz,'(2e25.15)')A(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)
+            end do
+         end do
+      end do
+   end do
 
    !!! debugging line
 !!$if(allocated(C))deallocate(C)
@@ -328,6 +337,16 @@ do im=1,num_mat
    allocate(C(NM,NM))
    call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,A,nrx*ngt*npol,A,nrx*ngt*npol,beta,C,NM)
    Si(iyz,im)%H=(C+transpose(dconjg(C)))/2.0_dp
+
+
+do i=1,NM
+   do j=1,NM
+      write(700+iyz,*)i,j,abs(C(i,j))
+   end do
+   write(700+iyz,*)
+end do
+close(700+iyz)
+   
    deallocate(C)
    
    call A_POWER( 0.5_dp,nm,Si(iyz,im)%H,Si_p05(iyz,im)%H)
@@ -349,20 +368,6 @@ do im=1,num_mat
       end do
    end if
 !!!!!!!!
-
-
-   
-
-!do i=1,NM_mat(im)
-!   do j=1,NM_mat(im)
-!      write(749,*)i,j,abs(Si_p05(iyz,im)%H(i,j))
-!      write(750,*)i,j,abs(Si(iyz,im)%H(i,j))
-!   end do
-!   write(749,*)
-!   write(750,*)
-!end do
-      
-
    
 deallocate(A)
 end do
@@ -449,8 +454,17 @@ do im=1,num_mat
    allocate(A(NM,NM),HLLL(NM,NM),TLLL(NM,NM),C(NM,NM))
    HLLL=HL(iyz,im)%H
    TLLL=TL(iyz,im)%H
-   C=SI(iyz,im)%H
+   C=Si(iyz,im)%H
    
+
+do i=1,NM
+   do j=1,NM
+      write(700+iyz,*)i,j,abs(C(i,j))
+   end do
+   write(700+iyz,*)
+end do
+close(700+iyz)
+
    do ikx=1,n+1
       A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
            transpose(dconjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
