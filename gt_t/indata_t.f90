@@ -851,7 +851,7 @@ END IF
 IF(bot_gate)THEN
 IF(inplane_z.le.(vertical_offset-1))THEN
    whichkind_3D(ii)=1 !Gate node
-    write(*,*)inplane_z,ii,whichkind_3D(ii)
+    !write(*,*)inplane_z,ii,whichkind_3D(ii)
 END IF
 END IF
 IF(top_gate)THEN
@@ -866,7 +866,7 @@ if(add_gate)then
       IF((plane_index .gt. ( gate_xi(ig)*Ndeltax )).and.(plane_index.le.( gate_xf(ig)*Ndeltax )))THEN
          IF( inplane_z  == gate_z(ig))THEN
             whichkind_3D(ii)=20+ig !Gate node with pinned potential
-            write(*,*)ig,inplane_z,ii,whichkind_3D(ii)
+            !write(*,*)'z',ig,inplane_z,ii,whichkind_3D(ii)
          END IF
       END IF
    end do

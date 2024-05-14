@@ -200,8 +200,8 @@ allocate(U(Ngt,(Ny+1)*(Nz+1)))
 do iy=1,NY+1
    do iz=1,NZ+1
       j=iy+(iz-1)*(NY+1)
-      U(1:Ngt,j)=exp(cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt_kyz(2,1:Ngt,iyz)*2.0_dp*pi/ac*Ry(iy)+&
-           cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt_kyz(3,1:Ngt,iyz)*2.0_dp*pi/ac*Rz(iz))/sqrt(dble((Ny+1)*(Nz+1)))
+      U(1:Ngt,j)=exp(dcmplx(0.0_dp,-1.0_dp)*KGt_kyz(2,1:Ngt,iyz)*2.0_dp*pi/ac*Ry(iy)+&
+           dcmplx(0.0_dp,-1.0_dp)*KGt_kyz(3,1:Ngt,iyz)*2.0_dp*pi/ac*Rz(iz))/sqrt(dble((Ny+1)*(Nz+1)))
    end do
 end do
 
@@ -319,14 +319,14 @@ do xx=1,ncx_d
    if(nband_val(imat(xx))>0)then
       kappax=kv_max(iyz,imat(xx))
       A(1:NM(xx),1:NM(xx))=Hi(1:NM(xx),1:NM(xx),xx,iyz)+&
-           (TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx)))*exp(cmplx(0.0_dp,1.0_dp,kind(dp))*kappax*2.0_dp*pi)+&
-           transpose(dconjg(TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))))*exp(cmplx(0.0_dp,-1.0_dp,kind(dp))*kappax*2.0_dp*pi)
+           (TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx)))*exp(dcmplx(0.0_dp,1.0_dp)*kappax*2.0_dp*pi)+&
+           transpose(dconjg(TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))))*exp(dcmplx(0.0_dp,-1.0_dp)*kappax*2.0_dp*pi)
       call SUB_DEF_Z0_GEN(ref_index-nsolv+1,ref_index,NM(xx),A,B, subband(1:nsolv,xx,iyz))
    end if
    kappax=kc_min(iyz,imat(xx))
    A(1:NM(xx),1:NM(xx))=Hi(1:NM(xx),1:NM(xx),xx,iyz)+&
-        (TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx)))*exp(cmplx(0.0_dp,1.0_dp,kind(dp))*kappax*2.0_dp*pi)+&
-        transpose(dconjg(TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))))*exp(cmplx(0.0_dp,-1.0_dp,kind(dp))*kappax*2.0_dp*pi)
+        (TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx)))*exp(dcmplx(0.0_dp,1.0_dp)*kappax*2.0_dp*pi)+&
+        transpose(dconjg(TL(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))))*exp(dcmplx(0.0_dp,-1.0_dp)*kappax*2.0_dp*pi)
    call SUB_DEF_Z0_GEN(ref_index+1,ref_index+nsolc,NM(xx),A, B, subband(nsolv+1:nsolv+nsolc,xx,iyz))
 
    deallocate(A,B)
@@ -1323,7 +1323,7 @@ if(ff == 0)then
    allocate( sig(nmax,nmax), sigmal(nmax,nmax), sigmar(nmax,nmax), sigma_r_ph(nmax,nmax) )
    allocate( H00(nmax,nmax), H10(nmax,nmax), A(nmax,nmax), B(nmax,nmax), C(nmax,nmax), Id(nmax,nmax) )
    
-  z=cmplx(E,0.0d-6,kind(dp))
+  z=dcmplx(E,0.0d-6)
 
   Gln=0.0_dp
   Glp=0.0_dp
@@ -1679,7 +1679,7 @@ subroutine sancho(nm,E,H00,H10,S,G00)
   Allocate( B(nm,nm) )
   Allocate( C(nm,nm) )
   
-  z = cmplx(E,eta,kind(dp))
+  z = dcmplx(E,eta)
   
   H_BB = H00  
   H_10 = H10
@@ -1759,7 +1759,7 @@ subroutine oldsancho(nm,E,H00,H10,Id,G00)
 
   nmax=100
 
-  z = E+cmplx(0.0_dp,eta**(0.5_dp),kind(dp))
+  z = E+dcmplx(0.0_dp,eta**(0.5_dp))
 
   write(*,*)'using old sancho',E
   H_BB = H00

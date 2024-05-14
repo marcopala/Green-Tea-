@@ -285,7 +285,7 @@ do im=1,num_mat
          do jgt=1,Ngt
             do ix=1,nrx   
                read(13,'(2e25.15)')tmp1,tmp2
-               A(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)=cmplx(tmp1,tmp2,kind(dp))
+               A(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)=dcmplx(tmp1,tmp2)
             end do
          end do
       end do
@@ -362,7 +362,7 @@ close(700+iyz)
             do ix=1,Nrx
                PSIBB(iyz,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,j)=&
                     A(1+(ix-1)*ngt+(ip-1)*Ngt*nrx:ngt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)&
-                    *exp(-cmplx(0.0_dp,1.0_dp,kind(dp))*in_kx(iyz,im)%n(j)*2.0_dp*pi*dble(ix-1)/dble(Nrx))
+                    *exp(-dcmplx(0.0_dp,1.0_dp)*in_kx(iyz,im)%n(j)*2.0_dp*pi*dble(ix-1)/dble(Nrx))
             end do
          end do
       end do
@@ -390,7 +390,7 @@ do im=1,num_mat
    do i=1,nm
       do j=1,nm
          read(13,'(2e25.15)')tmp1,tmp2
-         HL(iyz,im)%H(i,j)=cmplx(tmp1,tmp2,kind(dp))
+         HL(iyz,im)%H(i,j)=dcmplx(tmp1,tmp2)
       end do
    end do
    close(13)
@@ -410,7 +410,7 @@ do im=1,num_mat
    do i=1,nm
       do j=1,nm
          read(13,'(2e25.15)')tmp1,tmp2
-         A(i,j)=cmplx(tmp1,tmp2,kind(dp))
+         A(i,j)=dcmplx(tmp1,tmp2)
       end do
    end do
    close(13)
@@ -430,7 +430,7 @@ if(num_het > 0)then
       do i=1,NM_mat(mat_l(im))
          do j=1,NM_mat(mat_r(im))
             read(13,'(2e25.15)')tmp1,tmp2
-            A(i,j)=cmplx(tmp1,tmp2,kind(dp))
+            A(i,j)=dcmplx(tmp1,tmp2)
          end do
       end do
       close(13)
@@ -442,7 +442,7 @@ if(num_het > 0)then
 end if
    
 
-n=40
+n=60
 allocate(bb_ev(n+1),bb_ec(n+1))
 
 do im=1,num_mat
@@ -560,8 +560,8 @@ do im=1,num_mat
       do iy=1,NRY
          do iz=1,NRZ
             j=iy+(iz-1)*(NRY)
-            Uk(1:NGt,j,iyz)=exp( cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt_kyz(2,1:NGt,iyz)*2.0_dp*pi/a0*dble(iy)*Dy+&
-                            cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt_kyz(3,1:NGt,iyz)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
+            Uk(1:NGt,j,iyz)=exp(dcmplx(0.0_dp,-1.0_dp)*KGt_kyz(2,1:NGt,iyz)*2.0_dp*pi/a0*dble(iy)*Dy+&
+                            dcmplx(0.0_dp,-1.0_dp)*KGt_kyz(3,1:NGt,iyz)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
          end do
       end do
       if(npol>1)      Uk(1+NGt:npol*NGt,1:NRY*NRZ,iyz)=Uk(1:NGt,1:NRY*NRZ,iyz)
@@ -814,9 +814,9 @@ do iq=1,nqs
                   read(13,*) tmp1,tmp2
                   !!! this should cover the acoustic branches !!!
                   if(ll.le.3)then
-                     el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*cmplx(tmp1,tmp2,kind(dp))
+                     el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*dcmplx(tmp1,tmp2)
                   else
-                     el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2,kind(dp))
+                     el_ph_mat(ii, jj, nn, ll)=ryd*dcmplx(tmp1,tmp2)
                   endif
                end do
             end do
@@ -837,7 +837,7 @@ do iq=1,nqs
             do jj = 1,nbnd
                read(13,*) tmp1,tmp2
 
-               el_ph_mat(ii, jj, nn, ll)=ryd*cmplx(tmp1,tmp2,kind(dp))
+               el_ph_mat(ii, jj, nn, ll)=ryd*dcmplx(tmp1,tmp2)
                
             end do
          end do
@@ -969,7 +969,7 @@ if (.not. dfpt) then
                            !$omp atomic
                            C(n,m)=C(n,m)+zdotc(ngt,PSIBB(iyz,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,n),1, &
                                 PSIBB(jj,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,m),1) * &
-                                exp(-cmplx(0.0_dp,1.0_dp,kind(dp)) * ( in_kx(iyz,im)%n(n) - in_kx(jj,im)%n(m) - dble(2*(jx-1)-nn)/dble(2*nn)  ) * &
+                                exp(-dcmplx(0.0_dp,1.0_dp) * ( in_kx(iyz,im)%n(n) - in_kx(jj,im)%n(m) - dble(2*(jx-1)-nn)/dble(2*nn)  ) * &
                                 2.0_dp*pi*dble(ix-1)/dble(Nrx))
                         end do
                      end do

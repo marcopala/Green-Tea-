@@ -542,7 +542,7 @@ do ikx=1,nkx
    do m1=1,nrx
       do n=1,Nkx*nrx
          Uh(m1+(ikx-1)*nrx,n)=&
-              exp(cmplx(0.0_dp,1.0_dp,kind(dp))*(k_vec(1,ikx+(iyz-1)*nkx)+Gx(m1))*(2.0_dp*pi)*dble(n-1)/dble(nrx))/sqrt(dble(Nkx*nrx))
+              exp(dcmplx(0.0_dp,1.0_dp)*(k_vec(1,ikx+(iyz-1)*nkx)+Gx(m1))*(2.0_dp*pi)*dble(n-1)/dble(nrx))/sqrt(dble(Nkx*nrx))
       end do
    end do
 end do
@@ -616,8 +616,8 @@ do iy=1,NRY
    do iz=1,NRZ
       j=iy+(iz-1)*(NRY)
       do jp=1,npol
-      U(1+(jp-1)*NGt:jp*NGt,j)=exp( cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt(2,1:NGt)*2.0_dp*pi/a0*dble(iy)*Dy+&
-           cmplx(0.0_dp,-1.0_dp,kind(dp))*KGt(3,1:NGt)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
+      U(1+(jp-1)*NGt:jp*NGt,j)=exp( dcmplx(0.0_dp,-1.0_dp)*KGt(2,1:NGt)*2.0_dp*pi/a0*dble(iy)*Dy+&
+           dcmplx(0.0_dp,-1.0_dp)*KGt(3,1:NGt)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
    end do
    end do
 end do
@@ -720,7 +720,7 @@ else if(refine)then
    do j=1,NM
       do i=1,Nrx*Ngt*npol
          read(13,'(2e25.15)')tmp1,tmp2
-         PSI_MOD(i,j)=cmplx(tmp1,tmp2,kind(dp))
+         PSI_MOD(i,j)=dcmplx(tmp1,tmp2)
       end do
    end do
    write(*,*)'done'
@@ -793,7 +793,7 @@ if(ncell==2)then
    do j=1,NM1
       do i=1,Nrx*Ngt*npol
          read(13,'(2e25.15)')tmp1,tmp2
-         PSI_MOD_1(i,j)=cmplx(tmp1,tmp2,kind(dp))
+         PSI_MOD_1(i,j)=dcmplx(tmp1,tmp2)
       end do
    end do
    close(13)
@@ -803,7 +803,7 @@ if(ncell==2)then
    do j=1,NM0
       do i=1,Nrx*Ngt*npol
          read(13,'(2e25.15)')tmp1,tmp2
-         PSI_MOD_0(i,j)=cmplx(tmp1,tmp2,kind(dp))
+         PSI_MOD_0(i,j)=dcmplx(tmp1,tmp2)
       end do
    end do
    close(13)
@@ -1141,7 +1141,7 @@ else if(refine)then
    do i=1,nm
       do j=1,nm
          read(13,'(2e25.15)')tmp1,tmp2
-         HLLL(i,j)=cmplx(tmp1,tmp2,kind(dp))
+         HLLL(i,j)=dcmplx(tmp1,tmp2)
       end do
    end do
 end if
@@ -1160,7 +1160,7 @@ else if(refine)then
 do i=1,nm
    do j=1,nm
       read(13,'(2e25.15)')tmp1,tmp2
-      TLLL(i,j)=cmplx(tmp1,tmp2,kind(dp))
+      TLLL(i,j)=dcmplx(tmp1,tmp2)
    end do
 end do
 end if
@@ -1552,6 +1552,16 @@ end do
    deallocate(C)
    deallocate(ind_bnd,in_kx)
    
+allocate(C(NModes,NModes))
+call ZGEMM('c','n',NModes,NModes,nrx*ngt*npol,alpha,psi_mod,nrx*ngt*npol,psi_mod,nrx*ngt*npol,beta,C,NModes)
+do i=1,NModes
+   do j=1,NModes
+      write(710+iyz,*)i,j,abs(c(i,j))
+   end do
+   write(710+iyz,*)
+end do
+close(710+iyz)
+deallocate(c)
 
 allocate(HLL(mmm,mmm),TLL(mmm,mmm))
 allocate(A(NM,mmm))
@@ -1579,6 +1589,8 @@ do ikx=1,n+1
 end do
 deallocate(A)
 deallocate(E)
+
+
 do k=1,mmm
    if( nspin == 1 )then
       open(unit=300,file=TRIM(outdir)//'Edisp_'//TRIM(STRINGA(k))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
@@ -1598,6 +1610,14 @@ deallocate(hkl)
 NM=mmm
 NMODES=NM
 write(*,*)'NUMBER OF BLOCH STATES=',NMODES
+
+do i=1,NModes
+   do j=1,NModes
+      write(720+iyz,*)i,j,abs(Si(i,j))
+   end do
+   write(720+iyz,*)
+end do
+close(720+iyz)
 
 !if(ncell==1)then
 if( nspin == 1 )then

@@ -57,9 +57,9 @@ module static
   real(dp),    parameter :: ryd=m0/2.0_dp*(ELCH**2/diel_0/4.0_dp/pi/hbar)**2
   real(dp),    parameter :: dalpha=1.0_dp
   real(dp),    parameter :: dbeta=0.0_dp
-  complex(dp), parameter :: alpha=cmplx(1.0_dp,0.0_dp, kind=dp)
-  complex(dp), parameter :: beta=cmplx(0.0_dp,0.0_dp, kind=dp)
-  complex(dp), parameter :: im=cmplx(0.0_dp,1.0_dp, kind=dp)
+  complex(dp), parameter :: alpha=dcmplx(1.0_dp,0.0_dp)
+  complex(dp), parameter :: beta=dcmplx(0.0_dp,0.0_dp)
+  complex(dp), parameter :: im=dcmplx(0.0_dp,1.0_dp)
 
 end module static
 
