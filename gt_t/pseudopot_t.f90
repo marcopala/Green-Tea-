@@ -301,15 +301,7 @@ do im=1,num_mat
       end do
    end if
    close(13)
-   do j=1,NM
-      do ip=1,npol
-         do jgt=1,Ngt
-            do ix=1,nrx   
-               write(1000+iyz,'(2e25.15)')A(jgt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)
-            end do
-         end do
-      end do
-   end do
+  
 
    !!! debugging line
 !!$if(allocated(C))deallocate(C)
@@ -336,7 +328,7 @@ do im=1,num_mat
    allocate(Si(iyz,im)%H(NM_mat(im),NM_mat(im)))
    allocate(C(NM,NM))
    call ZGEMM('c','n',NM,NM,nrx*ngt*npol,alpha,A,nrx*ngt*npol,A,nrx*ngt*npol,beta,C,NM)
-   Si(iyz,im)%H=(C+transpose(dconjg(C)))/2.0_dp
+   Si(iyz,im)%H=C  !(C+transpose(dconjg(C)))/2.0_dp
 
 
 do i=1,NM
@@ -1041,7 +1033,7 @@ do j=1,nkz
    write(*,*)'Kz',j,kz(j),deg_kz(j)
 end do
 
-write(*,*)'Kkyz',Nkyz
+write(*,*)'Nkyz',Nkyz
 allocate(deg_kyz(Nkyz))
 deg_kyz=deg_ky*deg_kz
 
