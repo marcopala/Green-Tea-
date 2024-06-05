@@ -59,7 +59,7 @@ real(dp),    allocatable  :: E(:), KGt(:,:), Gx(:), bb_ev(:), bb_ec(:), hkl(:,:)
 real(dp),    allocatable  :: xkadd(:,:),xkqadd(:,:), xk(:,:)
 
 complex(dp), allocatable  :: el_ph_mat(:,:,:,:)
-complex(dp), allocatable  :: A(:,:),AA(:,:),B(:,:),C(:,:),Uk(:,:,:)
+complex(dp), allocatable  :: A(:,:),B(:,:),C(:,:),D(:,:,:,:),U(:,:),Uk(:,:)
 complex(dp), allocatable  :: HLL(:,:),TLL(:,:),HLLL(:,:),TLLL(:,:) 
 complex(dp), allocatable  :: dens_z(:,:,:), dens_yz(:,:,:), tmp_vec(:)
 complex(dp)               :: tmp, zdotc
@@ -331,13 +331,13 @@ do im=1,num_mat
    Si(iyz,im)%H=C  !(C+transpose(dconjg(C)))/2.0_dp
 
 
-do i=1,NM
-   do j=1,NM
-      write(700+iyz,*)i,j,abs(C(i,j))
-   end do
-   write(700+iyz,*)
-end do
-close(700+iyz)
+!do i=1,NM
+!   do j=1,NM
+!      write(700+iyz,*)i,j,abs(C(i,j))
+!   end do
+!   write(700+iyz,*)
+!end do
+!close(700+iyz)
    
    deallocate(C)
    
@@ -449,13 +449,13 @@ do im=1,num_mat
    C=Si(iyz,im)%H
    
 
-do i=1,NM
-   do j=1,NM
-      write(700+iyz,*)i,j,abs(C(i,j))
-   end do
-   write(700+iyz,*)
-end do
-close(700+iyz)
+!do i=1,NM
+!   do j=1,NM
+!      write(700+iyz,*)i,j,abs(C(i,j))
+!   end do
+!   write(700+iyz,*)
+!end do
+!close(700+iyz)
 
    do ikx=1,n+1
       A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
@@ -529,7 +529,7 @@ end do ! endo do iyz
 
 if(.not. onlyT .or. phonons )then
 
-if(.not.allocated(Uk)) allocate(Uk(NGt*npol,(nry)*(nrz),NKYZ))
+if(.not.allocated(Uk)) allocate(Uk(NGt*npol,(nry)*(nrz)))
 
 do im=1,num_mat
 
@@ -552,16 +552,20 @@ do im=1,num_mat
       do iy=1,NRY
          do iz=1,NRZ
             j=iy+(iz-1)*(NRY)
-            Uk(1:NGt,j,iyz)=exp(dcmplx(0.0_dp,-1.0_dp)*KGt_kyz(2,1:NGt,iyz)*2.0_dp*pi/a0*dble(iy)*Dy+&
+            Uk(1:NGt,j)=exp(dcmplx(0.0_dp,-1.0_dp)*KGt_kyz(2,1:NGt,iyz)*2.0_dp*pi/a0*dble(iy)*Dy+&
                             dcmplx(0.0_dp,-1.0_dp)*KGt_kyz(3,1:NGt,iyz)*2.0_dp*pi/a0*dble(iz)*Dz )/sqrt(dble((nry)*(nrz)))
          end do
       end do
-      if(npol>1)      Uk(1+NGt:npol*NGt,1:NRY*NRZ,iyz)=Uk(1:NGt,1:NRY*NRZ,iyz)
+      if(npol>1)      Uk(1+NGt:npol*NGt,1:NRY*NRZ)=Uk(1:NGt,1:NRY*NRZ)
 
+
+      allocate(D(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))!proxy of U_psi
+      allocate(U(Nrx*NGt*npol,NM_mat(im)))!proxy of ULCBB
+      U=ULCBB(iyz,im)%H
       call omp_set_num_threads(Nomp)
       
 !$omp parallel default(none) private(ix,iy,iz,ip,i,j,jgt,dens_z,dens_yz,A,B,C) &
-!$omp shared(iyz,im,ney,nez,nm,nrx,nry,nrz,ndeltay,ndeltaz,dx,dy,dz,npol,ngt,Uk,ULCBB,U_psi)
+!$omp shared(iyz,im,ney,nez,nm,nrx,nry,nrz,ndeltay,ndeltaz,dx,dy,dz,npol,ngt,Uk,U,D)
 
 
 allocate(dens_z(NM*NM,(nry),Ndeltaz+1))
@@ -577,11 +581,12 @@ write(*,*) 'ix =',ix
    do ip=1,npol
       do jgt=1,Ngt
          do i=1,NM
-            B(i,jgt+(ip-1)*ngt)=(dconjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+            !B(i,jgt+(ip-1)*ngt)=(dconjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+            B(i,jgt+(ip-1)*ngt)=(dconjg(U(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
          end do
       end do
    end do
-   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz,iyz),NGt*npol,beta,A,NM)
+   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz),NGt*npol,beta,A,NM)
 
    do i=1,NM
       do j=1,NM
@@ -635,7 +640,8 @@ write(*,*) 'ix =',ix
    end do
    
    !$omp critical 
-   U_psi(iyz,im)%K(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1,ix)=dens_yz(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1)
+   !U_psi(iyz,im)%K(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1,ix)=dens_yz(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1)
+   D(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1,ix)=dens_yz(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1)
    !$omp end critical
    
 end do !end do ix
@@ -645,6 +651,10 @@ end do !end do ix
 deallocate(A,B,C)
 deallocate(dens_z,dens_yz)
 !$omp end parallel
+
+U_psi(iyz,im)%K=D
+
+deallocate(U,D)
 
 t2=SECNDS(t1)
 WRITE(*,*)'Time spent to compute the interpolation (s)',t2
