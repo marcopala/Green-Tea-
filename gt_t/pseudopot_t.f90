@@ -251,19 +251,19 @@ write(*,*)'a0/Dz',a0/Dz,Dz
 !!!!stop
 
 do iyz=1,Nkyz  ! Loops over the transverse k vectors
-!if(k_selec(iyz))then
+if(k_selec(iyz))then
    write(*,*)'ikyz',iyz
    ky(iyz-((iyz-1)/nky))=k_vec(2,iyz)
    write(*,*)'iky',iyz-((iyz-1)/nky),ky(iyz-((iyz-1)/nky))    !!!! iyz = iy + (iz-1)*nky
    kz(1+((iyz-1)/nky))=k_vec(3,iyz)
    write(*,*)'ikz',1+((iyz-1)/nky),kz(1+((iyz-1)/nky)) !!!! iyz = iy + (iz-1)*nky
-!end if
+end if
 end do
 
 
 
 do iyz=1,Nkyz
-!if(k_selec(iyz))then
+if(k_selec(iyz))then
    
 do im=1,num_mat
    nm=NM_mat(im)
@@ -363,11 +363,12 @@ do im=1,num_mat
    
 deallocate(A)
 end do
+end if
 end do
 
 
 do iyz=1,Nkyz
-!if(k_selec(iyz))then
+if(k_selec(iyz))then
 do im=1,num_mat
    nm=NM_mat(im)
    write(*,*)iyz,'im',im,nm
@@ -507,7 +508,6 @@ end do
 deallocate(bb_ec,bb_ev)
 
 
-
 if(allocated(KGt))deallocate(KGt)
 allocate(KGt(4,1*Ngt))
 KGt=0.0_dp
@@ -524,6 +524,7 @@ end if
 
 KGt_kyz(1:4,1:Ngt,iyz)=KGt(1:4,1:1*Ngt)
 
+end if
 end do ! endo do iyz
 
 
@@ -540,9 +541,9 @@ do im=1,num_mat
    NM=NM_mat(im)
 
    do iyz=1,Nkyz
-      !if(k_selec(iyz))then
+      if(k_selec(iyz))then
       
-      allocate(U_psi(iyz,im)%K(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))
+     !!! allocate(U_psi(iyz,im)%K(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))
       
       
 !!!! INTERPOLATION ON THE COARSE GRID
@@ -652,6 +653,9 @@ deallocate(A,B,C)
 deallocate(dens_z,dens_yz)
 !$omp end parallel
 
+
+      
+allocate(U_psi(iyz,im)%K(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))      
 U_psi(iyz,im)%K=D
 
 deallocate(U,D)
@@ -689,7 +693,7 @@ end if
 end if
 
 write(*,*)'End ikyz =',iyz
-
+end if
 end do ! end do iyz
 
 do iyz=1,Nkyz
@@ -941,9 +945,8 @@ end if
 if (.not. dfpt) then
       
    do jyz=1,NKyz ! index of q_yz
-      
+      if(k_selec(jyz))then
       do iyz = 1,NKyz   ! index of k_yz
-            
          if(k_selec(iyz))then
             
             do jx=1,nqx
@@ -1006,6 +1009,7 @@ if (.not. dfpt) then
             end do
          end if
       end do
+      end if
    end do
    
 end if ! if not dfpt
