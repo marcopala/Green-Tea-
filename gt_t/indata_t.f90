@@ -523,6 +523,8 @@ CONTAINS
        write(*,*)'++++++++++++++++'
        write(*,*)'WARNING: ADDITIONAL GATES OPTION IS TURNED ON'
        write(*,*)'USE THIS CAREFULLY: gate nodes SHOULD NOT SUPERIMPOSE with the ones of another gate'
+       write(*,*)
+       write(*,*)'ADDITIONAL GATES CAN BE DEFINED ONLY AT THE EDGES OF STRUCTURE'
        write(*,*)'++++++++++++++++'
        write(*,*)
        allocate(gate_xi(num_add_gate), gate_xf(num_add_gate), gate_z(num_add_gate),gate_pot(num_add_gate))
@@ -753,7 +755,7 @@ IF(add_gate)THEN
          write(*,*)'pb w gate_xf and gate_xi',gate_xf(ig),gate_xi(ig)
          stop
       end if
-      NUMBOUND_3D=NUMBOUND_3D+(gate_xf(ig) - gate_xi(ig) )*Ndeltax*NTOT_Y*vertical_offset
+      NUMBOUND_3D=NUMBOUND_3D+((gate_xf(ig) - gate_xi(ig))*Ndeltax)*NTOT_Y*vertical_offset
       icc=icc+1
    end do
 END IF
@@ -851,7 +853,6 @@ END IF
 IF(bot_gate)THEN
 IF(inplane_z.le.(vertical_offset-1))THEN
    whichkind_3D(ii)=1 !Gate node
-    !write(*,*)inplane_z,ii,whichkind_3D(ii)
 END IF
 END IF
 IF(top_gate)THEN
@@ -863,8 +864,8 @@ END IF
 !!!! ADDITIONAL GATES
 if(add_gate)then
    do ig=1,num_add_gate
-      IF((plane_index .ge. ( gate_xi(ig)*Ndeltax )).and.(plane_index.le.( gate_xf(ig)*Ndeltax )))THEN
-         IF( inplane_z == gate_z(ig))THEN
+      IF((plane_index .ge. ( gate_xi(ig)*Ndeltax )).and.(plane_index.lt.( gate_xf(ig)*Ndeltax )))THEN
+         IF( inplane_z .eq. gate_z(ig))THEN
             whichkind_3D(ii)=20+ig !Gate node with pinned potential
          END IF
       END IF
@@ -926,7 +927,10 @@ epsilon_3D(ii)=DIEL_0*DIEL_OX !Internal Oxide
 type=2
 END IF
 END IF
-IF((inplane_z.lt.vertical_offset).and.bot_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+IF((inplane_z.lt.vertical_offset).and.bot_gate)THEN
+epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+write(*,*)ii,epsilon_3D(ii)
+end IF
 IF((inplane_z.ge.(tox_bot+tox_top+tsc_h+to2_bot+to2_top+vertical_offset)).and.top_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
 IF((inplane_y.lt.lateral_offset).and.lft_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
 IF((inplane_y.ge.(tox_lft+tox_rgt+tsc_w+to2_lft+to2_rgt+lateral_offset)).and.rgt_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
@@ -946,21 +950,12 @@ END IF
 END IF
 END IF
 
-!!!! ADDITIONAL GATES
-if(add_gate)then
-   do ig=1,num_add_gate
-      IF((plane_index .ge. ( gate_xi(ig)*Ndeltax )).and.(plane_index .le. ( gate_xf(ig)*Ndeltax )))THEN
-         IF( inplane_z == gate_z(ig))THEN
-            epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
-         END IF
-      END IF
-   end do
-end if
 
 type_3D(plane_index+1,inplane_y+1,inplane_z+1)=type
 
 END DO
 
+!stop
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1026,8 +1021,10 @@ jj=0
     END DO
 
 
-    IF (jj.ne.NUMN_3D) STOP 'indata_struttura_init: errore in reordering'
-
+    IF (jj.ne.NUMN_3D)THEN
+       write(*,*)'indata_struttura_init: errore in reordering',jj,NUMN_3D
+       STOP
+    END IF
     DO ii=0,NUMN_3D-1
        whichkind_3D_ord(map_3D(ii))=whichkind_3D(ii)
        coord_3D_ord(1,map_3D(ii))=coord_3D(1,ii)
