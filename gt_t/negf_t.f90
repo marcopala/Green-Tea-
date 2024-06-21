@@ -1788,7 +1788,7 @@ subroutine oldsancho(nm,E,H00,H10,Id,G00)
 
   z = E+dcmplx(0.0_dp,eta**(0.5_dp))
 
-  write(*,*)'using old sancho',E
+!  write(*,*)'using old sancho',E
   H_BB = H00
   H_10 = H10
   H_01 = TRANSPOSE( DCONJG( H10 ) )

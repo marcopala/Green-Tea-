@@ -864,9 +864,8 @@ END IF
 if(add_gate)then
    do ig=1,num_add_gate
       IF((plane_index .gt. ( gate_xi(ig)*Ndeltax )).and.(plane_index.le.( gate_xf(ig)*Ndeltax )))THEN
-         IF( inplane_z  == gate_z(ig))THEN
+         IF( inplane_z == gate_z(ig))THEN
             whichkind_3D(ii)=20+ig !Gate node with pinned potential
-            !write(*,*)'z',ig,inplane_z,ii,whichkind_3D(ii)
          END IF
       END IF
    end do
@@ -876,7 +875,7 @@ end if
 
 END DO
 write(*,*)'number of zero whichkind',jj
-!stop
+
 lateral_offset  =0!((tsc_w+tox_lft+tox_rgt)-(tsc_w+2*tox_w_ch))/2
 vertical_offset =0!((tsc_h+2*tox_h)-(tsc_h+2*tox_h_ch))/2
 
@@ -927,10 +926,10 @@ epsilon_3D(ii)=DIEL_0*DIEL_OX !Internal Oxide
 type=2
 END IF
 END IF
-IF((inplane_z.lt.vertical_offset).and.top_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
-IF((inplane_z.ge.(tox_bot+tox_top+tsc_h+to2_bot+to2_top+vertical_offset)).and.bot_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
-IF((inplane_y.lt.lateral_offset).and.rgt_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
-IF((inplane_y.ge.(tox_lft+tox_rgt+tsc_w+to2_lft+to2_rgt+lateral_offset)).and.lft_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+IF((inplane_z.lt.vertical_offset).and.bot_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+IF((inplane_z.ge.(tox_bot+tox_top+tsc_h+to2_bot+to2_top+vertical_offset)).and.top_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+IF((inplane_y.lt.lateral_offset).and.lft_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+IF((inplane_y.ge.(tox_lft+tox_rgt+tsc_w+to2_lft+to2_rgt+lateral_offset)).and.rgt_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
 ELSE
 !SPACER REGION!
 IF((inplane_z.ge.(to2_bot+vertical_offset)).and.(inplane_z.lt.(to2_bot+tsc_h+vertical_offset+tox_bot+tox_top)).and. &
@@ -947,9 +946,21 @@ END IF
 END IF
 END IF
 
+!!!! ADDITIONAL GATES
+if(add_gate)then
+   do ig=1,num_add_gate
+      IF((plane_index .gt. ( gate_xi(ig)*Ndeltax )).and.(plane_index .le. ( gate_xf(ig)*Ndeltax )))THEN
+         IF( inplane_z == gate_z(ig))THEN
+            epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+         END IF
+      END IF
+   end do
+end if
+
 type_3D(plane_index+1,inplane_y+1,inplane_z+1)=type
 
 END DO
+
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
