@@ -863,7 +863,7 @@ END IF
 !!!! ADDITIONAL GATES
 if(add_gate)then
    do ig=1,num_add_gate
-      IF((plane_index .gt. ( gate_xi(ig)*Ndeltax )).and.(plane_index.le.( gate_xf(ig)*Ndeltax )))THEN
+      IF((plane_index .ge. ( gate_xi(ig)*Ndeltax )).and.(plane_index.le.( gate_xf(ig)*Ndeltax )))THEN
          IF( inplane_z == gate_z(ig))THEN
             whichkind_3D(ii)=20+ig !Gate node with pinned potential
          END IF
@@ -949,7 +949,7 @@ END IF
 !!!! ADDITIONAL GATES
 if(add_gate)then
    do ig=1,num_add_gate
-      IF((plane_index .gt. ( gate_xi(ig)*Ndeltax )).and.(plane_index .le. ( gate_xf(ig)*Ndeltax )))THEN
+      IF((plane_index .ge. ( gate_xi(ig)*Ndeltax )).and.(plane_index .le. ( gate_xf(ig)*Ndeltax )))THEN
          IF( inplane_z == gate_z(ig))THEN
             epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
          END IF
