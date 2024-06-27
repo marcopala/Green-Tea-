@@ -73,7 +73,7 @@ REAL(DP)                 :: n_bose_g
 
 REAL(DP), ALLOCATABLE    :: degeneracy(:), trans(:,:,:,:), cur(:,:,:,:)
 REAL(DP), ALLOCATABLE    :: ldos(:,:,:,:), zdos(:,:,:,:), ndos(:,:,:,:), pdos(:,:,:,:), R_in(:,:,:,:), R_out(:,:,:,:)
-REAL(DP)                 :: tr,tre,ttr,sumt,kappax,tmp,n_2D
+REAL(DP)                 :: tr,tre,ttr,sumt,sums,kappax,tmp,n_2D
 COMPLEX(DP)              :: zdotc
 
 
@@ -1110,6 +1110,7 @@ end do ! end do iyz
 if(phonons)then
    OPEN(UNIT=30,FILE=TRIM(outdir)//'scat_LDOS_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=40,FILE=TRIM(outdir)//'scat_Jdens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   OPEN(UNIT=50,FILE=TRIM(outdir)//'scat_Jspectrum_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=41,FILE=TRIM(outdir)//'scat_Jx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=42,FILE=TRIM(outdir)//'scat_Junbalance_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=43,FILE=TRIM(outdir)//'scat_Qdens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
@@ -1140,6 +1141,16 @@ do nee=1,Nop
          end do
          write(40,*)dble(xx-0.5)*ac1*1.0d7,EN,sumt/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
       end do
+      
+      sums=0.0_dp
+      sumt=0.0_dp
+      do iyz=1,nkyz
+         if(k_selec(iyz))then
+            sumt=sumt+degeneracy(iyz)*trans(ee,nee,1,iyz)/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
+            sums=sums+degeneracy(iyz)*trans(ee,nee,2,iyz)/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
+         end if
+      end do
+      write(50,*)EN,sumt,sums
       
       do  xx=1,ncx_d-2
          sumt=0.0_dp
@@ -1207,6 +1218,7 @@ do xx=1,ncx_d-1
 end do
 close(30)
 close(40)
+close(50)
 close(41)
 close(42)
 close(43)
@@ -1290,9 +1302,26 @@ do xx=1,Ncx_d
    end do
 end do
 end if
+
 close(10)
 close(11)
-
+if(chtype == 't')then
+OPEN(UNIT=11,FILE=TRIM(outdir)//'charge_n2D_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+do xx=1,Ncx_d
+   do ix=1,Ndeltax
+      n_2D=0.0_dp
+      do iz=1,NTOT_Z
+         do iy=1,NTOT_Y
+            n_2D=n_2D+(charge_p(ix+(xx-1)*Ndeltax,iy,iz)-charge_n(ix+(xx-1)*Ndeltax,iy,iz))*deltaz/NTOT_Y
+         end do
+      end do
+      write(11,*)ix+(xx-1)*Ndeltax,n_2D
+      write(10,*)
+   end do
+end do
+   
+close(11)
+end if
 deallocate(KGt)
 deallocate(NM)
 

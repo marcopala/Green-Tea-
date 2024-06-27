@@ -813,7 +813,7 @@ write(*,*)'Number of unknows in Poisson solution=', LWORK_3D
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 whichkind_3D=-1 !Default for unknows nodes
-jj=0
+
 DO ii=0, NUMN_3D-1
 
 plane_index=ii/(NTOT_Y*NTOT_Z)
@@ -864,7 +864,7 @@ END IF
 !!!! ADDITIONAL GATES
 if(add_gate)then
    do ig=1,num_add_gate
-      IF((plane_index .ge. ( gate_xi(ig)*Ndeltax )).and.(plane_index.lt.( gate_xf(ig)*Ndeltax )))THEN
+      IF((plane_index .ge. ( gate_xi(ig)*Ndeltax )).and.(plane_index.le.( gate_xf(ig)*Ndeltax )))THEN
          IF( inplane_z .eq. gate_z(ig))THEN
             whichkind_3D(ii)=20+ig !Gate node with pinned potential
          END IF
@@ -875,7 +875,6 @@ end if
 !!!!!IF(plane_index.eq.0)whichkind_3D(ii)=1 !! THE DIRICHLECT NODES ARE LOCATED AT THE SOURCE (FIRST SLICE)
 
 END DO
-write(*,*)'number of zero whichkind',jj
 
 lateral_offset  =0!((tsc_w+tox_lft+tox_rgt)-(tsc_w+2*tox_w_ch))/2
 vertical_offset =0!((tsc_h+2*tox_h)-(tsc_h+2*tox_h_ch))/2
@@ -902,15 +901,15 @@ type=2
 
 IF((plane_index.lt.source_len).or.(plane_index.ge.(source_len+2*spacer+gate_len)))THEN
 !RESERVOIR REGION!
-IF((inplane_z.ge.(to2_bot)).and.(inplane_z.lt.(to2_top+tox_bot+tsc_h+tox_top)).and. &
+IF((inplane_z.ge.(to2_bot)).and.(inplane_z.lt.(to2_bot+tox_bot+tsc_h+tox_top)).and. &
    (inplane_y.ge.(to2_lft)) .and.(inplane_y.lt.(to2_lft +tox_lft +tsc_w+tox_rgt)))THEN
 IF((inplane_z.ge.(tox_bot+to2_bot)).and.(inplane_z.lt.(tox_bot+to2_bot+tsc_h)).and. &
    (inplane_y.ge.(tox_lft +to2_lft)) .and.(inplane_y.lt.(tox_lft +to2_lft +tsc_w)))THEN
-epsilon_3D(ii)=DIEL_0*DIEL_SC  !Semiconductor
-type=1
+   epsilon_3D(ii)=DIEL_0*DIEL_SC  !Semiconductor
+   type=1
 ELSE
-epsilon_3D(ii)=DIEL_0*DIEL_OX  !Internal Oxide
-type=2
+   epsilon_3D(ii)=DIEL_0*DIEL_OX  !Internal Oxide
+   type=2
 END IF
 END IF
 ELSE
@@ -929,9 +928,10 @@ END IF
 END IF
 IF((inplane_z.lt.vertical_offset).and.bot_gate)THEN
 epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
-write(*,*)ii,epsilon_3D(ii)
 end IF
-IF((inplane_z.ge.(tox_bot+tox_top+tsc_h+to2_bot+to2_top+vertical_offset)).and.top_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+IF((inplane_z.ge.(tox_bot+tox_top+tsc_h+to2_bot+to2_top+vertical_offset)).and.top_gate)THEN
+   epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+end IF
 IF((inplane_y.lt.lateral_offset).and.lft_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
 IF((inplane_y.ge.(tox_lft+tox_rgt+tsc_w+to2_lft+to2_rgt+lateral_offset)).and.rgt_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
 ELSE
@@ -947,15 +947,13 @@ epsilon_3D(ii)=DIEL_0*DIEL_OX !Internal  Oxide
 type=2
 END IF
 END IF
-END IF
-END IF
 
+END IF
+END IF
 
 type_3D(plane_index+1,inplane_y+1,inplane_z+1)=type
 
 END DO
-
-!stop
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

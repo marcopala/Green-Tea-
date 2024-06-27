@@ -357,14 +357,13 @@ SUBROUTINE poisson_nonlin_selfconsistent(pot3D,EC3D,EV3D,outer_rho,outer_drho,Fn
               IF(whichkind_3D_ord(list_3D_ord(prev_plane,nel)) == 20+ig) THEN !
                  rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
                       epsilon_3D(nel)*A(jj+1,prev_plane)*&
-                      (gate_pot(ig)-workgate) 
+                      (gate_pot(ig)-workgate)
               END IF
               
               IF(whichkind_3D_ord(list_3D_ord(next_plane,nel)) == 20+ig) THEN !
                  rhs(list_3D_ord(jj+1,nel))=rhs(list_3D_ord(jj+1,nel))+&
                       epsilon_3D(nel)*A(jj+1,next_plane)*&
                       (gate_pot(ig)-workgate)
-                 
               END IF
               
               IF(whichkind_3D_ord(list_3D_ord(out_plane,nel)) == 20+ig) THEN !

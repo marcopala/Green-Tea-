@@ -373,7 +373,7 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
      END DO
      DO ii=1, NTOT_Y
         DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
+           write(23,*)plotpot(1,ii,jj),plotpot(NTOT_X,ii,jj)
         END DO
         write(23,*)
      END DO
