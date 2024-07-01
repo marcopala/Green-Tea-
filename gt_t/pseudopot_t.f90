@@ -563,7 +563,7 @@ do im=1,num_mat
       allocate(D(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))!proxy of U_psi
       allocate(U(Nrx*NGt*npol,NM_mat(im)))!proxy of ULCBB
       U=ULCBB(iyz,im)%H
-      call omp_set_num_threads(Nomp)
+      call omp_set_num_threads(Nomp_PP)
       
 !$omp parallel default(none) private(ix,iy,iz,ip,i,j,jgt,dens_z,dens_yz,A,B,C) &
 !$omp shared(iyz,im,ney,nez,nm,nrx,nry,nrz,ndeltay,ndeltaz,dx,dy,dz,npol,ngt,Uk,U,D)

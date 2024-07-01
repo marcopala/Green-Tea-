@@ -190,7 +190,7 @@ MODULE indata
   REAL(DP) :: Eop
   INTEGER  :: Nop_g
   REAL(DP) :: Dop_g
-  INTEGER  :: Nsub,Nomp
+  INTEGER  :: Nsub,Nomp,Nomp_PP
   REAL(DP) :: Dac, Dac_e
   REAL(DP) :: Dac_h
   REAL(DP) :: seuil
@@ -292,7 +292,8 @@ MODULE indata
        &  ERROR_OUTER,                         &
        &  MAX_ITER_OUTER,                      &
        &  alphapot,                            &
-       &  Nomp
+       &  Nomp,                                &
+       &  Nomp_PP
   NAMELIST /indata_energy/                     &
        &  dfpt,                                &
        &  Eop,                                 &
@@ -417,6 +418,7 @@ CONTAINS
     MAX_ITER_OUTER=30
     alphapot=1.0_dp
     Nomp=1
+    Nomp_PP = Nomp
     Dop_g=0.0_dp
     Nop_g=1
     Dac=0.0_dp
