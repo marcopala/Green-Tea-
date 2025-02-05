@@ -383,11 +383,16 @@ do im=1,num_mat
    do i=1,nm
       do j=1,nm
          read(13,'(2e25.15)')tmp1,tmp2
-         HL(iyz,im)%H(i,j)=dcmplx(tmp1,tmp2)
+         if(i>=j)            HL(iyz,im)%H(i,j)=dcmplx(tmp1,tmp2)
+      end do
+   end do
+   do i=1,nm
+      do j=1,nm
+           if(i<j) HL(iyz,im)%H(i,j)=conjg(HL(iyz,im)%H(j,i))
       end do
    end do
    close(13)
-   HL(iyz,im)%H=(HL(iyz,im)%H+transpose(dconjg(HL(iyz,im)%H)))/2.0_dp
+   !HL(iyz,im)%H=(HL(iyz,im)%H+transpose(dconjg(HL(iyz,im)%H)))/2.0_dp
    HL(iyz,im)%H = HL(iyz,im)%H + off_set(im)*Si(iyz,im)%H  !!! offset of the material
    write(*,*)im,'offset=',off_set(im)
    allocate(TL(iyz,im)%H(NM_mat(im),NM_mat(im)))   !!! H10
@@ -949,10 +954,10 @@ if (.not. dfpt) then
       do iyz = 1,NKyz   ! index of k_yz
          if(k_selec(iyz))then
             
-            do jx=1,nqx
-               
-               allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
-               el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
+            allocate(el_ph_mtrx(iyz,1,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
+            el_ph_mtrx(iyz,1,jyz,im)%M=0.0d0
+
+            do jx=1,nqx+1
                
                jj = ind_kyz( k_vec(2:3,iyz) - kq_vec(2:3,1+(jyz-1)*nkx) )  ! index of k_yz' = k_yz - q_yz 
                
@@ -964,7 +969,7 @@ if (.not. dfpt) then
                   
                   call omp_set_num_threads(Nrx)
                   !$omp parallel default(none) private(ix,n,m) &
-                  !$omp shared(nrx,nm,ngt,im,ip,jj,iyz,jx,nn,in_kx,PSIBB,C)
+                  !$omp shared(nrx,nm,ngt,im,nband_val,ip,jj,iyz,jx,nn,in_kx,PSIBB,C)
                   
                   !$omp do 
                   do ix=1,Nrx
@@ -974,8 +979,8 @@ if (.not. dfpt) then
                            !$omp atomic
                            C(n,m)=C(n,m)+zdotc(ngt,PSIBB(iyz,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,n),1, &
                                 PSIBB(jj,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,m),1) * &
-                                exp(-dcmplx(0.0_dp,1.0_dp) * ( in_kx(iyz,im)%n(n) - in_kx(jj,im)%n(m) - dble(2*(jx-1)-nn)/dble(2*nn)  ) * &
-                                2.0_dp*pi*dble(ix-1)/dble(Nrx))
+                                exp( -cmplx(0.0_dp,1.0_dp) * ( in_kx(iyz,im)%n(n) - in_kx(jj,im)%n(m) - dble(2*(jx-1)-dble(nn))/dble(2*nn)  ) * &
+                                2.0_dp*pi*dble(ix-1)/dble(Nrx) )
                         end do
                      end do
                      
@@ -986,26 +991,14 @@ if (.not. dfpt) then
                   ll=1
                   do j=1,NM
                      do i=1,NM
-                        
-                        el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=C(i,j)
-                        
-                        !write(5000+100*iyz+10*jyz+jx,*)i,j,abs(C(i,j))
-                        !write(5000+200*iyz+10*jyz+jx,*)i,j,dble(C(i,j))
-                        !write(5000+300*iyz+10*jyz+jx,*)i,j,aimag(C(i,j))
-                        
+                        !   el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=C(i,j)
+                        el_ph_mtrx(iyz,1,jyz,im)%M(ll,i,j)=el_ph_mtrx(iyz,1,jyz,im)%M(ll,i,j)+C(i,j)/dble(nn+1)
                      end do
-                     
-                     !write(5000+100*iyz+10*jyz+jx,*)
-                     !write(5000+200*iyz+10*jyz+jx,*)
-                     !write(5000+300*iyz+10*jyz+jx,*)
-                     
                   end do
                   deallocate(C)
-
+                  
                end if
 
-
-               
             end do
          end if
       end do

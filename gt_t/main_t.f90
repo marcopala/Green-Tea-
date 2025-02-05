@@ -75,6 +75,7 @@ ISDcurrent=0.0d0
 IDScurrentb=0.0d0
 
 call indata_readinput()
+
 call indata_grid()
 
 call indata_structure_init()
@@ -202,7 +203,6 @@ DO gg=0, NUMVG
   write(*,*)'//VG=',vg,'VD=',-mud,'BZ=',bz,'//'
   write(*,*)'///////////////////////////////////////////////////////////////////////'
 
-
   open(23, file = TRIM(outdir)//'convergence_LOG.dat',status='old',position='append')
   write(23,*) ':::::::::::::::::::::Bias definition::::::::::::::::::::::::'
   write(23,*) '::VG=',vg,'VD=',-mud,'BZ=',bz,'::'
@@ -219,8 +219,8 @@ DO gg=0, NUMVG
      if(ss.eq.0 .and. gg.eq.0 .and. bb.eq.0)then
         write(*,*)'////////////////////////////////////////////////////////////////'
         if(.not. in_pot)then
+           write(*,*)'insol',in_sol     
            write(*,*)'Poisson init guess'
-           write(*,*)'in_sol=',in_sol
            call pot_init(POT_3D,whichkind_3D,map_3D,ntot_x,ntot_y,ntot_z,lwork_3D)
            write(*,*)'POT INIT DONE',mus,mud
         else
@@ -240,7 +240,18 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   transport_iter=transport_iter+1
   write(*,*)'ITERATION n.', transport_iter
 
+  if(NO_SC)then
+     transport_error = 0.0_dp
+     write(*,*)'Self-consistent calculation is turned off'
+     
+     open(10,file='Last_Potential-vd'//TRIM(STRINGA(ss))//'-vg'//TRIM(STRINGA(gg))//'.dat',status='unknown')
+     do ii=0,LWORK_3D-1
+        read(10,*)POT_3D(ii)
+     end do
+     close(10)
 
+  end if
+     
   EC_3D=0.0d0
   EV_3D=0.0d0
   rho_3D_n=0.0d0
@@ -311,6 +322,7 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   write(*,*)'////////////////////////////////////////////////////////'
   write(*,*)'                        NEGF SOLVED                     '
   write(*,*)'////////////////////////////////////////////////////////'
+if(.not. no_SC)then
   write(*,*)'////////////////////////////////////////////////////////'
   write(*,*)'                     SOLVING  POISSON                   '
   write(*,*)'////////////////////////////////////////////////////////'
@@ -373,7 +385,7 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
      END DO
      DO ii=1, NTOT_Y
         DO jj=1, NTOT_Z
-           write(23,*)plotpot(1,ii,jj),plotpot(NTOT_X,ii,jj)
+           write(23,*)plotpot(NTOT_X/2,ii,jj)
         END DO
         write(23,*)
      END DO
@@ -527,7 +539,7 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   write(*,*)'////////////////////////////////////////////////////////'
   write(*,*)'                      POISSON SOLVED                    '
   write(*,*)'////////////////////////////////////////////////////////'
-
+endif
 
   transport_error=0.d0
   DO ii=0,LWORK_3D-1

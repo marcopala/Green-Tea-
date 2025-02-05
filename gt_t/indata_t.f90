@@ -113,7 +113,7 @@ MODULE indata
   INTEGER,  allocatable :: gate_xi(:), gate_xf(:), gate_z(:)
   REAL(DP), allocatable :: gate_pot(:)
 
-  LOGICAL  :: onlyT
+  LOGICAL  :: onlyT, NO_SC
   LOGICAL  :: in_pot, in_sol
   LOGICAL  :: magnetic
 
@@ -312,7 +312,7 @@ MODULE indata
        &  in_pot,                              &   
        &  in_sol,                              &
        &  source_sol, channel_sol, drain_sol,  &
-       &  onlyT,                               &
+       &  onlyT, NO_SC,                        &
        &  VGMIN,                               &
        &  VGMAX,                               &
        &  DELTAVG,                             & 
@@ -374,6 +374,7 @@ CONTAINS
 !!! DEFAULT VALUES !!!
 !    vec_field_new=.FALSE.
 !    vec_field_old=.FALSE.
+    NO_SC=.false.
     onlyT=.false.
     in_pot=.false.
     in_sol=.false.
@@ -423,7 +424,7 @@ CONTAINS
     Nop_g=1
     Dac=0.0_dp
     Nsub=3
-    seuil=1.0d0
+    seuil=1.0d1
     SCBA_alpha=1.0_dp
     SCBA_max_iter=50
     SCBA_tolerance=1.0d-3
@@ -660,7 +661,6 @@ CONTAINS
     write(*,*) 'Damping factor= ', alphapot
     write(*,*) 'NKT', NKT
 
-    
   
     phonons=.FALSE.
     if(dac > 0.0_dp .or. dop_g > 0.0_dp) phonons=.TRUE.
@@ -668,6 +668,8 @@ CONTAINS
 
     if(phonons) then
        write(*,*)'PHONONS ON'
+       write(*,*)'SCBA_max_iter=',SCBA_max_iter
+       write(*,*)'SCBA_tolerance=',SCBA_tolerance
     else
        write(*,*)'PHONONS OFF, balistic simulation'
     end if
@@ -679,7 +681,9 @@ CONTAINS
        allocate(ind_bnd(NKyz,num_mat))
        if (dfpt) allocate(ind_q(nkx,nkyz))
     end if
-
+    
+    write(*,*)'VGS inputs:',  VGMIN,   VGMAX,   DELTAVG
+    write(*,*)'VDS inputs:', VDMIN,VDMAX,DELTAVD
     
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   IF((mod(tsc_h-tsc_h,2).ne.0).or.(mod(tsc_w-tsc_w,2).ne.0))STOP "Error in structure declaration"
@@ -815,7 +819,7 @@ write(*,*)'Number of unknows in Poisson solution=', LWORK_3D
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 whichkind_3D=-1 !Default for unknows nodes
-
+jj=0
 DO ii=0, NUMN_3D-1
 
 plane_index=ii/(NTOT_Y*NTOT_Z)
@@ -866,7 +870,7 @@ END IF
 !!!! ADDITIONAL GATES
 if(add_gate)then
    do ig=1,num_add_gate
-      IF((plane_index .ge. ( gate_xi(ig)*Ndeltax )).and.(plane_index.le.( gate_xf(ig)*Ndeltax )))THEN
+      IF((plane_index .ge. ( gate_xi(ig)*Ndeltax )).and.(plane_index.lt.( gate_xf(ig)*Ndeltax )))THEN
          IF( inplane_z .eq. gate_z(ig))THEN
             whichkind_3D(ii)=20+ig !Gate node with pinned potential
          END IF
@@ -877,6 +881,7 @@ end if
 !!!!!IF(plane_index.eq.0)whichkind_3D(ii)=1 !! THE DIRICHLECT NODES ARE LOCATED AT THE SOURCE (FIRST SLICE)
 
 END DO
+write(*,*)'number of zero whichkind',jj
 
 lateral_offset  =0!((tsc_w+tox_lft+tox_rgt)-(tsc_w+2*tox_w_ch))/2
 vertical_offset =0!((tsc_h+2*tox_h)-(tsc_h+2*tox_h_ch))/2
@@ -907,11 +912,11 @@ IF((inplane_z.ge.(to2_bot)).and.(inplane_z.lt.(to2_bot+tox_bot+tsc_h+tox_top)).a
    (inplane_y.ge.(to2_lft)) .and.(inplane_y.lt.(to2_lft +tox_lft +tsc_w+tox_rgt)))THEN
 IF((inplane_z.ge.(tox_bot+to2_bot)).and.(inplane_z.lt.(tox_bot+to2_bot+tsc_h)).and. &
    (inplane_y.ge.(tox_lft +to2_lft)) .and.(inplane_y.lt.(tox_lft +to2_lft +tsc_w)))THEN
-   epsilon_3D(ii)=DIEL_0*DIEL_SC  !Semiconductor
-   type=1
+epsilon_3D(ii)=DIEL_0*DIEL_SC  !Semiconductor
+type=1
 ELSE
-   epsilon_3D(ii)=DIEL_0*DIEL_OX  !Internal Oxide
-   type=2
+epsilon_3D(ii)=DIEL_0*DIEL_OX  !Internal Oxide
+type=2
 END IF
 END IF
 ELSE
@@ -930,10 +935,9 @@ END IF
 END IF
 IF((inplane_z.lt.vertical_offset).and.bot_gate)THEN
 epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
+write(*,*)ii,epsilon_3D(ii)
 end IF
-IF((inplane_z.ge.(tox_bot+tox_top+tsc_h+to2_bot+to2_top+vertical_offset)).and.top_gate)THEN
-   epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
-end IF
+IF((inplane_z.ge.(tox_bot+tox_top+tsc_h+to2_bot+to2_top+vertical_offset)).and.top_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
 IF((inplane_y.lt.lateral_offset).and.lft_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
 IF((inplane_y.ge.(tox_lft+tox_rgt+tsc_w+to2_lft+to2_rgt+lateral_offset)).and.rgt_gate)epsilon_3D(ii)=DIEL_0*DIEL_METAL !Gate
 ELSE
@@ -949,13 +953,15 @@ epsilon_3D(ii)=DIEL_0*DIEL_OX !Internal  Oxide
 type=2
 END IF
 END IF
+END IF
+END IF
 
-END IF
-END IF
 
 type_3D(plane_index+1,inplane_y+1,inplane_z+1)=type
 
 END DO
+
+!stop
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
