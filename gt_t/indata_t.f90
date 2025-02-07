@@ -155,7 +155,7 @@ MODULE indata
   type N_BLOCKS
      real(dp), allocatable :: N(:)
   end type N_BLOCKS
-  type(N_blocks),allocatable :: in_kx(:,:)
+  type(N_blocks),allocatable :: ind_kx(:,:)
   
   type H_blocks
      complex(dp), allocatable :: H(:,:)
@@ -181,7 +181,7 @@ MODULE indata
 
   CHARACTER :: domag, lspinorb, okvan
   
-  INTEGER               :: num_mat, num_reg, num_het, nqs, nqmodes
+  INTEGER               :: num_mat, num_reg, num_het, nqs, nqmodes,nkread
   INTEGER,  ALLOCATABLE :: imat(:), ihet(:), nc_reg(:), typ_mat(:), ind_q(:,:)
   INTEGER,  ALLOCATABLE :: nm_mat(:), mat_l(:), mat_r(:), ihh(:,:)
   REAL(DP), ALLOCATABLE :: ref_ev(:),ref_ec(:)
@@ -406,7 +406,7 @@ CONTAINS
     DIEL_O2=1.0d0
     ncy=1
     ncz=1
-    nqx=2
+    nqx=5
     nkx=2
     nky=1
     nkz=1
@@ -558,34 +558,14 @@ CONTAINS
     end do
 
 
-    allocate(kq_vec(3,nkx*Nkyz))
-    do iz=1,nkz
-       do iy=1,nky
-          l = iy + (iz-1)*nky
-          if(nkx==4)then
-             kq_vec(1,1+(l-1)*nkx)=-0.250
-             kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,2+(l-1)*nkx)= 0.0
-             kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,3+(l-1)*nkx)= 0.250
-             kq_vec(2,3+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,3+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,4+(l-1)*nkx)= 0.50
-             kq_vec(2,4+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,4+(l-1)*nkx)= k_vec(3,l)
-          end if
-          if(nkx==2)then
-             kq_vec(1,1+(l-1)*nkx)= 0.0
-             kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
-             kq_vec(1,2+(l-1)*nkx)= 0.50
-             kq_vec(2,2+(l-1)*nkx)= k_vec(2,l)
-             kq_vec(3,2+(l-1)*nkx)= k_vec(3,l)
-          end if
-       end do
-    end do
+    !allocate(kq_vec(3,nqx*Nkyz))
+    !do iz=1,nkz
+    !   do iy=1,nky
+    !      l = iy + (iz-1)*nky
+    !      kq_vec(2,1+(l-1)*nkx)= k_vec(2,l)
+    !      kq_vec(3,1+(l-1)*nkx)= k_vec(3,l)
+    !   end do
+    !end do
     
     magnetic='F'
     updw='ni'
@@ -674,12 +654,12 @@ CONTAINS
        write(*,*)'PHONONS OFF, balistic simulation'
     end if
 
-    if(phonons) allocate(el_ph_mtrx(NKyz,Nqx+1,NKyz,num_mat))
+    if(phonons) allocate(el_ph_mtrx(NKyz,Nqx,NKyz,num_mat))
     
     if(phonons)then
-       allocate(in_kx(NKyz,num_mat))
+       allocate(ind_kx(NKyz,num_mat))
        allocate(ind_bnd(NKyz,num_mat))
-       if (dfpt) allocate(ind_q(nkx,nkyz))
+       if (dfpt) allocate(ind_q(nqx,nkyz))
     end if
     
     write(*,*)'VGS inputs:',  VGMIN,   VGMAX,   DELTAVG

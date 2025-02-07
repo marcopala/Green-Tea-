@@ -47,16 +47,16 @@ subroutine read_QE_output
 implicit none
   
 character(len=80) :: comment
-integer(k15), allocatable :: miller_2D(:,:), ind_k(:,:)
-integer                   :: i,ikx,iyz,jyz,ii,j,l,k,m,n,mm,nn,ll,nrx0,ncell,m1,ix,jx,iy,iz
+integer(k15), allocatable :: miller_2D(:,:)
+integer                   :: i,ikx,iyz,jyz,irr,ik,nu,ii,j,l,k,m,n,mm,nn,ll,nrx0,ncell,m1,ix,jx,iy,iz
 integer                   :: nm,nadd,nbnd,ngmax,n2,n3,jgt,igt,ip,im,jj,kk,iq,nksq
 
 real(dp)                  :: a_1(3),a_2(3),a_3(3)
 real(dp)                  :: b_1(3),b_2(3),b_3(3)
 real(dp)                  :: vec(3),t0,a0
-real(dp)                  :: Ecutoff,refec,refev,tmp1,tmp2
+real(dp)                  :: Ecutoff,refec,refev,tmp1,tmp2,tmp3
 real(dp),    allocatable  :: E(:), KGt(:,:), Gx(:), bb_ev(:), bb_ec(:), hkl(:,:)
-real(dp),    allocatable  :: xkadd(:,:),xkqadd(:,:), xk(:,:)
+real(dp),    allocatable  :: xk(:,:), kread(:,:)
 
 complex(dp), allocatable  :: el_ph_mat(:,:,:,:)
 complex(dp), allocatable  :: A(:,:),B(:,:),C(:,:),D(:,:,:,:),U(:,:),Uk(:,:)
@@ -291,13 +291,13 @@ do im=1,num_mat
       end do
    end do
    if(phonons)then
-      allocate( in_kx( iyz,im)%n(NM) )
-      in_kx( iyz,im)%n=0.0_dp
+      allocate( ind_kx( iyz,im)%n(NM) )
+      ind_kx( iyz,im)%n=0.0_dp
       allocate( ind_bnd(iyz,im)%i(NM) )
       ind_bnd(iyz,im)%i=0
       
       do j=1,NM
-         read(13,*)i,in_kx(iyz,im)%n(j),ind_bnd(iyz,im)%i(j)
+         read(13,*)i,ind_kx(iyz,im)%n(j),ind_bnd(iyz,im)%i(j)
       end do
    end if
    close(13)
@@ -354,7 +354,7 @@ do im=1,num_mat
             do ix=1,Nrx
                PSIBB(iyz,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,j)=&
                     A(1+(ix-1)*ngt+(ip-1)*Ngt*nrx:ngt+(ix-1)*ngt+(ip-1)*Ngt*nrx,j)&
-                    *exp(-dcmplx(0.0_dp,1.0_dp)*in_kx(iyz,im)%n(j)*2.0_dp*pi*dble(ix-1)/dble(Nrx))
+                    *exp(-dcmplx(0.0_dp,1.0_dp)*ind_kx(iyz,im)%n(j)*2.0_dp*pi*dble(ix-1)/dble(Nrx))
             end do
          end do
       end do
@@ -736,216 +736,220 @@ write(*,*)
 write(*,*)'Computing the el-ph matrix'
 t1=SECNDS(0.0)
 
-!!! this part implements the use of el-ph matrix elements computed by QE within the DFPT. This is a work in progress, its use is for developpers and is not yet completely tested. 
 if(dfpt)then 
-write(*,*)
-write(*,*)'Reading the DFPT el-ph matrix file' 
-write(*,*)
-write(*,*)'WARNING: this is a work in progress, not yet validated' 
-write(*,*)
+!!! this part implements the use of el-ph matrix elements computed by QE within the DFPT. This is a work in progress, its use is for developpers and is not yet completely tested. 
 
+write(*,*)
+write(*,*)'Reading the DFPT file ' ,TRIM(input_file_DFPT)
+write(*,*)
+write(*,*)'WARNING: this is a work in progress, still to be tested' 
+write(*,*)
 
 open(unit=13,file=TRIM(input_file_DFPT),status='unknown')
-read(13,'(A)') comment
+read(13,'(A)') comment !'nbnd='
 read(13,'(I)')nbnd
 write(*,*)comment, nbnd
-read(13,'(A)') comment
+read(13,'(A)') comment !'nmodes='
 read(13,'(I)')nqmodes
 write(*,*)comment, nqmodes
-read(13,'(A)') comment
+read(13,'(A)') comment !'nqs='
 read(13,'(I)')nqs
 write(*,*)comment, nqs
 nadd=nqs
 
 allocate(x_q(3,nqs))
 allocate(omega_q(nqs,nqmodes))
-allocate(el_ph_mat(nbnd, nbnd, nqs, nqmodes))
+allocate(el_ph_mat(nqs, nqmodes, nbnd, nbnd))
 el_ph_mat=0.0_dp
-allocate(xkadd(3,nadd),xkqadd(3,nadd))
-allocate(ind_k(nkx,nkyz))
 
-read(13,'(a)') comment
+
+read(13,'(a)') comment ! 'q-points:'
 write(*,*) comment
 read(13,*) ((x_q(i, j), i = 1, 3), j = 1, nqs)
 write(*,*) ((x_q(i, j), i = 1, 3), j = 1, nqs)
 
+x_q(2, 1:nqs)=x_q(2, 1:nqs)/ac1*ac2
+x_q(3, 1:nqs)=x_q(3, 1:nqs)/ac1*ac3
 
-do iq=1,nqs
-   write(*,*)'iq=',iq
-   read(13,*)   
-   read(13,*) comment ! 'current q-point',nadd,nksqtot
-   !write(*,*) comment
-   read(13,'(A3,3e20.10)') comment,x_q(1, iq),x_q(2, iq),x_q(3, iq)
-   !write(*,'(A4,3e20.10)') 'q0=',x_q(1, iq),x_q(2, iq),x_q(3, iq)
-   x_q(2, iq)=x_q(2, iq)/ac1*ac2
-   x_q(3, iq)=x_q(3, iq)/ac1*ac3
-   !write(*,'(A3,3e20.10)') 'q=',x_q(1, iq),x_q(2, iq),x_q(3, iq)
+!!! dble check
+if(mod(nqs,nkyz) /= 0)then
+   write(*,*)'problem with the list of q or k vectors'
+   write(*,*)nqs,nqx,nkyz
+   stop
+end if
+nqx=nqs/nkyz
+write(*,*)
+write(*,*)'NQx=',nqx
+write(*,*)'NQyz=',nkyz
+write(*,*)
+!!!
 
-   read(13,*)nksq
-   write(*,*)'nksq',nksq
-   if(dot_product(x_q(:,iq),x_q(:,iq))>1.0d-6)then
+!!! CHECK that the q_yz correspond to the k_yz
+l=0
+do jyz=1,nkyz
+do jx=1,nqx
+   iq=jx+(jyz-1)*nqx
+!   write(*,*)iq,x_q(2:3,iq)
+   do iyz=1,nkyz
+      IF ( ABS( x_q(2,iq)-k_vec(2,iyz) ) < 1.0E-3_DP .AND. &
+           ABS( x_q(3,iq)-k_vec(3,iyz) ) < 1.0E-3_DP ) THEN
+         ind_q( jx, iyz ) = iq
+         !write(*,*)iq, jx, iyz
+         l=l+1
+      END IF
+   end do
+end do
+end do
+if( l /= nqs)then
+   write(*,*)'inconsistency between x_q and k_vec',l,nqs,nqx*nkyz
+   stop
+end if
+
+do jyz=1,nkyz
+do jx=1,nqx
+   
+   iq=jx+(jyz-1)*nqx ! it supposes that iq = jx+(jyz-1)*nqx
+   
+   read(13,'(A)') comment !'nksq='
+   read(13,'(I)')nksq
+   write(*,*)comment, nksq
+
+   read(13, '(a3,3e20.10)') comment, tmp1, tmp2, tmp3! x_q(1:3, iq)
+   write(*,*) comment, tmp1, tmp2, tmp3! x_q(1:3,iq)
+   read(13, '(a16,i6)') comment,i
+   write(*,*)  comment,i
+   if (i /= iq) stop  
+   write(*,*)'iq=',i
+   read(13,'(a)') comment ! list of k points:
+   write(*,*) comment
+
+   if(dot_product(x_q(:,iq),x_q(:,iq))>1.0d-16)then
       allocate(xk(4,2*nksq))
       do nn=1,nksq
-         READ(13,'(I,4e20.10)')i,xk(1,2*nn-1),xk(2,2*nn-1),xk(3,2*nn-1),xk(4,2*nn-1)
+         READ(13,'(I4,4e20.10)')i,xk(1:4,2*nn-1)
       end do
-      READ(13,*)
+      READ(13,'(a)') comment !list of k+q points:
+      write(*,*) comment
       do nn=1,nksq
-         READ(13,'(I,4e20.10)')i,xk(1,2*nn),xk(2,2*nn),xk(3,2*nn-1),xk(4,2*nn)
+         READ(13,'(I4,4e20.10)')i,xk(1:4,2*nn)
       end do
-      deallocate(xk)
    else
       allocate(xk(4,nksq))
       READ(13,*)
       do nn=1,nksq
-         READ(13,'(I,4e20.10)')i,xk(1,nn),xk(2,nn),xk(3,nn),xk(4,nn)
-      end do
-      deallocate(xk)
-   end if
-   read(13,*) comment !'hbar omega (Ryd):',shape(w2)
-   do ll=1,nqmodes
-      read(13,*) i,omega_q(iq,ll) !j,  dsqrt(abs(w2( j )))
-            
-      omega_q(iq,ll)=ryd*dsqrt(abs(omega_q(iq,ll))) !omega in eV
-      write(*,*) 'omega_q',iq,ll,omega_q(iq,ll)
-   end do
-
-   read(13,*)
-   read(13,'(a)') comment !'matrix elements (Ryd)', nadd,nkstot,nksqtot
-   !write(*,*)comment
-   do nn=1,nqs 
-      if(dot_product(x_q(:,iq),x_q(:,iq))<1.0d-6)then
-         read(13,'(I,A3,3e20.10)')i,comment,xkadd(1,nn),xkadd(2,nn),xkadd(3,nn)
-         xkadd(2,nn)=xkadd(2,nn)/ac1*ac2
-         xkadd(3,nn)=xkadd(3,nn)/ac1*ac3
-              
-         do ll = 1,nqmodes
-            read(13,'(A)')comment!,ll
-            do ii = 1,nbnd
-               do jj = 1,nbnd
-                  read(13,*) tmp1,tmp2
-                  !!! this should cover the acoustic branches !!!
-                  if(ll.le.3)then
-                     el_ph_mat(ii, jj, nn, ll)=0.0_dp*ryd*dcmplx(tmp1,tmp2)
-                  else
-                     el_ph_mat(ii, jj, nn, ll)=ryd*dcmplx(tmp1,tmp2)
-                  endif
-               end do
-            end do
-         end do
-
-      else
-         
-      read(13,'(I,A5,3e20.10)')i,comment,xkadd(1,nn),xkadd(2,nn),xkadd(3,nn)
-      read(13,'(I,A5,3e20.10)')i,comment,xkqadd(1,nn),xkqadd(2,nn),xkqadd(3,nn)
-      xkadd(2,nn)=xkadd(2,nn)/ac1*ac2
-      xkadd(3,nn)=xkadd(3,nn)/ac1*ac3
-      xkqadd(2,nn)=xkqadd(2,nn)/ac1*ac2
-      xkqadd(3,nn)=xkqadd(3,nn)/ac1*ac3
-           
-      do ll = 1,nqmodes
-         read(13,'(A)')comment!,ll
-         do ii = 1,nbnd
-            do jj = 1,nbnd
-               read(13,*) tmp1,tmp2
-
-               el_ph_mat(ii, jj, nn, ll)=ryd*dcmplx(tmp1,tmp2)
-               
-            end do
-         end do
+         READ(13,'(I4,4e20.10)')i,xk(1:4,nn)
       end do
    end if
-      read(13,*)
-   end do
-   
-   ind_k=0
-   do jx=1,nkx
-      do jyz=1,NKyz
-         do nn=1,nqs
-            if ( abs(abs(kq_vec(1,jx+(jyz-1)*nkx))-abs(xkadd(1, nn)))<1.0d-3 .and. &
-                 abs(abs(kq_vec(2,jx+(jyz-1)*nkx))-abs(xkadd(2, nn)))<1.0d-3 .and. &
-                 abs(abs(kq_vec(3,jx+(jyz-1)*nkx))-abs(xkadd(3, nn)))<1.0d-3 ) then
-               ind_k(jx,jyz)=nn      ! indice k (DFPT)
-            end if
-         end do
-      end do
-   end do
-   
-   allocate(A(NM,NM))
- !     allocate(AA(NM,NM))
 
-   write(*,*)iq, 'x_q  =',x_q(1:3,iq)
-   do jx=1,nkx   !!! index of q_x
-      do jyz=1,NKyz  !!! index of q_yz
-         if(k_selec(jyz))then
-         if ( abs(abs(kq_vec(1,jx+(jyz-1)*nkx))-abs(x_q(1, iq)))<1.0d-3 .and. & !!! kq_vec(1:3,jx+(jyz-1)*nkx) is the q vector
-              abs(abs(kq_vec(2,jx+(jyz-1)*nkx))-abs(x_q(2, iq)))<1.0d-3 .and. &
-              abs(abs(kq_vec(3,jx+(jyz-1)*nkx))-abs(x_q(3, iq)))<1.0d-3 ) then 
-            ind_q(jx,jyz)=iq
-            write(*,*)'ind_q',jx,jyz,ind_q(jx,jyz)
-            write(*,*)'kqvec',kq_vec(1,jx+(jyz-1)*nkx),kq_vec(2,jx+(jyz-1)*nkx),kq_vec(3,jx+(jyz-1)*nkx)
-            write(*,*)'ind_k',ind_k(jx,jyz)
-            do iyz=1,NKyz !!! index of k_yz
-               if(k_selec(iyz))then
-
-                  allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(nqmodes,NM_mat(im),NM_mat(im)))
-                  el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
-                  jj = ind_kyz( k_vec(2:3,iyz) - k_vec(2:3,jyz) ) !!! this is the index of (k-q)_yz
-                  
-if(k_selec(jj))then
+   read(13,'(a)') comment !squared hbar omega (Ry)
+   write(*,*) comment
    do ll=1,nqmodes
-      A=0.0_dp
-      do i=1,NM
-         do j=1,NM
-            A(i,j)=0.0_dp
-            do m=1,NM
-               do n=1,NM
-!!$                  if(abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) ) < 1.0d-3 .or. &
-!!$                     abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) + 1.0_dp) < 1.0d-3 .or. &
-!!$                     abs( in_kx(iyz,im)%n(n) + kq_vec(1,jx+(jyz-1)*nkx)- in_kx(jj,im)%n(m) - 1.0_dp) < 1.0d-3 )then !!! delta(k_x+q_x=k_x')
-!!$                     A(i,j) = A(i,j) + &
-!!$                          Si_p05(iyz,im)%H(i,n) *  el_ph_mat( ind_bnd(iyz,im)%i(n), ind_bnd(jj,im)%i(m), ind_k(jx,jyz) , ll) * Si_p05(jj,im)%H(m,j)
-!!$!                          el_ph_mat( ind_bnd(iyz,im)%i(i), ind_bnd(jj,im)%i(n), ind_k(jx,jyz) , ll) * Si_p05(jj,im)%H(n,m) * Si_m05(jj,im)%H(m,j)
-!!$                  end if                 
-   !               A(i,j) = A(i,j) + &
-   !                    Si(iyz,im)%H(i,n) *  el_ph_mat( ind_bnd(iyz,im)%i(n), ind_bnd(jj,im)%i(m), ind_k(jx,jyz) , ll) * Si(jj,im)%H(m,j)
-                  
-               end do
-            end do
-            !       el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=A(i,j)
-              el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=el_ph_mat( ind_bnd(iyz,im)%i(i), ind_bnd(jj,im)%i(j), ind_k(jx,jyz) , ll)
-            write(40000+1000*jyz+100*jx+ll,*)i,j,abs(A(i,j))
-            write(4000+100*jyz+ll,*)i,j,abs(A(i,j))
-         end do
-         write(40000+1000*jyz+100*jx+ll,*)
-         write(4000+100*jyz+ll,*)
-      end do
-   enddo
-!!!stop
-endif
-endif
-!           endif
-end do
+      read(13,*) i,omega_q(iq,ll) ! ! squared hbar omega (Ry)
+      write(*,*) i,omega_q(iq,ll)
+      !if (  omega_q(iq,ll) > 0.0_dp ) then
+         omega_q(iq,ll)=ryd*dsqrt(abs(omega_q(iq,ll))) ! hbar omega in eV
+         write(*,*) 'omega_q',iq,ll,omega_q(iq,ll)
+      !end if
+   end do
 
-endif
-end if
+   read(13,'(a)') comment !matrix elements (Ryd)
+   write(*,*)comment
+   read(13,*)i
+   write(*,*)'ios=',i
+   if( i/= 0 )then
+      write(*,*)'pb wt ios'
+      stop
+   end if
+   READ(13,'(A)')comment !reading k-points.dat
+   write(*,*)comment
+   
+   OPEN( unit = 11, file = TRIM(inputdir)//'kpoints.dat', status = 'unknown')
+   READ(11,*) nkread
+   WRITE(*,*) nkread
+   ALLOCATE ( kread(3,nkread) )
+   DO ii = 1, nkread
+      READ(11,*)  kread(1:3,ii)
+   END DO
+   CLOSE(11)
+   
+   READ(13,*)nkread
+   DO ii = 1, nkread
+      READ(13,*)kread(1:3,ii)
+      write(*,*)kread(1:3,ii)
+   END DO
+
+
+   DO irr = 1, nkread !ciclo sui punti k della base UCRBF (kx,ky,kz)
+      READ(13,'(i,a6)')i,comment!,kread(1,irr) !legge kx
+      READ(13,'(4X,A3,3e20.10)') ,comment,tmp1,tmp2,tmp3
+      write(*,*)comment,tmp1,tmp2,tmp3
+      READ(13,'(I2,A5,3e20.10)') nn,comment,tmp1,tmp2,tmp3
+      write(*,*)comment,tmp1,tmp2,tmp3
+      READ(13,' (A)') comment!  ibnd jbnd mode    |g| [meV] ",/,30("-") )'  
+      !write(*,*)comment
+      READ(13,' (A)')
+      do i = 1,nbnd
+         do j = 1,nbnd
+            do nu = 1,nqmodes
+               READ(13,'(3i5,1e25.15)') ii, jj, ll, &
+                    tmp1!, tmp2 !  
+   !            write(*,'(3i5,2e25.15)') ii, jj, ll, tmp1, tmp2
+               el_ph_mat(iq, ll, ii, jj) = tmp1
+            enddo
+         enddo
+      enddo
+   END DO
+
+   deallocate(xk,kread)
+
 end do
-end do
-deallocate(A)
-  
 end do !end iq
 close(13)
-write(*,*)'End reading the el-ph matrix file'
+write(*,*)'End reading the DFPT file ',TRIM(input_file_DFPT)
 
 
+do jyz=1,NKyz ! index of q_yz
+    if(k_selec(jyz))then
+      do jx=1,nqx ! index of qx
+                  
+         do iyz = 1,NKyz   ! index of k_yz
+            if(k_selec(iyz))then
+               
+               allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(nqmodes,NM,NM))
+               el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
+                              
+               jj = ind_kyz( k_vec(2:3,iyz) - k_vec(2:3,jyz) )  ! index of k_yz' = k_yz - q_yz 
+               
+               if(k_selec(jj))then
+                  
+               do nu= 1 , nqmodes
+               do m = 1 , NM
+               do n = 1 , NM      
 
+                  el_ph_mtrx(iyz, jx, jyz, im)%M(nu, n, m) = &
+                       el_ph_mat(jx+(jyz-1)*nqx, nu, ind_bnd(iyz,im)%i(n), ind_bnd(jj,im)%i(m))
+                  
+               end do
+               end do
+               end do
 
-deallocate(x_q)
+               end if
+               
+            end if
+            
+         end do
+      end do
+      
+   end if
+end do
+
 deallocate(el_ph_mat)
-deallocate(xkadd)
-deallocate(ind_k)
 
+!stop
 end if
 !!! end of the dfpt part
+
+
 
 if (.not. dfpt) then
       
@@ -954,22 +958,26 @@ if (.not. dfpt) then
       do iyz = 1,NKyz   ! index of k_yz
          if(k_selec(iyz))then
             
-            allocate(el_ph_mtrx(iyz,1,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
-            el_ph_mtrx(iyz,1,jyz,im)%M=0.0d0
+           ! allocate(el_ph_mtrx(iyz,1,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
+           ! el_ph_mtrx(iyz,1,jyz,im)%M=0.0d0
 
-            do jx=1,nqx+1
+            
+            nn=nqx-1
+            do jx=1,nqx
                
-               jj = ind_kyz( k_vec(2:3,iyz) - kq_vec(2:3,1+(jyz-1)*nkx) )  ! index of k_yz' = k_yz - q_yz 
+           allocate(el_ph_mtrx(iyz,jx,jyz,im)%M(1,NM_mat(im),NM_mat(im)))
+            el_ph_mtrx(iyz,jx,jyz,im)%M=0.0d0
+            
+               jj = ind_kyz( k_vec(2:3,iyz) - k_vec(2:3,jyz) )  ! index of k_yz' = k_yz - q_yz 
                
                if(k_selec(jj))then
                   allocate(C(nm,nm))
                   C=0.0_dp
                   ip=1 !!! no polarization is assumed
-                  nn=nqx
-                  
+                                    
                   call omp_set_num_threads(Nrx)
                   !$omp parallel default(none) private(ix,n,m) &
-                  !$omp shared(nrx,nm,ngt,im,nband_val,ip,jj,iyz,jx,nn,in_kx,PSIBB,C)
+                  !$omp shared(nrx,nm,ngt,im,nband_val,ip,jj,iyz,jx,nn,ind_kx,PSIBB,C)
                   
                   !$omp do 
                   do ix=1,Nrx
@@ -979,7 +987,7 @@ if (.not. dfpt) then
                            !$omp atomic
                            C(n,m)=C(n,m)+zdotc(ngt,PSIBB(iyz,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,n),1, &
                                 PSIBB(jj,im)%H(1+(ix-1)*NGt+(ip-1)*Ngt*nrx:ngt+(ix-1)*NGt+(ip-1)*Ngt*nrx,m),1) * &
-                                exp( -cmplx(0.0_dp,1.0_dp) * ( in_kx(iyz,im)%n(n) - in_kx(jj,im)%n(m) - dble(2*(jx-1)-dble(nn))/dble(2*nn)  ) * &
+                                exp( -cmplx(0.0_dp,1.0_dp) * ( ind_kx(iyz,im)%n(n) - ind_kx(jj,im)%n(m) - dble(2*(jx-1)-dble(nn))/dble(2*nn)  ) * &
                                 2.0_dp*pi*dble(ix-1)/dble(Nrx) )
                         end do
                      end do
@@ -991,8 +999,8 @@ if (.not. dfpt) then
                   ll=1
                   do j=1,NM
                      do i=1,NM
-                        !   el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=C(i,j)
-                        el_ph_mtrx(iyz,1,jyz,im)%M(ll,i,j)=el_ph_mtrx(iyz,1,jyz,im)%M(ll,i,j)+C(i,j)/dble(nn+1)
+                        el_ph_mtrx(iyz,jx,jyz,im)%M(ll,i,j)=C(i,j)
+                        !!!el_ph_mtrx(iyz,1,jyz,im)%M(ll,i,j)=el_ph_mtrx(iyz,1,jyz,im)%M(ll,i,j)+C(i,j)!/dble(nqx)
                      end do
                   end do
                   deallocate(C)
@@ -1023,14 +1031,6 @@ end if
 
 
 
-
-if(phonons)then
-do i=1,nkx
-   if(abs(kq_vec(1,i)-0.0d0)<1.0d-3 .or. abs(kq_vec(1,i)-0.5d0)<1.0d-3) deg_kx(i)=1.0_dp
-   write(*,*)'Kx',i,kq_vec(1,i),deg_kx(i)
-end do
-end if
-
 do i=1,nky
    if(abs(ky(i)-0.0d0)<1.0d-3 .or. abs(ky(i)-0.5d0)<1.0d-3) deg_ky(i)=1.0_dp
    write(*,*)'Ky',i,ky(i),deg_ky(i)
@@ -1040,7 +1040,7 @@ do j=1,nkz
    write(*,*)'Kz',j,kz(j),deg_kz(j)
 end do
 
-write(*,*)'Nkyz',Nkyz
+write(*,*)'Nkyz=',Nkyz
 allocate(deg_kyz(Nkyz))
 deg_kyz=deg_ky*deg_kz
 

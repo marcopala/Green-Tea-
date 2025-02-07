@@ -500,8 +500,7 @@ if(phonons)then
      SCBA_scalar=1.0_dp
      SCBA_iter=0  
 
-     ALLOCATE(derror(Nop,Ncx_D,nkyz),omega(1,1))
-     derror=1.0_dp
+     ALLOCATE(omega(1,1))
      omega=0.0_dp
      ALLOCATE(g_lesser(Nop,NMAX,NMAX,ncx_d,NKYZ),g_greater(Nop,NMAX,NMAX,Ncx_d,NKYZ))
      ALLOCATE(old_g_lesser(Nop,NMAX,NMAX,ncx_d,NKYZ),old_g_greater(Nop,NMAX,NMAX,Ncx_d,NKYZ))
@@ -526,9 +525,9 @@ if(phonons)then
         t3=SECNDS(0.0)
             
               !$omp parallel default(none)  private(jyz,ii,ll,ix,nee,xx,pp,nn,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,A,B,C,D) &
-              !$omp shared(scba_iter,ee,iyz,Nop,nm,imat,ncx_d,ncy,ncz,nmax,nkyz,nkx,nqmodes,k_vec,emin,emin_local,Eop,mus,mud,hi,&
-              !$omp sigma_lesser_ph_prev,sigma_greater_ph_prev,cur,ldos,ndos,pdos,zdos,chtype,neutr,omega_q,ind_q,&
-              !$omp degeneracy,g_spin,w,temp,trans,g_lesser,g_greater,old_g_lesser,old_g_greater,diff_g_lesser,diff_g_greater,el_ph_mtrx,flag,k_selec,dfpt,Si,derror,scba_tolerance)
+              !$omp shared(scba_iter,ee,iyz,Nop,nm,imat,ncx_d,ncy,ncz,nmax,nkyz,nqmodes,k_vec,emin,emin_local,Eop,mus,mud,hi,&
+              !$omp sigma_lesser_ph_prev,sigma_greater_ph_prev,cur,ldos,ndos,pdos,zdos,chtype,neutr,&
+              !$omp degeneracy,g_spin,w,temp,trans,g_lesser,g_greater,old_g_lesser,old_g_greater,diff_g_lesser,diff_g_greater,el_ph_mtrx,flag,k_selec,dfpt,Si,scba_tolerance)
 
         ALLOCATE(g_lesser_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
         ALLOCATE(g_greater_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
@@ -583,69 +582,6 @@ if(phonons)then
   
   t1=SECNDS(0.0)
 
- if (dfpt) then
-        
-     !$omp parallel default(none)  private(NdE,ll,ix,ii,iyz,jyz,nee,xx,A,B,CC,DD) shared(Nop,nmax,nkx,nkyz,g_spin,ncx_d,ncy,ncz,nm, &
-     !$omp sigma_lesser_ph,sigma_greater_ph,g_lesser,g_greater,SCBA_iter,Eop,temp,omega_q,ind_q,nqmodes,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy)
-     allocate(A(NMAX,NMAX),B(NMAX,NMAX),CC(NMAX,NMAX,Ncx_d),DD(NMAX,NMAX,Ncx_d))     
-     DO nee=1,Nop
-        do jyz = 1,NKYZ   ! index of k_yz 
-           if(k_selec(jyz))then
-              do iyz =1,nkyz ! index of k_yz'
-                 if(k_selec(iyz))then
-                    ii = ind_kyz(  k_vec(2:3,jyz) - k_vec(2:3,iyz) ) ! this is the idex of q_yz = k_yz - k_yz'
-                    do ll=1,nqmodes
-                       do ix=1,nkx
-                          NdE=ceiling(omega_q(ind_q(ix,ii),ll)/Eop)
-                          !$omp do
-                          DO xx=1,Ncx_d
-                             A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
-                             IF(nee <= Nde)THEN
-                                IF(nee <= Nop-Nde)THEN
-                                   ! E+Eop
-                                   CC(1:nm(xx),1:nm(xx),xx)=g_lesser(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
-                                   DD(1:nm(xx),1:nm(xx),xx)=g_greater(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) ) 
-                                END IF
-                             ELSE
-                                IF(nee <= Nop-Nde)THEN
-                                   ! E+Eop and E-Eop
-                                   CC(1:nm(xx),1:nm(xx),xx)=g_lesser(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp ) + &
-                                        g_lesser(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP))  )
-                                   DD(1:nm(xx),1:nm(xx),xx)=g_greater(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) ) + &
-                                        g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
-                                ELSE 
-                                   ! E-Eop
-                                   CC(1:nm(xx),1:nm(xx),xx)=g_lesser(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) )
-                                   DD(1:nm(xx),1:nm(xx),xx)=g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp ) 
-                                END IF
-                             END IF
-                   call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),CC(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                   call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,CC(1:nm(xx),1:nm(xx),xx),nm(xx))
-                   call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),DD(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                   call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,DD(1:nm(xx),1:nm(xx),xx),nm(xx))
-                             sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz) =sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz) +&
-                                  degeneracy(iyz)/g_spin/dble(NCY*NCZ*Nkx) * CC(1:nm(xx),1:nm(xx),xx)
-                             sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
-                                  degeneracy(iyz)/g_spin/dble(NCY*NCZ*Nkx) * DD(1:nm(xx),1:nm(xx),xx)
-                          END DO
-                          !$omp end do nowait
-                                                    
-                       end do
-                    end do
-                 end if
-              end do
-           end if
-        end do
-  
-     END DO
-
-  
-     DEALLOCATE(A,B,CC,DD)
-
-     !$omp end parallel
-  end if
-                    
-  if ( .not. dfpt) then
      
 !!! TEST
 !!$     if( mod(scba_iter, 10) == 0 .and. scba_iter >= 100) then
@@ -654,14 +590,92 @@ if(phonons)then
 !!$           g_greater(1:Nop,1:nm(xx),1:nm(xx),xx,1:nkyz) =   g_greater(1:Nop,1:nm(xx),1:nm(xx),xx,1:nkyz) + 2.0_dp* diff_g_greater(1:Nop,1:nm(xx),1:nm(xx),xx,1:nkyz)
 !!$        end do
 !!$     end if
+  
+ if (dfpt) then
+                                     
+    !$omp parallel default(none)  private(NdE,ll,ix,ii,iyz,jyz,nee,xx,A,B,C,D,U) shared(Nop,nmax,nqx,nkyz,g_spin,ncx_d,ncy,ncz,nm, &
+    !$omp sigma_lesser_ph,sigma_greater_ph,g_lesser,g_greater,SCBA_iter,Eop,temp,omega_q,ind_q,nqmodes,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy)
+    
+    allocate(A(NMAX,NMAX),B(NMAX,NMAX),C(NMAX,NMAX),D(NMAX,NMAX),U(NMAX,NMAX))
+    
+    !$omp do
+    DO nee=1,Nop
+       
+       do jyz = 1,NKYZ   ! index of k_yz 
+          if(k_selec(jyz))then
+             
+             do iyz = 1,NKYZ ! this is the idex of k_yz' = k_yz-q_yz 
+                if(k_selec(iyz))then
+                   ii = ind_kyz( k_vec(2:3,jyz) - k_vec(2:3,iyz) ) ! this is the idex of q_yz = k_yz - k_yz'
+                   
+                   do ix=1,nqx ! this is the index of q_x
+                      
+                      NdE=ceiling(omega_q(ind_q(ix,ii),ll)/Eop) ! hbar omega(q) is approximated as NdE*Eop
+                                            
+                      do xx=1,ncx_d
+                         
+                      IF(nee <= Nde)THEN
+                          IF(nee <= Nop-Nde)THEN
+                             ! E+Eop
+                             C(1:nm(xx),1:nm(xx))=g_lesser(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
+                             D(1:nm(xx),1:nm(xx))=g_greater(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) ) 
+                          END IF
+                       ELSE
+                          IF(nee <= Nop-Nde)THEN
+                             ! E+Eop and E-Eop
+                             C(1:nm(xx),1:nm(xx))=g_lesser(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp ) + &
+                                  g_lesser(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP))  )
+                             D(1:nm(xx),1:nm(xx))=g_greater(nee+NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) ) + &
+                                  g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp )
+                          ELSE 
+                             ! E-Eop
+                             C(1:nm(xx),1:nm(xx))=g_lesser(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) )
+                             D(1:nm(xx),1:nm(xx))=g_greater(nee-NdE,1:nm(xx),1:nm(xx),xx,iyz)*( bose(NdE*Eop/(BOLTZ*TEMP)) + 1.0_dp ) 
+                          END IF
+                       END IF
+
+                       do ll=1,nqmodes
+                         
+                          U(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(ll,1:nm(xx),1:nm(xx))
+                             
+                          call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,U(1:nm(xx),1:nm(xx)),nm(xx),C(1:nm(xx),1:nm(xx)),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx))
+                          call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),U(1:nm(xx),1:nm(xx)),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))
+                          
+                          sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
+                               degeneracy(iyz)/g_spin/dble(NQX*NCY*NCZ)*&
+                               A(1:nm(xx),1:nm(xx))
+                          
+                          call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,U(1:nm(xx),1:nm(xx)),nm(xx),D(1:nm(xx),1:nm(xx)),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                          call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),U(1:nm(xx),1:nm(xx)),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))      
+                                                    
+                          sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
+                               degeneracy(iyz)/g_spin/dble(NQX*NCY*NCZ)*&
+                               A(1:nm(xx),1:nm(xx))
+                          
+                       end do
+
+                    end do
+                 end do
+                 end if
+              end do
+           end if
+        end do
+  
+     END DO
+     !$omp end do nowait
+       
+     DEALLOCATE(A,B,C,D)
+
+     !$omp end parallel
+  end if
+                    
+  if ( .not. dfpt) then
      
-     !n_bose_g=1.0_dp / ( DEXP((dble(Nop_g)*Eop)/(BOLTZ*TEMP)) - 1.0_dp )
-     
-     !$omp parallel default(none)  private(i,j,ii,ix,iyz,jyz,nee,xx,A,B,C,D,CC,DD) shared(Nop,nmax,nqx,nkyz,g_spin,ncx_d,ncy,ncz,nm,Nop_g_x, &
+     !$omp parallel default(none)  private(i,j,ii,ix,iyz,jyz,nee,xx,A,B,C,D,U) shared(Nop,nmax,nqx,nkyz,g_spin,ncx_d,ncy,ncz,nm,Nop_g_x, &
      !$omp sigma_lesser_ph,sigma_greater_ph,sigma_lesser_ph_prev,sigma_greater_ph_prev, &
-     !$omp g_lesser,g_greater,SCBA_iter,Dop_g_x,n_bose_g,Dac_x,Eop,temp,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy,derror,scba_tolerance)
+     !$omp g_lesser,g_greater,SCBA_iter,Dop_g_x,n_bose_g,Dac_x,Eop,temp,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy,scba_tolerance)
      
-     allocate(A(NMAX,NMAX),B(NMAX,NMAX),C(NMAX,NMAX),D(NMAX,NMAX),CC(NMAX,NMAX,Ncx_d),DD(NMAX,NMAX,Ncx_d))
+     allocate(A(NMAX,NMAX),B(NMAX,NMAX),C(NMAX,NMAX),D(NMAX,NMAX),U(NMAX,NMAX)) 
      !$omp do
      DO nee=1,Nop
         do jyz = 1,NKYZ   ! index of k_yz 
@@ -675,9 +689,6 @@ if(phonons)then
 !!!!!! acoustic + optical phonons !!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                     
-                    CC=0.0_dp
-                    DD=0.0_dp   
-                    
                 do xx=1,ncx_d
 
                    n_bose_g=1.0_dp/(EXP((Nop_g_x(xx)*Eop)/(BOLTZ*TEMP)) - 1.0_dp)
@@ -686,11 +697,11 @@ if(phonons)then
                       IF(nee.le.Nop-Nop_g_x(xx))THEN
                          ! E+Eop_g
                          
-                         CC(1:nm(xx),1:nm(xx),xx)=&
+                         C(1:nm(xx),1:nm(xx))=&
                               Dop_g_x(xx)*g_lesser (nee+Nop_g_x(xx),1:nm(xx),1:nm(xx),xx,iyz)* ( n_bose_g + 1.0_dp ) +&
                               Dac_x(xx) * g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
                          
-                         DD(1:nm(xx),1:nm(xx),xx)=&
+                         D(1:nm(xx),1:nm(xx))=&
                               Dop_g_x(xx)*g_greater(nee+Nop_g_x(xx),1:nm(xx),1:nm(xx),xx,iyz)* ( n_bose_g ) +&
                               Dac_x(xx) * g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz)
                          
@@ -701,12 +712,12 @@ if(phonons)then
                       IF(nee.le.Nop-Nop_g_x(xx))THEN
                          ! E+Eop_g and E-Eop_g
                          
-                         CC(1:nm(xx),1:nm(xx),xx)=&
+                         C(1:nm(xx),1:nm(xx))=&
                               Dop_g_x(xx)*g_lesser (nee+Nop_g_x(xx),1:nm(xx),1:nm(xx),xx,iyz)* ( n_bose_g + 1.0_dp ) +&
                               Dop_g_x(xx)*g_lesser (nee-Nop_g_x(xx),1:nm(xx),1:nm(xx),xx,iyz)* ( n_bose_g )  +&
                               Dac_x(xx) * g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
                          
-                         DD(1:nm(xx),1:nm(xx),xx)=&
+                         D(1:nm(xx),1:nm(xx))=&
                               Dop_g_x(xx)*g_greater(nee+Nop_g_x(xx),1:nm(xx),1:nm(xx),xx,iyz)* ( n_bose_g ) + &
                               Dop_g_x(xx)*g_greater(nee-Nop_g_x(xx),1:nm(xx),1:nm(xx),xx,iyz)* ( n_bose_g + 1.0_dp ) +&
                               Dac_x(xx) * g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz)
@@ -714,38 +725,39 @@ if(phonons)then
                       ELSE 
                          ! E-Eop_g
                          
-                         CC(1:nm(xx),1:nm(xx),xx)=&
+                         C(1:nm(xx),1:nm(xx))=&
                               Dop_g_x(xx)*g_lesser (nee-Nop_g_x(xx),1:nm(xx),1:nm(xx),xx,iyz)* ( n_bose_g ) +&
                               Dac_x(xx) * g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
                          
-                         DD(1:nm(xx),1:nm(xx),xx)=&
+                         D(1:nm(xx),1:nm(xx))=&
                               Dop_g_x(xx)*g_greater(nee-Nop_g_x(xx),1:nm(xx),1:nm(xx),xx,iyz)* ( n_bose_g + 1.0_dp ) +&
                               Dac_x(xx) * g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz)  
                          
                       END IF
                     END IF
                     
-                 end do
-                 
-                 do xx=1,ncx_d
+
+                    do ix=1,nqx
+                    U(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,ix,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
                     
-                    A(1:nm(xx),1:nm(xx))=el_ph_mtrx(jyz,1,ii,imat(xx))%M(1,1:nm(xx),1:nm(xx))
+                    call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,U(1:nm(xx),1:nm(xx)),nm(xx),C(1:nm(xx),1:nm(xx)),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx))
+                    call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),U(1:nm(xx),1:nm(xx)),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))
                     
-                    call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),CC(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx))
-                    call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,C(1:nm(xx),1:nm(xx)),nm(xx))
-                    
-                    call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,A(1:nm(xx),1:nm(xx)),nm(xx),DD(1:nm(xx),1:nm(xx),xx),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
-                    call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),A(1:nm(xx),1:nm(xx)),nm(xx),beta,D(1:nm(xx),1:nm(xx)),nm(xx))      
-                 
                     sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
-                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                         C(1:nm(xx),1:nm(xx))
+                         degeneracy(iyz)/g_spin/dble(nqx*NCY*NCZ)*&
+                         A(1:nm(xx),1:nm(xx))
+                    
+                    call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,U(1:nm(xx),1:nm(xx)),nm(xx),D(1:nm(xx),1:nm(xx)),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
+                    call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),U(1:nm(xx),1:nm(xx)),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))      
+                 
                     
                     sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
-                         degeneracy(iyz)/g_spin/dble(NCY*NCZ)*&
-                         D(1:nm(xx),1:nm(xx))
+                         degeneracy(iyz)/g_spin/dble(nqx*NCY*NCZ)*&
+                         A(1:nm(xx),1:nm(xx))
+                    enddo
                  
                  end do
+
               end if
            end do
 
@@ -755,7 +767,7 @@ if(phonons)then
      
   end DO
 !$omp end do nowait
-  DEALLOCATE(A,B,C,D,CC,DD)
+  DEALLOCATE(A,B,C,D)
   !$omp end parallel
      
 end if
@@ -804,9 +816,8 @@ WRITE(*,*)'TIME SPENT TO COMPUTE SIGMA_LESSER_PH (s)',t2
   
   SCBA_f=0.0_dp
   SCBA_x=0.0_dp
-  derror=0.0_dp
-  
-  !$omp parallel default(none)  private(nee,xx,i,jyz) shared(Nop,nkyz,ncx_d,k_selec,NM,SCBA_f,SCBA_x,derror, &
+    
+  !$omp parallel default(none)  private(nee,xx,i,jyz) shared(Nop,nkyz,ncx_d,k_selec,NM,SCBA_f,SCBA_x, &
   !$omp sigma_lesser_ph,sigma_greater_ph,sigma_lesser_ph_prev,sigma_greater_ph_prev)
 
   !$omp do
@@ -817,10 +828,9 @@ WRITE(*,*)'TIME SPENT TO COMPUTE SIGMA_LESSER_PH (s)',t2
               do i=1,NM(xx)
                  SCBA_f(i)=SCBA_f(i)+((dimag(sigma_lesser_ph(nee,i,i,xx,jyz)-sigma_lesser_ph_prev(nee,i,i,xx,jyz)))**2 +&
                       (dimag(sigma_greater_ph(nee,i,i,xx,jyz)-sigma_greater_ph_prev(nee,i,i,xx,jyz)))**2   )
-                 
                  SCBA_x(i)=SCBA_x(i)+((dimag(sigma_lesser_ph(nee,i,i,xx,jyz)))**2 + (dimag(sigma_greater_ph(nee,i,i,xx,jyz)))**2)
               end do
-              derror(nee,xx,jyz)= derror(nee,xx,jyz)+abs(traccia(dimag(sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)-sigma_lesser_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz)))-traccia(dimag(sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)-sigma_greater_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz))))
+!!!!!              derror(nee,xx,jyz)= derror(nee,xx,jyz)+abs(traccia(dimag(sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)-sigma_lesser_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz)))-traccia(dimag(sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)-sigma_greater_ph_prev(nee,1:nm(xx),1:nm(xx),xx,jyz))))
            end do
         end if
      END DO
@@ -828,9 +838,9 @@ WRITE(*,*)'TIME SPENT TO COMPUTE SIGMA_LESSER_PH (s)',t2
   !$omp end do  nowait
   !$omp end parallel
   
-  SCBA_error(:)=SCBA_f(:)/(SCBA_x(:)+1.0d-16)
-  SCBA_scalar=sum(sqrt(SCBA_error(:)))/dble(NMAX)
-
+  SCBA_error(:)=SCBA_f(:)/(SCBA_x(:)+1.0d-10)
+  !SCBA_scalar=sum(sqrt(SCBA_error(:)))/dble(NMAX)
+  SCBA_scalar=sum(sqrt(SCBA_f(:)))/sum(sqrt(SCBA_x(:)))
 
   !$omp parallel default(none)  private(nee,xx,jyz) shared(Nop,nkyz,ncx_d,k_selec,NM,omega,&
   !$omp sigma_lesser_ph,sigma_greater_ph,sigma_lesser_ph_prev,sigma_greater_ph_prev)
@@ -859,14 +869,14 @@ END DO ! END of the SCBA di Born
   DEALLOCATE(g_lesser,g_greater)
   DEALLOCATE(old_g_lesser,old_g_greater)
   DEALLOCATE(diff_g_lesser,diff_g_greater)
-  DEALLOCATE(omega,derror)
+  DEALLOCATE(omega)
 
 end if ! endif phonons
 
 do iyz=1,NKYZ !loop over kyz
    if(k_selec(iyz))then
    !$omp parallel default(none) &
-   !$omp private(nee,xx,i,j,ix,iy,iz,EN,tr,tre,tmp,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,A,B,C) &
+   !$omp private(nee,xx,i,j,iy,iz,EN,tr,tre,tmp,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,A,B,C) &
    !$omp shared(scba_iter,ee,iyz,Nop,ncx_d,nkyz,nmax,nm,nrx,nrz,nsolv,imat,emin,emin_local,Eop,mus,mud,hi,si,&
    !$omp AJ,BJ,CJ,sigma_lesser_ph_prev,sigma_greater_ph_prev,subband, &
    !$omp cur,ldos,ndos,pdos,zdos,chtype,neutr,degeneracy,w,temp,con,cone,conb,trans,dosn,dosp, &
@@ -1961,14 +1971,14 @@ end function traccia
 
 function bose(a)
   real(dp) a,bose
-  bose=1.0_dp/(EXP(a) - 1.0_dp)
+  bose = 1.0_dp/( EXP(a) - 1.0_dp )
 end function bose
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-Real(qp) Function ferm(a)
-  real(qp) a
-  ferm = 1.0_qp/(1.0_qp + Exp(a))
+Function ferm(a)
+  real(qp) a,ferm
+  ferm = 1.0_qp/( Exp(a) + 1.0_qp)
 End Function ferm
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
