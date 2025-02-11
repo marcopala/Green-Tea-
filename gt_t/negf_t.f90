@@ -1433,7 +1433,7 @@ WRITE(*,*)
 
   deallocate(con,cone,conb)
 
-stop
+!stop
 END SUBROUTINE negf_mixed
 
 
