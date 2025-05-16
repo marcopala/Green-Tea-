@@ -431,7 +431,7 @@ end do  ! end of loop over kyz
 
 
   emax=maxval(emax_yz(:))
-  emin=minval(emin_yz(:))-0.3
+  emin=minval(emin_yz(:))
 
   if(onlyT .and. .not. in_pot)then
      emin=min(emin,min(mus,mud))-NKT*(BOLTZ*TEMP)
