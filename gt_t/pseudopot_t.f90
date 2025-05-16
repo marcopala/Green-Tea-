@@ -323,6 +323,21 @@ do im=1,num_mat
 !!$deallocate(C)
    !!end debugging lines
    
+   allocate(psipsi(iyz,im)%H(NM_mat(im),NM_mat(im)))
+   do i=1,nm
+      do j=1,nm
+         psipsi(iyz,im)%H(i,j) = dot_product(A(:,j),A(:,i))
+      end do
+   end do
+
+!!$   do i=1,nm
+!!$      do j=1,nm
+!!$         write(19,*)i,j,abs(psipsi(iyz,im)%H(i,j))
+!!$      end do
+!!$       write(19,*)
+!!$    end do
+!!$    stop
+         
    allocate(Si_p05(iyz,im)%H(NM_mat(im),NM_mat(im)))
    allocate(Si_m05(iyz,im)%H(NM_mat(im),NM_mat(im)))
    allocate(Si(iyz,im)%H(NM_mat(im),NM_mat(im)))
@@ -587,7 +602,7 @@ write(*,*) 'ix =',ix
    do ip=1,npol
       do jgt=1,Ngt
          do i=1,NM
-            !B(i,jgt+(ip-1)*ngt)=(dconjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+            !!B(i,jgt+(ip-1)*ngt)=(dconjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
             B(i,jgt+(ip-1)*ngt)=(dconjg(U(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
          end do
       end do

@@ -161,7 +161,7 @@ MODULE indata
      complex(dp), allocatable :: H(:,:)
   end type H_blocks
   type(H_blocks),allocatable :: HL(:,:), TL(:,:), ULCBB(:,:),  psibb(:,:)
-  type(H_blocks),allocatable :: Si_m05(:,:), Si_p05(:,:), Si(:,:)
+  type(H_blocks),allocatable :: Si_m05(:,:), Si_p05(:,:), Si(:,:), psipsi(:,:) 
   
   type M_blocks
      COMPLEX(DP), ALLOCATABLE :: M(:,:,:)
@@ -605,7 +605,8 @@ CONTAINS
     allocate(U_PSI(NKyz,num_mat))
     allocate(Si(Nkyz,num_mat))   
     allocate(Si_p05(Nkyz,num_mat))  
-    allocate(Si_m05(Nkyz,num_mat))  
+    allocate(Si_m05(Nkyz,num_mat))
+    allocate(psipsi(Nkyz,num_mat))     
 
     
     deltax=ac1/dble(Ndeltax)
