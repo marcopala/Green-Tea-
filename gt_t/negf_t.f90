@@ -1259,7 +1259,8 @@ do nee=1,Nop
          end do
          write(43,*)(xx)*ac1*1.0d7,EN,-EN*sumt/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
       end do
-      
+      write(10,*)
+      write(20,*)
       write(30,*)
       write(40,*)
       write(42,*)
