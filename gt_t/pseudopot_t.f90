@@ -49,11 +49,11 @@ implicit none
 character(len=80) :: comment
 integer(k15), allocatable :: miller_2D(:,:)
 integer                   :: i,ikx,iyz,jyz,irr,ik,nu,ii,j,l,k,m,n,mm,nn,ll,nrx0,ncell,m1,ix,jx,iy,iz
-integer                   :: nm,nadd,nbnd,ngmax,n2,n3,jgt,igt,ip,im,jj,kk,iq,nksq
+integer                   :: nm,nadd,nbnd,ngmax,n2,n3,jgt,igt,ip,im,jj,kk,iq,nksq,i0,i1,j0,j1,k0,k1
 
 real(dp)                  :: a_1(3),a_2(3),a_3(3)
 real(dp)                  :: b_1(3),b_2(3),b_3(3)
-real(dp)                  :: vec(3),t0,a0
+real(dp)                  :: vec(3), t0, tx, ty,tz, a0
 real(dp)                  :: Ecutoff,refec,refev,tmp1,tmp2,tmp3
 real(dp),    allocatable  :: E(:), KGt(:,:), Gx(:), bb_ev(:), bb_ec(:), hkl(:,:)
 real(dp),    allocatable  :: xk(:,:), kread(:,:)
@@ -61,7 +61,7 @@ real(dp),    allocatable  :: xk(:,:), kread(:,:)
 complex(dp), allocatable  :: el_ph_mat(:,:,:,:)
 complex(dp), allocatable  :: A(:,:),B(:,:),C(:,:),D(:,:,:,:),U(:,:),Uk(:,:)
 complex(dp), allocatable  :: HLL(:,:),TLL(:,:),HLLL(:,:),TLLL(:,:) 
-complex(dp), allocatable  :: dens_z(:,:,:), dens_yz(:,:,:), tmp_vec(:)
+complex(dp), allocatable  :: dens_z(:,:,:), dens_yz(:,:,:), dens_xyz(:,:,:,:)
 complex(dp)               :: tmp, zdotc
 
 real(4) :: t1,t2
@@ -248,7 +248,10 @@ write(*,*)'a0/Dz',a0/Dz,Dz
     allocate(kv_max(Nkyz,num_mat))
     write(*,*)'NPOL=',npol
 
-!!!!stop
+    write(*,*)'Nex',Nex
+    write(*,*)'Ney',Ney
+    write(*,*)'Nez',Nez
+    
 
 do iyz=1,Nkyz  ! Loops over the transverse k vectors
 if(k_selec(iyz))then
@@ -337,7 +340,8 @@ do im=1,num_mat
 !!$       write(19,*)
 !!$    end do
 !!$    stop
-         
+
+   
    allocate(Si_p05(iyz,im)%H(NM_mat(im),NM_mat(im)))
    allocate(Si_m05(iyz,im)%H(NM_mat(im),NM_mat(im)))
    allocate(Si(iyz,im)%H(NM_mat(im),NM_mat(im)))
@@ -580,110 +584,183 @@ do im=1,num_mat
       if(npol>1)      Uk(1+NGt:npol*NGt,1:NRY*NRZ)=Uk(1:NGt,1:NRY*NRZ)
 
 
-      allocate(D(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))!proxy of U_psi
+     ! allocate(D(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))!proxy of U_psi
       allocate(U(Nrx*NGt*npol,NM_mat(im)))!proxy of ULCBB
       U=ULCBB(iyz,im)%H
+
+
       call omp_set_num_threads(Nomp_PP)
+      allocate(dens_xyz(nm,nrx,ndeltay+1,ndeltaz+1))
+      dens_xyz=0.0_dp
       
-!$omp parallel default(none) private(ix,iy,iz,ip,i,j,jgt,dens_z,dens_yz,A,B,C) &
-!$omp shared(iyz,im,ney,nez,nm,nrx,nry,nrz,ndeltay,ndeltaz,dx,dy,dz,npol,ngt,Uk,U,D)
-
-
-allocate(dens_z(NM*NM,(nry),Ndeltaz+1))
-allocate(dens_yz(NM*NM,Ndeltay+1,Ndeltaz+1))
-
-allocate(A(NM,(nry)*(nrz)))
-allocate(B(NM,ngt*npol))
-allocate(C(NM*NM,(nry)*(nrz)))
-
-!$omp do 
-do ix=1,Nrx
-write(*,*) 'ix =',ix
-   do ip=1,npol
-      do jgt=1,Ngt
-         do i=1,NM
-            !!B(i,jgt+(ip-1)*ngt)=(dconjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
-            B(i,jgt+(ip-1)*ngt)=(dconjg(U(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+!$omp parallel default(none) private(ix,iy,iz,ip,i,j,k,jj,kk,jgt,A,B) &
+!$omp shared(nm,nrx,nry,nrz,ndeltay,ndeltaz,npol,ngt,ney,nez,Uk,U,dens_xyz)
+      allocate(A(NM,(nry)*(nrz)))
+      allocate(B(NM,ngt*npol))
+      
+      !$omp do
+      do ix=1,Nrx
+         write(*,*) 'ix =',ix
+         do ip=1,npol
+            do jgt=1,Ngt
+               do i=1,NM
+                  B(i,jgt+(ip-1)*ngt)=(conjg(U(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+               end do
+            end do
          end do
-      end do
-   end do
-   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz),NGt*npol,beta,A,NM)
+         call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz),NGt*npol,beta,A,NM)
+         
+           iz=0
+           do k=1,Ndeltaz
+              do kk=1,Nez(k)
+                 iz=iz+1
+           iy=0
+           do j=1,Ndeltay
+              do jj=1,Ney(j)
+                 iy=iy+1
+                 dens_xyz(1:nm,ix,j,k)=dens_xyz(1:nm,ix,j,k)+A(1:nm,iy+(iz-1)*(nry))/dble(Ney(j)*Nez(k))
+              end do
+           end do
+            end do
+         end do 
 
-   do i=1,NM
-      do j=1,NM
-         C(i+(j-1)*NM,:)=dconjg(A(i,:))*A(j,:)
-      end do
-   end do
-
-   dens_z=0.0_dp
-   dens_yz=0.0_dp
-   
-   iz=1
-   do iy=1,NRY
-      dens_z(1:NM*NM,iy,iz)=C(1:NM*NM,iy+(iz-1)*(nry))
-   end do
-   dens_z(1:NM*NM,1:nry,Ndeltaz+1)=dens_z(1:NM*NM,1:nry,iz)
-   iz=0
-   do i=1,Ndeltaz-1
-      do j=1,Nez(i)
-         iz=iz+1
-         do iy=1,NRY
-            dens_z(1:NM*NM,iy,i+1)=dens_z(1:NM*NM,iy,i+1)+C(1:NM*NM,iy+(iz-1)*(nry))/dble(2*Nez(i))
+         do k=1,Ndeltaz+1
+            dens_xyz(1:nm,ix,Ndeltay+1,k)=dens_xyz(1:nm,ix,1,k)
          end do
-      end do
-   end do
-   iz=Nez(1)
-   do i=2,Ndeltaz
-      do j=1,Nez(i)
-         iz=iz+1
-         do iy=1,NRY
-            dens_z(1:NM*NM,iy,i)=dens_z(1:NM*NM,iy,i)+C(1:NM*NM,iy+(iz-1)*(nry))/dble(2*Nez(i))
+         do j=1,Ndeltay+1
+            dens_xyz(1:nm,ix,j,Ndeltaz+1)=dens_xyz(1:nm,ix,j,1)
          end do
+         
       end do
-   end do
-   
-   iy=1
-   dens_yz(1:NM*NM,iy,1:Ndeltaz+1)=dens_z(1:NM*NM,iy,1:Ndeltaz+1)
-   dens_yz(1:NM*NM,Ndeltay+1,1:Ndeltaz+1)=dens_yz(1:NM*NM,iy,1:Ndeltaz+1)
-   iy=0
-   do i=1,Ndeltay-1
-      do j=1,Ney(i)
-         iy=iy+1
-         dens_yz(1:NM*NM,i+1,:)=dens_yz(1:NM*NM,i+1,:)+dens_z(1:NM*NM,iy,:)/dble(2*Ney(i))
-      end do
-   end do
-   iy=Ney(1)
-   do i=2,Ndeltay
-      do j=1,Ney(i)
-         iy=iy+1
-         dens_yz(1:NM*NM,i,:)=dens_yz(1:NM*NM,i,:)+dens_z(1:NM*NM,iy,:)/dble(2*Ney(i))
-      end do
-   end do
-   
-   !$omp critical 
-   !U_psi(iyz,im)%K(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1,ix)=dens_yz(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1)
-   D(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1,ix)=dens_yz(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1)
-   !$omp end critical
-   
-end do !end do ix
+      !$omp end do
+      deallocate(A,B)
 
-!$omp end do
-
-deallocate(A,B,C)
-deallocate(dens_z,dens_yz)
-!$omp end parallel
-
+      !$omp end parallel    
+      deallocate(U)
 
       
-allocate(U_psi(iyz,im)%K(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))      
-U_psi(iyz,im)%K=D
+allocate(psi_charge(iyz,im)%K(NM_mat(im)*NM_mat(im), Ndeltax, Ndeltay+1, Ndeltaz+1))
+psi_charge(iyz,im)%K=0.0_dp
 
-deallocate(U,D)
+do i=1,nm
+do j=1,nm
+do iz = 1, ndeltaz+1
+do iy = 1, ndeltay+1
+   ix=0
+   do k = 1, ndeltax
+      do kk=1,Nex(k)
+         ix=ix+1
+         psi_charge(iyz,im)%K(i+(j-1)*NM, k, iy, iz) = psi_charge(iyz,im)%K(i+(j-1)*NM, k, iy, iz) + &  
+              ( conjg(dens_xyz(j,ix,iy,iz))*dens_xyz(i,ix,iy,iz) )/dble(Nex(k))
+      end do
+   end do
+end do
+end do
+end do
+end do
 
+
+deallocate(dens_xyz)
+write(*,*)'interpolation done'
+
+!!$!$omp parallel default(none) private(ix,iy,iz,ip,i,j,jgt,dens_z,dens_yz,A,B,C) &
+!!$!$omp shared(iyz,im,ney,nez,nm,nrx,nry,nrz,ndeltay,ndeltaz,dx,dy,dz,npol,ngt,Uk,U,D)
+!!$
+!!$
+!!$allocate(dens_z(NM*NM,(nry),Ndeltaz+1))
+!!$allocate(dens_yz(NM*NM,Ndeltay+1,Ndeltaz+1))
+!!$
+!!$allocate(A(NM,(nry)*(nrz)))
+!!$allocate(B(NM,ngt*npol))
+!!$allocate(C(NM*NM,(nry)*(nrz)))
+!!$
+!!$!$omp do 
+!!$do ix=1,Nrx
+!!$write(*,*) 'ix =',ix
+!!$   do ip=1,npol
+!!$      do jgt=1,Ngt
+!!$         do i=1,NM
+!!$            !!B(i,jgt+(ip-1)*ngt)=(dconjg(ULCBB(iyz,im)%H(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+!!$            B(i,jgt+(ip-1)*ngt)=(dconjg(U(jgt+(ix-1)*Ngt+(ip-1)*nrx*ngt,i)))
+!!$         end do
+!!$      end do
+!!$   end do
+!!$   call ZGEMM('n','n',NM,(nry)*(nrz),NGt*npol,alpha,B,NM,Uk(1:Ngt*npol,1:nry*nrz),NGt*npol,beta,A,NM)
+!!$
+!!$   do i=1,NM
+!!$      do j=1,NM
+!!$         C(i+(j-1)*NM,:)=dconjg(A(i,:))*A(j,:)
+!!$      end do
+!!$   end do
+!!$
+!!$   dens_z=0.0_dp
+!!$   dens_yz=0.0_dp
+!!$   
+!!$   iz=1
+!!$   do iy=1,NRY
+!!$      dens_z(1:NM*NM,iy,iz)=C(1:NM*NM,iy+(iz-1)*(nry))
+!!$   end do
+!!$   dens_z(1:NM*NM,1:nry,Ndeltaz+1)=dens_z(1:NM*NM,1:nry,iz)
+!!$   iz=0
+!!$   do i=1,Ndeltaz-1
+!!$      do j=1,Nez(i)
+!!$         iz=iz+1
+!!$         do iy=1,NRY
+!!$            dens_z(1:NM*NM,iy,i+1)=dens_z(1:NM*NM,iy,i+1)+C(1:NM*NM,iy+(iz-1)*(nry))/dble(2*Nez(i))
+!!$         end do
+!!$      end do
+!!$   end do
+!!$   iz=Nez(1)
+!!$   do i=2,Ndeltaz
+!!$      do j=1,Nez(i)
+!!$         iz=iz+1
+!!$         do iy=1,NRY
+!!$            dens_z(1:NM*NM,iy,i)=dens_z(1:NM*NM,iy,i)+C(1:NM*NM,iy+(iz-1)*(nry))/dble(2*Nez(i))
+!!$         end do
+!!$      end do
+!!$   end do
+!!$   
+!!$   iy=1
+!!$   dens_yz(1:NM*NM,iy,1:Ndeltaz+1)=dens_z(1:NM*NM,iy,1:Ndeltaz+1)
+!!$   dens_yz(1:NM*NM,Ndeltay+1,1:Ndeltaz+1)=dens_yz(1:NM*NM,iy,1:Ndeltaz+1)
+!!$   iy=0
+!!$   do i=1,Ndeltay-1
+!!$      do j=1,Ney(i)
+!!$         iy=iy+1
+!!$         dens_yz(1:NM*NM,i+1,:)=dens_yz(1:NM*NM,i+1,:)+dens_z(1:NM*NM,iy,:)/dble(2*Ney(i))
+!!$      end do
+!!$   end do
+!!$   iy=Ney(1)
+!!$   do i=2,Ndeltay
+!!$      do j=1,Ney(i)
+!!$         iy=iy+1
+!!$         dens_yz(1:NM*NM,i,:)=dens_yz(1:NM*NM,i,:)+dens_z(1:NM*NM,iy,:)/dble(2*Ney(i))
+!!$      end do
+!!$   end do
+!!$   
+!!$   !$omp critical 
+!!$   !U_psi(iyz,im)%K(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1,ix)=dens_yz(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1)
+!!$   D(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1,ix)=dens_yz(1:NM*NM,1:Ndeltay+1,1:Ndeltaz+1)
+!!$   !$omp end critical
+!!$   
+!!$end do !end do ix
+!!$
+!!$!$omp end do
+!!$
+!!$deallocate(A,B,C)
+!!$deallocate(dens_z,dens_yz)
+!!$!$omp end parallel
+!!$
+!!$
+!!$      
+!!$allocate(U_psi(iyz,im)%K(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))      
+!!$U_psi(iyz,im)%K=D
+!!$
+!!$deallocate(U,D)
+!!$
 t2=SECNDS(t1)
 WRITE(*,*)'Time spent to compute the interpolation (s)',t2
 
-!stop
  
 if(iyz==1)then
    allocate(E(NM))

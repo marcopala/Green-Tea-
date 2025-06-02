@@ -171,7 +171,7 @@ MODULE indata
   type K_tensor
      complex(dp), allocatable :: K(:,:,:,:)
   end type K_tensor
-  type(k_tensor),allocatable :: U_PSI(:,:), AJ(:,:), BJ(:,:), CJ(:,:)
+  type(k_tensor),allocatable :: U_PSI(:,:), PSI_charge(:,:), AJ(:,:), BJ(:,:), CJ(:,:)
   
 
   
@@ -603,6 +603,7 @@ CONTAINS
     allocate(ULCBB(NKyz,num_mat))
     allocate(PSIBB(NKyz,num_mat))
     allocate(U_PSI(NKyz,num_mat))
+    allocate(PSI_charge(NKyz,num_mat))
     allocate(Si(Nkyz,num_mat))   
     allocate(Si_p05(Nkyz,num_mat))  
     allocate(Si_m05(Nkyz,num_mat))
