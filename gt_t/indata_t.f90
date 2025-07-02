@@ -161,12 +161,14 @@ MODULE indata
      complex(dp), allocatable :: H(:,:)
   end type H_blocks
   type(H_blocks),allocatable :: HL(:,:), TL(:,:), ULCBB(:,:),  psibb(:,:)
-  type(H_blocks),allocatable :: Si_m05(:,:), Si_p05(:,:), Si(:,:), psipsi(:,:) 
+  type(H_blocks),allocatable :: Si_m05(:,:), Si_p05(:,:), Si(:,:), psipsi(:,:), dzpsipsi(:,:),  dxpsipsi(:,:)
+   
   
   type M_blocks
      COMPLEX(DP), ALLOCATABLE :: M(:,:,:)
   end type M_blocks
   type(M_blocks),allocatable :: el_ph_mtrx(:,:,:,:)
+!  type(M_blocks),allocatable :: dzpsipsi(:,:)
 
   type K_tensor
      complex(dp), allocatable :: K(:,:,:,:)
@@ -608,6 +610,8 @@ CONTAINS
     allocate(Si_p05(Nkyz,num_mat))  
     allocate(Si_m05(Nkyz,num_mat))
     allocate(psipsi(Nkyz,num_mat))     
+    allocate(dxpsipsi(Nkyz,num_mat))    
+    allocate(dzpsipsi(Nkyz,num_mat))   
 
     
     deltax=ac1/dble(Ndeltax)
@@ -658,11 +662,11 @@ CONTAINS
 
     if(phonons) allocate(el_ph_mtrx(NKyz,Nqx,NKyz,num_mat))
     
-    if(phonons)then
+!    if(phonons)then
        allocate(ind_kx(NKyz,num_mat))
        allocate(ind_bnd(NKyz,num_mat))
-       if (dfpt) allocate(ind_q(nqx,nkyz))
-    end if
+       if (phonons .and. dfpt) allocate(ind_q(nqx,nkyz))
+!    end if
     
     write(*,*)'VGS inputs:',  VGMIN,   VGMAX,   DELTAVG
     write(*,*)'VDS inputs:', VDMIN,VDMAX,DELTAVD
