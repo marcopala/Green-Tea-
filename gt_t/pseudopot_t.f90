@@ -59,7 +59,7 @@ real(dp),    allocatable  :: E(:), KGt(:,:), Gx(:), bb_ev(:), bb_ec(:), hkl(:,:)
 real(dp),    allocatable  :: xk(:,:), kread(:,:)
 
 complex(dp), allocatable  :: el_ph_mat(:,:,:,:)
-complex(dp), allocatable  :: A(:,:),B(:,:),C(:,:),T(:,:),D(:,:,:,:),U(:,:),Uk(:,:)
+complex(dp), allocatable  :: A(:,:),B(:,:),C(:,:),D(:,:),U(:,:),Uk(:,:)
 complex(dp), allocatable  :: HLL(:,:),TLL(:,:),HLLL(:,:),TLLL(:,:) 
 !complex(dp), allocatable  :: dens_z(:,:,:), dens_yz(:,:,:),
 complex(dp), allocatable  :: dens_x(:,:,:,:), dens_xyz(:,:,:,:)
@@ -180,7 +180,7 @@ if(mod(nrx,nrx0)/=0)then
    stop
 end if
 write(*,*)'ncell',ncell,ncell/2
-write(*,*)'NRX',nrx,nrx0,'NRY',nry,'NRZ',nrz
+write(*,*)'NRX',nrx,'NRY',nry,'NRZ',nrz
 write(*,*)'max miller_2D 2',maxval(miller_2D(2,:))
 write(*,*)'max miller_2D 3',maxval(miller_2D(3,:))
 
@@ -587,21 +587,21 @@ do im=1,num_mat
      ! allocate(D(1:NM_mat(im)*NM_mat(im),1:(Ndeltay+1),1:(Ndeltaz+1),1:Nrx))!proxy of U_psi
       allocate(U(Nrx*NGt*npol,NM_mat(im)))!proxy of ULCBB
       U=ULCBB(iyz,im)%H
-
-allocate(dzpsipsi(iyz,im)%H(nrz,NM_mat(im)*NM_mat(im)))
-dzpsipsi(iyz,im)%H=0.0_dp
-allocate(dxpsipsi(iyz,im)%H(nrz,NM_mat(im)*NM_mat(im)))
-dxpsipsi(iyz,im)%H=0.0_dp
-
+if (Jz) then
+   allocate(dzpsipsi(iyz,im)%H(nrz,NM_mat(im)*NM_mat(im)))
+   dzpsipsi(iyz,im)%H=0.0_dp
+!allocate(dxpsipsi(iyz,im)%H(nrz,NM_mat(im)*NM_mat(im)))
+!dxpsipsi(iyz,im)%H=0.0_dp
+end if
       call omp_set_num_threads(Nomp_PP)
       allocate(dens_xyz(nm,nrx,ndeltay+1,ndeltaz+1))
       dens_xyz=0.0_dp
      
-      
-      allocate(C(NM,(nry)*(nrz)))
-      allocate(T(NM,(nry)*(nrz)))
-!$omp parallel default(none) private(ix,iy,iz,ip,i,j,k,jj,kk,jgt,A,B,tmp1,tmp2) &
-!$omp shared(nm,nrx,nry,nrz,ndeltax,ndeltay,nex,ndeltaz,npol,ngt,xx,ney,nez,Uk,U,dens_xyz,im,iyz,Nband_val,ind_bnd,dzpsipsi,C,T)
+      !allocate(C(NM,(nry)*(nrz)))
+      !allocate(D(NM,(nry)*(nrz)))
+
+      !$omp parallel default(none) private(ix,iy,iz,ip,i,j,k,jj,kk,jgt,A,B,tmp1,tmp2) &
+      !$omp shared(nm,nrx,nry,nrz,ndeltax,ndeltay,nex,ndeltaz,npol,ngt,xx,ney,nez,Uk,U,dens_xyz,im,iyz,Jz,dzpsipsi)
       allocate(A(NM,(nry)*(nrz)))
       allocate(B(NM,ngt*npol))
       
@@ -641,23 +641,28 @@ dxpsipsi(iyz,im)%H=0.0_dp
 !!$            write(3000+100*im+iyz,*)ix,iz,sqrt(tmp1**2+tmp2**2)
 !!$         end do
 !!$         write(3000+100*im+iyz,*)
-
          
+      if (Jz) then      
          do iy=1,nry
-            do iz=1,nrz-1
                do i=1,NM
                   do j=1,NM
                      
+                     do iz=1,nrz-1
+                        dzpsipsi(iyz,im)%H(iz,i+(j-1)*NM)=dzpsipsi(iyz,im)%H(iz,i+(j-1)*NM) + &
+                             (conjg( A(j,iy+(iz-1)*(nry)) )*(A(i,iy+(iz)*(nry)) - A(i,iy+(iz-1)*(nry))) &
+                             - conjg( A(j,iy+(iz)*(nry)) - A(j,iy+(iz-1)*(nry)) )*A(i,iy+(iz-1)*(nry)))
+                     end do
+                     iz=nrz
                      dzpsipsi(iyz,im)%H(iz,i+(j-1)*NM)=dzpsipsi(iyz,im)%H(iz,i+(j-1)*NM) + &
-                          conjg(A(j,iy+(iz-1)*(nry)))*(A(i,iy+(iz)*(nry)) - A(i,iy+(iz-1)*(nry)))
+                          (conjg( A(j,iy+(iz-1)*(nry)) )*(A(i,iy+(0)*(nry)) - A(i,iy+(iz-1)*(nry))) &
+                          - conjg( A(j,iy+(0)*(nry)) - A(j,iy+(iz-1)*(nry)) )*A(i,iy+(iz-1)*(nry)))
                      
-                  end do
                end do
             end do
          end do
-         
-         if( ix == 1 ) C = A
-         if( ix == nrx ) T = A
+      end if
+!         if( ix == 1 ) C = A
+!         if( ix == 2 ) D = A
          
            iz=0
            do k=1,Ndeltaz
@@ -688,19 +693,20 @@ dxpsipsi(iyz,im)%H=0.0_dp
       !$omp end parallel    
       deallocate(U)
 
-      do iy=1,nry
-         do iz=1,nrz
-            do i=1,NM
-               do j=1,NM
-                  
-                  dxpsipsi(iyz,im)%H(iz,i+(j-1)*NM)=dxpsipsi(iyz,im)%H(iz,i+(j-1)*NM) + &
-                       conjg(T(j,iy+(iz-1)*(nry)) ) * (T(i,iy+(iz-1)*(nry)) - C(i,iy+(iz-1)*(nry))) 
-                  
-               end do
-            end do
-         end do
-      end do
-      deallocate(C,T)
+    !  do iy=1,nry
+    !     do iz=1,nrz
+    !        do i=1,NM
+    !           do j=1,NM
+    !              
+    !              dxpsipsi(iyz,im)%H(iz,i+(j-1)*NM)=dxpsipsi(iyz,im)%H(iz,i+(j-1)*NM) + &
+    !                   (  conjg(D(j,iy+(iz-1)*(nry)) ) * (D(i,iy+(iz-1)*(nry)) - C(i,iy+(iz-1)*(nry))) &
+    !                   -conjg(D(j,iy+(iz-1)*(nry)) - C(j,iy+(iz-1)*(nry)) ) * D(i,iy+(iz-1)*(nry)) )
+    !              
+    !           end do
+    !        end do
+    !     end do
+    !  end do
+    !  deallocate(C,D)
 
 !!$!$omp parallel default(none) private(ix,iy,iz,i,j,ii,xx,k,kk) &
 !!$!$omp shared(iyz,im,nm,nrx,nry,nrz,nex,nez,ndeltax,ndeltaz, C, dzpsipsi)

@@ -113,7 +113,7 @@ MODULE indata
   INTEGER,  allocatable :: gate_xi(:), gate_xf(:), gate_z(:)
   REAL(DP), allocatable :: gate_pot(:)
 
-  LOGICAL  :: onlyT, NO_SC
+  LOGICAL  :: onlyT, NO_SC, Jz
   LOGICAL  :: in_pot, in_sol
   LOGICAL  :: magnetic
 
@@ -314,7 +314,7 @@ MODULE indata
        &  in_pot,                              &   
        &  in_sol,                              &
        &  source_sol, channel_sol, drain_sol,  &
-       &  onlyT, NO_SC,                        &
+       &  onlyT, NO_SC, Jz,                     &
        &  VGMIN,                               &
        &  VGMAX,                               &
        &  DELTAVG,                             & 
@@ -378,6 +378,7 @@ CONTAINS
 !    vec_field_old=.FALSE.
     NO_SC=.false.
     onlyT=.false.
+    Jz=.false.
     in_pot=.false.
     in_sol=.false.
     dfpt=.false.

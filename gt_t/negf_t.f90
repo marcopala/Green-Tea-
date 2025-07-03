@@ -72,7 +72,7 @@ REAL(DP)                 :: SCBA_scalar
 REAL(DP)                 :: n_bose_g
 
 REAL(DP), ALLOCATABLE    :: degeneracy(:), trans(:,:,:,:), cur(:,:,:,:)
-REAL(DP), ALLOCATABLE    :: ldos(:,:,:,:), zdos(:,:,:,:), ndos(:,:,:,:), pdos(:,:,:,:), Jdensz(:,:,:), Jdensx(:,:,:), R_in(:,:,:,:), R_out(:,:,:,:)
+REAL(DP), ALLOCATABLE    :: ldos(:,:,:,:), zdos(:,:,:,:), ndos(:,:,:,:), pdos(:,:,:,:), Jdensz(:,:,:), R_in(:,:,:,:), R_out(:,:,:,:)
 REAL(DP)                 :: tr,tre,ttr,sumt,sums,kappax,tmp,n_2D
 COMPLEX(DP)              :: zdotc
 
@@ -438,7 +438,7 @@ end do  ! end of loop over kyz
      emax=max(emax,max(mus,mud))+NKT*(BOLTZ*TEMP)
   end if
 
-!!!  Emin=mud-NKT*(BOLTZ*TEMP)
+Emin=mud-NKT*(BOLTZ*TEMP)
   
   deallocate(emin_yz,emax_yz)
 
@@ -467,12 +467,12 @@ end do  ! end of loop over kyz
   dosn=0.0_dp
   dosp=0.0_dp
 
-  ALLOCATE(Jdensz(1:nrz,1:Ncx_d,1:NKYZ))
-  write(*,*)'shape Jdensz',shape(Jdensz)
-  Jdensz=0.0_dp
-  ALLOCATE(Jdensx(1:nrz,1:Ncx_d,1:NKYZ))
-  Jdensx=0.0_dp
-     
+  if (Jz) then
+     ALLOCATE(Jdensz(1:nrz,1:Ncx_d,1:NKYZ))
+     write(*,*)'shape Jdensz',shape(Jdensz)
+     Jdensz=0.0_dp
+  end if
+       
   ALLOCATE(cur(1:Nsub,1:Nop,1:Ncx_d-1,1:NKYZ))
   ALLOCATE(ldos(1:Nsub,1:Nop,1:Ncx_d,1:NKYZ))
   ALLOCATE(zdos(1:Nsub,1:Nop,1:Ncx_d,1:NKYZ))
@@ -885,8 +885,8 @@ do iyz=1,NKYZ !loop over kyz
    !$omp private(nee,xx,i,j,ix,iy,iz,EN,tr,tre,tmp,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,A,B,C) &
    !$omp shared(scba_iter,ee,iyz,Nop,ncx_d,nkyz,nmax,nm,nrz,nsolv,imat,emin,emin_local,Eop,mus,mud,hi,si,&
    !$omp AJ,BJ,CJ,sigma_lesser_ph_prev,sigma_greater_ph_prev,subband, &
-   !$omp cur,ldos,ndos,pdos,zdos,chtype,neutr,degeneracy,w,temp,con,cone,conb,trans,dosn,dosp, psipsi, dxpsipsi, dzpsipsi, &
-   !$omp flag,phonons,R_in,R_out, Jdensx, Jdensz)
+   !$omp cur,ldos,ndos,pdos,zdos,chtype,neutr,degeneracy,w,temp,con,cone,conb,trans,dosn,dosp, psipsi, Jz, dzpsipsi, &
+   !$omp flag,phonons,R_in,R_out, Jdensz)
 
   ALLOCATE(g_lesser_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
   ALLOCATE(g_greater_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
@@ -928,17 +928,17 @@ do iyz=1,NKYZ !loop over kyz
 
         C=g_lesser_diag_local(1:NM(xx),1:NM(xx),xx)
         ndos(ee,nee,xx,iyz)= sum(dimag(C*B)) !!traccia(dimag(C))
-  
-        do iz=1,nrz
-           do i=1,nm(xx)
-              do j=1,nm(xx)
-                 Jdensz(iz,xx,iyz) = Jdensz(iz,xx,iyz) + &
-                      degeneracy(iyz)*w(ee)* dble( C(i,j) * dzpsipsi(iyz,imat(xx))%H(iz,i+(j-1)*NM(xx)) )
-                 Jdensx(iz,xx,iyz) = Jdensx(iz,xx,iyz) + &
-                      degeneracy(iyz)*w(ee)* dble( C(i,j) * dxpsipsi(iyz,imat(xx))%H(iz,i+(j-1)*NM(xx)) )
+        
+        if ( Jz ) then
+           do iz=1,nrz
+              do i=1,nm(xx)
+                 do j=1,nm(xx)
+                    Jdensz(iz,xx,iyz) = Jdensz(iz,xx,iyz) + &
+                         degeneracy(iyz)*w(ee)* dble( C(i,j) * dzpsipsi(iyz,imat(xx))%H(iz,i+(j-1)*NM(xx)) )
+                 end do
               end do
            end do
-        end do
+        end if
      
         zdos(ee,nee,xx,iyz)= 2.0_dp*ldos(ee,nee,xx,iyz) - pdos(ee,nee,xx,iyz) - ndos(ee,nee,xx,iyz)        
         deallocate(C,B)
@@ -1230,9 +1230,9 @@ if(phonons)then
    OPEN(UNIT=20,FILE=TRIM(outdir)//'scat_ndens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=30,FILE=TRIM(outdir)//'scat_LDOS_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=40,FILE=TRIM(outdir)//'scat_Jdens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
-   OPEN(UNIT=47,FILE=TRIM(outdir)//'scat_Jdensx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
-   OPEN(UNIT=48,FILE=TRIM(outdir)//'scat_Jz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
-   OPEN(UNIT=49,FILE=TRIM(outdir)//'scat_Jdensz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   !OPEN(UNIT=47,FILE=TRIM(outdir)//'scat_Jdensx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   if(Jz)  OPEN(UNIT=48,FILE=TRIM(outdir)//'scat_Jz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   if(Jz)  OPEN(UNIT=49,FILE=TRIM(outdir)//'scat_Jdensz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=50,FILE=TRIM(outdir)//'scat_Jspectrum_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=41,FILE=TRIM(outdir)//'scat_Jx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=42,FILE=TRIM(outdir)//'scat_Junbalance_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
@@ -1244,9 +1244,9 @@ else
    OPEN(UNIT=20,FILE=TRIM(outdir)//'bal_ndens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=30,FILE=TRIM(outdir)//'bal_LDOS_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=40,FILE=TRIM(outdir)//'bal_Jdens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
-   OPEN(UNIT=47,FILE=TRIM(outdir)//'bal_Jdensx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
-   OPEN(UNIT=48,FILE=TRIM(outdir)//'bal_Jz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
-   OPEN(UNIT=49,FILE=TRIM(outdir)//'bal_Jdensz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   !OPEN(UNIT=47,FILE=TRIM(outdir)//'bal_Jdensx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   if(Jz) OPEN(UNIT=48,FILE=TRIM(outdir)//'bal_Jz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   if(Jz) OPEN(UNIT=49,FILE=TRIM(outdir)//'bal_Jdensz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=41,FILE=TRIM(outdir)//'bal_Jx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=50,FILE=TRIM(outdir)//'bal_Jspectrum_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
 end if
@@ -1362,28 +1362,16 @@ do xx=1,ncx_d-1
    write(41,*)(xx-1)*ac1*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
 end do
 
-
+if (Jz) then
 do iz=1,nrz
    do xx=1,ncx_d
       ttr=0.0_dp
       do iyz=1,NKYZ
          if(k_selec(iyz))then
-            ttr = ttr + hbareV*hbareV/m0/(Dx**2) * Jdensx(iz,xx,iyz)
+            ttr = ttr + hbareV*hbareV/m0/(2.0*Dz**2) * Jdensz(iz,xx,iyz)
          end if
       end do
-      write(47,*)(xx-1)*ac1*1.0d7,(iz-1)*dz*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2/dble(nry)
-   end do
-   write(47,*)
-end do
-do iz=1,nrz
-   do xx=1,ncx_d
-      ttr=0.0_dp
-      do iyz=1,NKYZ
-         if(k_selec(iyz))then
-            ttr = ttr + hbareV*hbareV/m0/(Dz**2) * Jdensz(iz,xx,iyz)
-         end if
-      end do
-      write(49,*)(xx-1)*ac1*1.0d7,(iz-1)*dz*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2/dble(nry)
+      write(49,*)(xx-1)*ac1*1.0d7,(iz-1)*dz*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
    end do
    write(49,*)
 end do
@@ -1393,29 +1381,21 @@ do xx=1,ncx_d
    do iz=1,nrz
       do iyz=1,NKYZ
          if(k_selec(iyz))then
-            ttr = ttr + hbareV*hbareV/m0/(Dz**2) * Jdensz(iz,xx,iyz)
+            ttr = ttr + hbareV*hbareV/m0/(2.0*Dz**2) * Jdensz(iz,xx,iyz)
          end if
       end do
    end do
-   sumt=0.0_dp
-   do iz=1,nrz
-      do iyz=1,NKYZ
-         if(k_selec(iyz))then
-            sumt = sumt + hbareV*hbareV/m0/(Dx**2) * Jdensx(iz,xx,iyz)
-         end if
-      end do
-   end do
-   write(48,*)(xx-1)*ac1*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2/dble(nry)/dble(nrz),&
-        sumt/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2/dble(nry)/dble(nrz)
+   write(48,*)(xx-1)*ac1*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
 end do
+end if
 
 close(10)
 close(20)
 close(30)
 close(40)
-close(47)
-close(48)
-close(49)
+!close(47)
+if(Jz)close(48)
+if(Jz)close(49)
 close(50)
 close(41)
 close(42)
@@ -1426,8 +1406,7 @@ deallocate(ldos)
 deallocate(zdos)
 deallocate(ndos)
 deallocate(pdos)
-deallocate(Jdensx)
-deallocate(Jdensz)
+if(Jz)deallocate(Jdensz)
 deallocate(cur)
 deallocate(dosn)
 deallocate(dosp)
