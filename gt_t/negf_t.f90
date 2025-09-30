@@ -1542,7 +1542,7 @@ subroutine RGF(it,nmax,ff,E,mul,mur,Hii,sigma_lesser_ph,sigma_greater_ph,ndens,p
   COMPLEX(dp) :: Hii(nmax,nmax,ncx_d),sigma_lesser_ph(nmax,nmax,Ncx_d),sigma_greater_ph(nmax,nmax,Ncx_d)
   COMPLEX(dp), allocatable :: sig(:,:),sigmal(:,:),sigmar(:,:) !,sigma_r_ph(:,:)
   COMPLEX(dp), allocatable :: Gn(:,:),Gp(:,:),G00(:,:),GN0(:,:)
-  COMPLEX(dp), allocatable :: Gl(:,:,:),Gln(:,:,:),Glp(:,:,:)
+  !COMPLEX(dp), allocatable :: Gl(:,:,:),Gln(:,:,:),Glp(:,:,:)
   COMPLEX(dp) :: ldos(nmax,nmax,ncx_d),ndens(nmax,nmax,ncx_d),pdens(nmax,nmax,ncx_d)
   COMPLEX(dp), allocatable :: H00(:,:),H10(:,:)
   COMPLEX(dp), allocatable :: A(:,:),B(:,:),C(:,:),D(:,:),Id(:,:)
@@ -1553,16 +1553,16 @@ subroutine RGF(it,nmax,ff,E,mul,mur,Hii,sigma_lesser_ph,sigma_greater_ph,ndens,p
 !!!  seuil=1.0d0
   
 if(ff == 0)then
-   allocate( Gl(nmax,nmax,Ncx_d), Gln(nmax,nmax,Ncx_d), Glp(nmax,nmax,Ncx_d) )
+   !allocate( Gl(nmax,nmax,Ncx_d), Gln(nmax,nmax,Ncx_d), Glp(nmax,nmax,Ncx_d) )
    allocate( Gn(nmax,nmax), Gp(nmax,nmax), G00(nmax,nmax), GN0(nmax,nmax) )
    allocate( sig(nmax,nmax), sigmal(nmax,nmax), sigmar(nmax,nmax) ) !, sigma_r_ph(nmax,nmax) )
    allocate( H00(nmax,nmax), H10(nmax,nmax), A(nmax,nmax), B(nmax,nmax), C(nmax,nmax), Id(nmax,nmax) )
    
   z=dcmplx(E,0.0d-3)
 
-  Gln=0.0_dp
-  Glp=0.0_dp
-  Gl=0.0_dp
+  !Gln=0.0_dp
+  !Glp=0.0_dp
+  !Gl=0.0_dp
   ldos=0.0_dp
   ndens=0.0_dp
   pdens=0.0_dp
@@ -1610,7 +1610,7 @@ if(ff == 0)then
   call zgemm('n','c',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),H10(1:nm(l),1:nm(l)),nm(l),beta,sigmal(1:nm(l),1:nm(l)),nm(l))  
   A(1:nm(l),1:nm(l))=z*Id(1:nm(l),1:nm(l))-H00(1:nm(l),1:nm(l))-sigmal(1:nm(l),1:nm(l))
   call invert(A(1:nm(l),1:nm(l)),nm(l),nm(l))
-  Gl(1:nm(l),1:nm(l),l)=A(1:nm(l),1:nm(l))
+  ldos(1:nm(l),1:nm(l),l)=A(1:nm(l),1:nm(l))!Gl(1:nm(l),1:nm(l),l)=A(1:nm(l),1:nm(l))
 
   zeta=(E-mul)/(BOLTZ*TEMP)
   sig(1:nm(l),1:nm(l))=-(sigmal(1:nm(l),1:nm(l))-transpose(dconjg(sigmal(1:nm(l),1:nm(l)))))*ferm(zeta) 
@@ -1619,43 +1619,39 @@ if(ff == 0)then
   call zgemm('n','n',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),sig(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l))
   call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),A(1:nm(l),1:nm(l)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
   !C(1:nm(l),1:nm(l))=(C(1:nm(l),1:nm(l))-transpose(dconjg(C(1:nm(l),1:nm(l)))))/2.0_dp
-  Gln(1:nm(l),1:nm(l),l)=C(1:nm(l),1:nm(l))
+  ndens(1:nm(l),1:nm(l),l)=C(1:nm(l),1:nm(l))!Gln(1:nm(l),1:nm(l),l)=C(1:nm(l),1:nm(l))
 
   sig(1:nm(l),1:nm(l))=(sigmal(1:nm(l),1:nm(l))-transpose(dconjg(sigmal(1:nm(l),1:nm(l)))))*ferm(-zeta)
   sig(1:nm(l),1:nm(l))=sig(1:nm(l),1:nm(l))+sigma_greater_ph(1:nm(l),1:nm(l),l)
 
   call zgemm('n','n',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),sig(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l))
   call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),A(1:nm(l),1:nm(l)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
-  Glp(1:nm(l),1:nm(l),l)=C(1:nm(l),1:nm(l))
-
-  !!!Gl(1:nm(l),1:nm(l),l)=(Gl(1:nm(l),1:nm(l),l)+transpose(conjg(Gl(1:nm(l),1:nm(l),l))))/2.0_dp + &
-  !     (Glp(1:nm(l),1:nm(l),l)-Gln(1:nm(l),1:nm(l),l))/2.0_dp
+  pdens(1:nm(l),1:nm(l),l)=C(1:nm(l),1:nm(l))!Glp(1:nm(l),1:nm(l),l)=C(1:nm(l),1:nm(l))
 
   
   Do l=2,Ncx_d-1
  
      Id(1:nm(l),1:nm(l))=Si(iyz,imat(l))%H(1:NM(l),1:NM(l))
-     !!!sigma_r_ph(1:nm(l),1:nm(l))=(sigma_greater_ph(1:nm(l),1:nm(l),l) - sigma_lesser_ph(1:nm(l),1:nm(l),l))/2.0_dp
      H00(1:nm(l),1:nm(l))=Hii(1:nm(l),1:nm(l),l)+(sigma_greater_ph(1:nm(l),1:nm(l),l) - sigma_lesser_ph(1:nm(l),1:nm(l),l))/2.0_dp !sigma_r_ph(1:nm(l),1:nm(l))
      H10(1:nm(l),1:nm(l-1))=TL(iyz,ihet(l))%H(1:NM(l),1:NM(l-1)) !!!! H_{l,l-1}
    
-     call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),Gl(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
+     !call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),Gl(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
+     call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),ldos(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
      call zgemm('n','c',nm(l),nm(l),nm(l-1),alpha,B(1:nm(l),1:nm(l-1)),nm(l),H10(1:nm(l),1:nm(l-1)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
      A(1:nm(l),1:nm(l))=z*Id(1:nm(l),1:nm(l))-H00(1:nm(l),1:nm(l))-C(1:nm(l),1:nm(l))              
      call invert(A(1:nm(l),1:nm(l)),nm(l),nm(l))
-     Gl(1:nm(l),1:nm(l),l)=A(1:nm(l),1:nm(l))     
+     ldos(1:nm(l),1:nm(l),l)=A(1:nm(l),1:nm(l))!Gl(1:nm(l),1:nm(l),l)=A(1:nm(l),1:nm(l))     
 
-     sig(1:nm(l-1),1:nm(l-1))=Gln(1:nm(l-1),1:nm(l-1),l-1)
+     sig(1:nm(l-1),1:nm(l-1))=ndens(1:nm(l-1),1:nm(l-1),l-1)!Gln(1:nm(l-1),1:nm(l-1),l-1)
      call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),sig(1:nm(l-1),1:nm(l-1)),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
      call zgemm('n','c',nm(l),nm(l),nm(l-1),alpha,B(1:nm(l),1:nm(l-1)),nm(l),H10(1:nm(l),1:nm(l-1)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
      C(1:nm(l),1:nm(l))=C(1:nm(l),1:nm(l))+sigma_lesser_ph(1:nm(l),1:nm(l),l)
 
      call zgemm('n','n',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),C(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l)) 
      call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),A(1:nm(l),1:nm(l)),nm(l),beta,Gn(1:nm(l),1:nm(l)),nm(l))
-    !!! !Gn(1:nm(l),1:nm(l))=(Gn(1:nm(l),1:nm(l))-transpose(dconjg(Gn(1:nm(l),1:nm(l)))))/2.0_dp
-     Gln(1:nm(l),1:nm(l),l)=Gn(1:nm(l),1:nm(l))
+     ndens(1:nm(l),1:nm(l),l)=Gn(1:nm(l),1:nm(l))!Gln(1:nm(l),1:nm(l),l)=Gn(1:nm(l),1:nm(l))
 
-     sig(1:nm(l-1),1:nm(l-1))=Glp(1:nm(l-1),1:nm(l-1),l-1)
+     sig(1:nm(l-1),1:nm(l-1))=pdens(1:nm(l-1),1:nm(l-1),l-1)!Glp(1:nm(l-1),1:nm(l-1),l-1)
      call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),sig(1:nm(l-1),1:nm(l-1)),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l))
      call zgemm('n','c',nm(l),nm(l),nm(l-1),alpha,B(1:nm(l),1:nm(l-1)),nm(l),H10(1:nm(l),1:nm(l-1)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
 
@@ -1664,15 +1660,9 @@ if(ff == 0)then
      call zgemm('n','n',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),C(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l))
      call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),A(1:nm(l),1:nm(l)),nm(l),beta,Gp(1:nm(l),1:nm(l)),nm(l))
   !!!   !Gp(1:nm(l),1:nm(l))=(Gp(1:nm(l),1:nm(l))-transpose(dconjg(Gp(1:nm(l),1:nm(l)))))/2.0_dp
-     Glp(1:nm(l),1:nm(l),l)=Gp(1:nm(l),1:nm(l))
+     pdens(1:nm(l),1:nm(l),l)=Gp(1:nm(l),1:nm(l))!Glp(1:nm(l),1:nm(l),l)=Gp(1:nm(l),1:nm(l))
 
   enddo
-  
-  !!do l=1,ncx_d-1
-  !!   write(*,*)'glr',l,E,-traccia(dimag(Gl(1:nm(l),1:nm(l),l)))
-  !!   write(*,*)'glp',l,E,-traccia(dimag(Glp(1:nm(l),1:nm(l),l)))
-  !!   write(*,*)'gln',l,E,traccia(dimag(Gln(1:nm(l),1:nm(l),l)))
-  !!end do
   
 ! self energy on the right contact
   l=Ncx_d
@@ -1718,13 +1708,15 @@ if(ff == 0)then
   call zgemm('n','n',nm(l),nm(l),nm(l),alpha,A(1:nm(l),1:nm(l)),nm(l),H10(1:nm(l),1:nm(l)),nm(l),beta,sigmar(1:nm(l),1:nm(l)),nm(l)) 
 
   H10(1:nm(l),1:nm(l-1))=TL(iyz,ihet(l))%H(1:NM(l),1:NM(l-1)) !!! H(N,N-1)
-  call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),Gl(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
+!  call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),Gl(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
+  call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),ldos(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
   call zgemm('n','c',nm(l),nm(l),nm(l-1),alpha,B(1:nm(l),1:nm(l-1)),nm(l),H10(1:nm(l),1:nm(l-1)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
 
   G00(1:nm(l),1:nm(l))=z*Id(1:nm(l),1:nm(l))-H00(1:nm(l),1:nm(l))-sigmar(1:nm(l),1:nm(l))-C(1:nm(l),1:nm(l))   
   call invert(G00(1:nm(l),1:nm(l)),nm(l),nm(l))
 
-  call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),Gln(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
+  !call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),Gln(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
+  call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),ndens(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l)) 
   call zgemm('n','c',nm(l),nm(l),nm(l-1),alpha,B(1:nm(l),1:nm(l-1)),nm(l),H10(1:nm(l),1:nm(l-1)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
 
   l=ncx_d
@@ -1736,10 +1728,8 @@ if(ff == 0)then
   call zgemm('n','n',nm(l),nm(l),nm(l),alpha,G00(1:nm(l),1:nm(l)),nm(l),sig(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l)) 
   call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),G00(1:nm(l),1:nm(l)),nm(l),beta,Gn(1:nm(l),1:nm(l)),nm(l)) 
 
-  !Gn(1:nm(l),1:nm(l))=(Gn(1:nm(l),1:nm(l))-transpose(dconjg(Gn(1:nm(l),1:nm(l)))))/2.0_dp
-  ndens(1:nm(l),1:nm(l),l)=Gn(1:nm(l),1:nm(l))
-
-  call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),Glp(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l))
+!  call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),Glp(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l))
+  call zgemm('n','n',nm(l),nm(l-1),nm(l-1),alpha,H10(1:nm(l),1:nm(l-1)),nm(l),pdens(1:nm(l-1),1:nm(l-1),l-1),nm(l-1),beta,B(1:nm(l),1:nm(l-1)),nm(l))
   call zgemm('n','c',nm(l),nm(l),nm(l-1),alpha,B(1:nm(l),1:nm(l-1)),nm(l),H10(1:nm(l),1:nm(l-1)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
   
   sig(1:nm(l),1:nm(l))=(sigmar(1:nm(l),1:nm(l))-transpose(dconjg(sigmar(1:nm(l),1:nm(l)))))*ferm(-zeta)+C(1:nm(l),1:nm(l))
@@ -1748,8 +1738,8 @@ if(ff == 0)then
   call zgemm('n','n',nm(l),nm(l),nm(l),alpha,G00(1:nm(l),1:nm(l)),nm(l),sig(1:nm(l),1:nm(l)),nm(l),beta,B(1:nm(l),1:nm(l)),nm(l))
   call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),G00(1:nm(l),1:nm(l)),nm(l),beta,Gp(1:nm(l),1:nm(l)),nm(l))
 
+  ndens(1:nm(l),1:nm(l),l)=Gn(1:nm(l),1:nm(l))
   pdens(1:nm(l),1:nm(l),l)=Gp(1:nm(l),1:nm(l))
-
   ldos(1:nm(l),1:nm(l),l) = G00(1:nm(l),1:nm(l))
   
   A(1:nm(l),1:nm(l))=-(sigmar(1:nm(l),1:nm(l))-transpose(dconjg(sigmar(1:nm(l),1:nm(l)))))*ferm(zeta)
@@ -1789,10 +1779,10 @@ if(ff == 0)then
 !!$     
 !!$     cur(l)=2.0_dp*traccia(dble(A(1:nm(l),1:nm(l))))
 
-     call zgemm('n','c',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Gl(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1)) 
+     call zgemm('n','c',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),ldos(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1)) 
      call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,Gn(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, sig(1:nm(l+1),1:nm(l)), nm(l+1))  !!!G^<_{i+1,i+1}H_{i+1,i}g^L_{i,i}
      
-     call zgemm('n','n',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Gln(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1))
+     call zgemm('n','n',nm(l+1),nm(l),nm(l),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),ndens(1:nm(l),1:nm(l),l),nm(l),beta, B(1:nm(l+1),1:nm(l)), nm(l+1))
      call zgemm('n','n',nm(l+1),nm(l),nm(l+1),alpha,G00(1:nm(l+1),1:nm(l+1)),nm(l+1),B(1:nm(l+1),1:nm(l)),nm(l+1),beta, A(1:nm(l+1),1:nm(l)), nm(l+1))
 
      B(1:nm(l+1),1:nm(l))=sig(1:nm(l+1),1:nm(l))+A(1:nm(l+1),1:nm(l))
@@ -1801,10 +1791,10 @@ if(ff == 0)then
      cur(l)=traccia(dble(A(1:nm(l),1:nm(l))))
 
      call zgemm('c','c',nm(l),nm(l+1),nm(l+1),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),G00(1:nm(l+1),1:nm(l+1)),nm(l+1),beta, B(1:nm(l),1:nm(l+1)), nm(l)) 
-     call zgemm('n','n',nm(l),nm(l+1),nm(l),alpha,Gln(1:nm(l),1:nm(l),l),nm(l),B(1:nm(l),1:nm(l+1)),nm(l),beta, C(1:nm(l),1:nm(l+1)), nm(l))
+     call zgemm('n','n',nm(l),nm(l+1),nm(l),alpha,ndens(1:nm(l),1:nm(l),l),nm(l),B(1:nm(l),1:nm(l+1)),nm(l),beta, C(1:nm(l),1:nm(l+1)), nm(l))
      
      call zgemm('c','n',nm(l),nm(l+1),nm(l+1),alpha,H10(1:nm(l+1),1:nm(l)),nm(l+1),Gn(1:nm(l+1),1:nm(l+1)),nm(l+1),beta, B(1:nm(l),1:nm(l+1)), nm(l))
-     call zgemm('n','n',nm(l),nm(l+1),nm(l),alpha,Gl(1:nm(l),1:nm(l),l),nm(l),B(1:nm(l),1:nm(l+1)),nm(l),beta, A(1:nm(l),1:nm(l+1)), nm(l))
+     call zgemm('n','n',nm(l),nm(l+1),nm(l),alpha,ldos(1:nm(l),1:nm(l),l),nm(l),B(1:nm(l),1:nm(l+1)),nm(l),beta, A(1:nm(l),1:nm(l+1)), nm(l))
 
      B(1:nm(l),1:nm(l+1))=C(1:nm(l),1:nm(l+1))+A(1:nm(l),1:nm(l+1))
      call zgemm('n','n',nm(l),nm(l),nm(l+1),alpha,B(1:nm(l),1:nm(l+1)),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,A(1:nm(l),1:nm(l)),nm(l))      !!! G<_i+1,i
@@ -1814,30 +1804,30 @@ if(ff == 0)then
         
      !-------------------------
 
-     call zgemm('n','c',nm(l),nm(l+1),nm(l),alpha,Gl(1:nm(l),1:nm(l),l),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l+1)),nm(l)) 
+     call zgemm('n','c',nm(l),nm(l+1),nm(l),alpha,ldos(1:nm(l),1:nm(l),l),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l+1)),nm(l)) 
      call zgemm('n','n',nm(l),nm(l+1),nm(l+1),alpha,B(1:nm(l),1:nm(l+1)),nm(l),G00(1:nm(l+1),1:nm(l+1)),nm(l+1),beta,GN0(1:nm(l),1:nm(l+1)),nm(l))      !!! G_i,i+1
 
      call zgemm('n','n',nm(l),nm(l),nm(l+1),alpha,GN0(1:nm(l),1:nm(l+1)),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l)),nm(l))
-     call zgemm('n','n',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),Gl(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
+     call zgemm('n','n',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),ldos(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
      
-     G00(1:nm(l),1:nm(l)) = Gl(1:nm(l),1:nm(l),l) + C(1:nm(l),1:nm(l))                                       !!! G_i,i
+     G00(1:nm(l),1:nm(l)) = ldos(1:nm(l),1:nm(l),l) + C(1:nm(l),1:nm(l))                                       !!! G_i,i
 
 !-------------------------
      
-     call zgemm('n','c',nm(l),nm(l+1),nm(l),alpha,Gl(1:nm(l),1:nm(l),l),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,A(1:nm(l),1:nm(l+1)),nm(l))  
+     call zgemm('n','c',nm(l),nm(l+1),nm(l),alpha,ldos(1:nm(l),1:nm(l),l),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,A(1:nm(l),1:nm(l+1)),nm(l))  
      call zgemm('n','n',nm(l),nm(l),nm(l+1),alpha,A(1:nm(l),1:nm(l+1)),nm(l),sig(1:nm(l+1),1:nm(l)),nm(l+1),beta,C(1:nm(l),1:nm(l)),nm(l))     !!!g^L_{i,i}H_{i,i+1}G^<_{i+1,i+1}H_{i+1,i}g^L_{i,i}
 !!$     call zgemm('n','n',nm(l),nm(l+1),nm(l+1),alpha,A(1:nm(l),1:nm(l+1)),nm(l),Gn(1:nm(l+1),1:nm(l+1)),nm(l+1),beta,C(1:nm(l),1:nm(l+1)),nm(l)) 
 !!$     call zgemm('n','n',nm(l),nm(l),nm(l+1),alpha,C(1:nm(l),1:nm(l+1)),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l)),nm(l))
 !!$     call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),Gl(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
 
-     Gn(1:nm(l),1:nm(l)) = Gln(1:nm(l),1:nm(l),l) + C(1:nm(l),1:nm(l)) 
+     Gn(1:nm(l),1:nm(l)) = ndens(1:nm(l),1:nm(l),l) + C(1:nm(l),1:nm(l)) 
 
      call zgemm('n','n',nm(l),nm(l),nm(l+1),alpha,GN0(1:nm(l),1:nm(l+1)),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,sig(1:nm(l),1:nm(l)),nm(l)) 
-     call zgemm('n','n',nm(l),nm(l),nm(l),alpha,sig(1:nm(l),1:nm(l)),nm(l),Gln(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))     
+     call zgemm('n','n',nm(l),nm(l),nm(l),alpha,sig(1:nm(l),1:nm(l)),nm(l),ndens(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))     
      
      Gn(1:nm(l),1:nm(l)) = Gn(1:nm(l),1:nm(l))+C(1:nm(l),1:nm(l)) !!!-transpose(dconjg(C(1:nm(l),1:nm(l)))) !!!! I am using  (G<)^+ = -G< 	 !!! G<_i,i
      
-     call zgemm('n','c',nm(l),nm(l+1),nm(l),alpha,Gln(1:nm(l),1:nm(l),l),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l+1)),nm(l)) 
+     call zgemm('n','c',nm(l),nm(l+1),nm(l),alpha,ndens(1:nm(l),1:nm(l),l),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l+1)),nm(l)) 
      call zgemm('n','c',nm(l),nm(l),nm(l+1),alpha,B(1:nm(l),1:nm(l+1)),nm(l),GN0(1:nm(l),1:nm(l+1)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
      
      Gn(1:nm(l),1:nm(l)) = Gn(1:nm(l),1:nm(l))+C(1:nm(l),1:nm(l))
@@ -1847,15 +1837,15 @@ if(ff == 0)then
      call zgemm('n','n',nm(l),nm(l+1),nm(l+1),alpha,A(1:nm(l),1:nm(l+1)),nm(l),Gp(1:nm(l+1),1:nm(l+1)),nm(l+1),beta,C(1:nm(l),1:nm(l+1)),nm(l))
      
      call zgemm('n','n',nm(l),nm(l),nm(l+1),alpha,C(1:nm(l),1:nm(l+1)),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l)),nm(l))
-     call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),Gl(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
+     call zgemm('n','c',nm(l),nm(l),nm(l),alpha,B(1:nm(l),1:nm(l)),nm(l),ldos(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
 
-     Gp(1:nm(l),1:nm(l)) = Glp(1:nm(l),1:nm(l),l) + C(1:nm(l),1:nm(l))
+     Gp(1:nm(l),1:nm(l)) = pdens(1:nm(l),1:nm(l),l) + C(1:nm(l),1:nm(l))
      
-     call zgemm('n','n',nm(l),nm(l),nm(l),alpha,sig(1:nm(l),1:nm(l)),nm(l),Glp(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))     
+     call zgemm('n','n',nm(l),nm(l),nm(l),alpha,sig(1:nm(l),1:nm(l)),nm(l),pdens(1:nm(l),1:nm(l),l),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))     
      
      Gp(1:nm(l),1:nm(l)) = Gp(1:nm(l),1:nm(l))+C(1:nm(l),1:nm(l)) !!!-transpose(dconjg(C(1:nm(l),1:nm(l))))   !!! G<_i,i
           
-     call zgemm('n','c',nm(l),nm(l+1),nm(l),alpha,Glp(1:nm(l),1:nm(l),l),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l+1)),nm(l)) 
+     call zgemm('n','c',nm(l),nm(l+1),nm(l),alpha,pdens(1:nm(l),1:nm(l),l),nm(l),H10(1:nm(l+1),1:nm(l)),nm(l+1),beta,B(1:nm(l),1:nm(l+1)),nm(l)) 
      call zgemm('n','c',nm(l),nm(l),nm(l+1),alpha,B(1:nm(l),1:nm(l+1)),nm(l),GN0(1:nm(l),1:nm(l+1)),nm(l),beta,C(1:nm(l),1:nm(l)),nm(l))
      
      Gp(1:nm(l),1:nm(l)) = Gp(1:nm(l),1:nm(l))+C(1:nm(l),1:nm(l))
@@ -1892,7 +1882,7 @@ if(ff == 0)then
      cur=0.0_dp
   end if
 
-  deallocate( Gl, Gln, Glp )
+!  deallocate( Gl, Gln, Glp )
   deallocate( Gn, Gp, G00, GN0 )
   deallocate( sig, sigmal, sigmar) 
   deallocate( H00, H10, A , B, C, Id )

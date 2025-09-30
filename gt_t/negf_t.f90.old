@@ -72,7 +72,7 @@ REAL(DP)                 :: SCBA_scalar
 REAL(DP)                 :: n_bose_g
 
 REAL(DP), ALLOCATABLE    :: degeneracy(:), trans(:,:,:,:), cur(:,:,:,:)
-REAL(DP), ALLOCATABLE    :: ldos(:,:,:,:), zdos(:,:,:,:), ndos(:,:,:,:), pdos(:,:,:,:), R_in(:,:,:,:), R_out(:,:,:,:)
+REAL(DP), ALLOCATABLE    :: ldos(:,:,:,:), zdos(:,:,:,:), ndos(:,:,:,:), pdos(:,:,:,:), Jdensz(:,:,:), R_in(:,:,:,:), R_out(:,:,:,:)
 REAL(DP)                 :: tr,tre,ttr,sumt,sums,kappax,tmp,n_2D
 COMPLEX(DP)              :: zdotc
 
@@ -431,12 +431,14 @@ end do  ! end of loop over kyz
 
 
   emax=maxval(emax_yz(:))
-  emin=minval(emin_yz(:))-0.3
+  emin=minval(emin_yz(:))
 
   if(onlyT .and. .not. in_pot)then
      emin=min(emin,min(mus,mud))-NKT*(BOLTZ*TEMP)
      emax=max(emax,max(mus,mud))+NKT*(BOLTZ*TEMP)
   end if
+
+Emin=mud-NKT*(BOLTZ*TEMP)
   
   deallocate(emin_yz,emax_yz)
 
@@ -465,8 +467,12 @@ end do  ! end of loop over kyz
   dosn=0.0_dp
   dosp=0.0_dp
 
-
-     
+  if (Jz) then
+     ALLOCATE(Jdensz(1:nrz,1:Ncx_d,1:NKYZ))
+     write(*,*)'shape Jdensz',shape(Jdensz)
+     Jdensz=0.0_dp
+  end if
+       
   ALLOCATE(cur(1:Nsub,1:Nop,1:Ncx_d-1,1:NKYZ))
   ALLOCATE(ldos(1:Nsub,1:Nop,1:Ncx_d,1:NKYZ))
   ALLOCATE(zdos(1:Nsub,1:Nop,1:Ncx_d,1:NKYZ))
@@ -474,9 +480,9 @@ end do  ! end of loop over kyz
   ALLOCATE(pdos(1:Nsub,1:Nop,1:Ncx_d,1:NKYZ))
   ALLOCATE(trans(1:Nsub,1:Nop,4,1:NKYZ))
   if(phonons)allocate(R_in(1:Nsub,1:Nop,1:Ncx_d,1:NKYZ),R_out(1:Nsub,1:Nop,1:Ncx_d,1:NKYZ))
-
+  
   ! ==========  Start of parallel resolution ===========================
-  !write(*,*) 'starting the parallel loop'
+  write(*,*) 'starting the parallel loop'
   
   call omp_set_num_threads(min(Nomp,Nop)) !!! this sets the environment variable OMP_NUM_THREADS 
 
@@ -876,11 +882,11 @@ end if ! endif phonons
 do iyz=1,NKYZ !loop over kyz
    if(k_selec(iyz))then
    !$omp parallel default(none) &
-   !$omp private(nee,xx,i,j,iy,iz,EN,tr,tre,tmp,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,A,B,C) &
-   !$omp shared(scba_iter,ee,iyz,Nop,ncx_d,nkyz,nmax,nm,nrx,nrz,nsolv,imat,emin,emin_local,Eop,mus,mud,hi,si,&
+   !$omp private(nee,xx,i,j,ix,iy,iz,EN,tr,tre,tmp,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,A,B,C) &
+   !$omp shared(scba_iter,ee,iyz,Nop,ncx_d,nkyz,nmax,nm,nrz,nsolv,imat,emin,emin_local,Eop,mus,mud,hi,si,&
    !$omp AJ,BJ,CJ,sigma_lesser_ph_prev,sigma_greater_ph_prev,subband, &
-   !$omp cur,ldos,ndos,pdos,zdos,chtype,neutr,degeneracy,w,temp,con,cone,conb,trans,dosn,dosp, psipsi, &
-   !$omp flag,phonons,R_in,R_out)
+   !$omp cur,ldos,ndos,pdos,zdos,chtype,neutr,degeneracy,w,temp,con,cone,conb,trans,dosn,dosp, psipsi, Jz, dzpsipsi, &
+   !$omp flag,phonons,R_in,R_out, Jdensz)
 
   ALLOCATE(g_lesser_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
   ALLOCATE(g_greater_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
@@ -909,20 +915,31 @@ do iyz=1,NKYZ !loop over kyz
              g_lesser_diag_local(1:NMAX,1:NMAX,1:Ncx_d),g_greater_diag_local(1:NMAX,1:NMAX,1:Ncx_d),g_r_diag_local(1:NMAX,1:NMAX,1:Ncx_d),&
              tr,tre,cur(ee,nee,1:Ncx_d-1,iyz))
      end if
-     
+
      do xx=1,ncx_d
-        allocate(C(NM(xx),NM(xx)), B(NM(xx),NM(xx)))
+        allocate( C(NM(xx),NM(xx)), B(NM(xx),NM(xx)) )
         B(1:NM(xx),1:NM(xx)) = psipsi(iyz,imat(xx))%H(1:NM(xx),1:NM(xx))
         
         C=g_r_diag_local(1:NM(xx),1:NM(xx),xx)
         ldos(ee,nee,xx,iyz)=-sum(dimag(C*B)) !!-traccia(dimag(C))
 
-        C=g_lesser_diag_local(1:NM(xx),1:NM(xx),xx)
-        ndos(ee,nee,xx,iyz)= sum(dimag(C*B)) !!traccia(dimag(C))
-
         C=g_greater_diag_local(1:NM(xx),1:NM(xx),xx)      
         pdos(ee,nee,xx,iyz)=-sum(dimag(C*B)) !!-traccia(dimag(C))
 
+        C=g_lesser_diag_local(1:NM(xx),1:NM(xx),xx)
+        ndos(ee,nee,xx,iyz)= sum(dimag(C*B)) !!traccia(dimag(C))
+        
+        if ( Jz ) then
+           do iz=1,nrz
+              do i=1,nm(xx)
+                 do j=1,nm(xx)
+                    Jdensz(iz,xx,iyz) = Jdensz(iz,xx,iyz) + &
+                         degeneracy(iyz)*w(ee)* dble( C(i,j) * dzpsipsi(iyz,imat(xx))%H(iz,i+(j-1)*NM(xx)) )
+                 end do
+              end do
+           end do
+        end if
+     
         zdos(ee,nee,xx,iyz)= 2.0_dp*ldos(ee,nee,xx,iyz) - pdos(ee,nee,xx,iyz) - ndos(ee,nee,xx,iyz)        
         deallocate(C,B)
      end do
@@ -977,7 +994,8 @@ do iyz=1,NKYZ !loop over kyz
      con(iyz) = con(iyz)  + degeneracy(iyz)*w(ee)*(tr)
   
      cone(iyz)= cone(iyz) + degeneracy(iyz)*w(ee)*(tre)
-     
+
+          
   enddo  ! Nop
   !$omp end do nowait
      
@@ -988,6 +1006,7 @@ do iyz=1,NKYZ !loop over kyz
 
   !$omp end parallel
 
+  
   do nee= 2,Nop-1
      if(flag(nee,iyz)/=0)then
         ldos(ee,nee,1:ncx_d,iyz)=( ldos(ee,nee-1,1:ncx_d,iyz) + ldos(ee,nee+1,1:ncx_d,iyz) )/2.0_dp
@@ -1107,62 +1126,99 @@ if(.not.onlyT)then
   ! t1=SECNDS(0.0)
    
    call omp_set_num_threads(Nomp)
-  !$omp parallel default(none) private(xx,n,i,ii,j,ix,iy,iz,dens_yz,dens_z) &
-  !$omp shared(chtype,iyz,imat,NCX_D,Nrx,Ndeltax,Ndeltay,Ndeltaz,NM,Ny,Nz,ac,Ry,Rz,dosn,dosp, &
-  !$omp U_PSI,DX,DY,DZ,charge_n,charge_p,Nex,NTOT_Y,NTOT_Z,to2_lft,to2_bot,comp_ch)
 
-   allocate(dens_yz(Ndeltay+1,Ndeltaz+1))
 
+   
+  !$omp parallel default(none) private(xx,n,i,j,ii) &
+  !$omp shared(chtype,iyz,imat,NCX_D,Nrx,Ndeltax,Ndeltay,Ndeltaz,NM,dosn,dosp, &
+  !$omp PSI_CHARGE,charge_n,charge_p,to2_lft,to2_bot,comp_ch)
+   
   !$omp do
    do xx=1,NCX_D
-
-      ix=0
       do ii=1,Ndeltax
-         do n=1,Nex(ii)
-            ix=ix+1
-            if((chtype .eq. 'n') .or. (chtype .eq. 't'))then
-               dens_yz=0.0_dp
+         
+         if((chtype .eq. 'n') .or. (chtype .eq. 't'))then
             do i=1,NM(xx)
                do j=1,NM(xx)
-                  dens_yz(1:Ndeltay+1,1:Ndeltaz+1)=dens_yz(1:Ndeltay+1,1:Ndeltaz+1)+&
-                       dimag(dosn(i,j,xx,iyz)*U_psi(iyz,imat(xx))%K(i+(j-1)*NM(xx),1:Ndeltay+1,1:Ndeltaz+1,ix))
+                  charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
+                       charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot ) &
+                       + dimag(dosn(i,j,xx,iyz)*psi_charge(iyz,imat(xx))%K(i+(j-1)*NM(xx),ii,1:Ndeltay+1,1:Ndeltaz+1))
                end do
             end do
-            do i=1,Ndeltay+1
-               do j=1,Ndeltaz+1
-                  if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
-               end do
-            end do
-            charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
-            charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
-            dens_yz(1:Ndeltay+1,1:Ndeltaz+1)/dble(Nex(ii))
          end if
+         
          if((chtype .eq. 'p') .or. (chtype .eq. 't'))then
-            dens_yz=0.0_dp
             do i=1,NM(xx)
                do j=1,NM(xx)
-                  dens_yz(1:Ndeltay+1,1:Ndeltaz+1)=dens_yz(1:Ndeltay+1,1:Ndeltaz+1)-&
-                       dimag(dosp(i,j,xx,iyz)*U_psi(iyz,imat(xx))%K(i+(j-1)*NM(xx),1:Ndeltay+1,1:Ndeltaz+1,ix))
+                  charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
+                       charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )  &
+                       - dimag(dosp(i,j,xx,iyz)*psi_charge(iyz,imat(xx))%K(i+(j-1)*NM(xx),ii,1:Ndeltay+1,1:Ndeltaz+1))
                end do
             end do
-            do i=1,Ndeltay+1
-               do j=1,Ndeltaz+1
-                  if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
-               end do
-            end do
-            charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
-            charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
-            dens_yz(1:Ndeltay+1,1:Ndeltaz+1)/dble(Nex(ii))
          end if
+            
       end do
    end do
-      
-   end do
    !$omp end do nowait
-   
-   deallocate(dens_yz)
-   
    !$omp end parallel
+
+   
+   
+!!$  !$omp parallel default(none) private(xx,n,i,ii,j,ix,iy,iz,dens_yz,dens_z) &
+!!$  !$omp shared(chtype,iyz,imat,NCX_D,Nrx,Ndeltax,Ndeltay,Ndeltaz,NM,Ny,Nz,ac,Ry,Rz,dosn,dosp, &
+!!$  !$omp U_PSI,DX,DY,DZ,charge_n,charge_p,Nex,NTOT_Y,NTOT_Z,to2_lft,to2_bot,comp_ch)
+!!$
+!!$   allocate(dens_yz(Ndeltay+1,Ndeltaz+1))
+!!$
+!!$  !$omp do
+!!$   do xx=1,NCX_D
+!!$
+!!$      ix=0
+!!$      do ii=1,Ndeltax
+!!$         do n=1,Nex(ii)
+!!$            ix=ix+1
+!!$            if((chtype .eq. 'n') .or. (chtype .eq. 't'))then
+!!$               dens_yz=0.0_dp
+!!$            do i=1,NM(xx)
+!!$               do j=1,NM(xx)
+!!$                  dens_yz(1:Ndeltay+1,1:Ndeltaz+1)=dens_yz(1:Ndeltay+1,1:Ndeltaz+1)+&
+!!$                       dimag(dosn(i,j,xx,iyz)*U_psi(iyz,imat(xx))%K(i+(j-1)*NM(xx),1:Ndeltay+1,1:Ndeltaz+1,ix))
+!!$               end do
+!!$            end do
+!!$            do i=1,Ndeltay+1
+!!$               do j=1,Ndeltaz+1
+!!$                  if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
+!!$               end do
+!!$            end do
+!!$            charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
+!!$            charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
+!!$            dens_yz(1:Ndeltay+1,1:Ndeltaz+1)/dble(Nex(ii))
+!!$         end if
+!!$         if((chtype .eq. 'p') .or. (chtype .eq. 't'))then
+!!$            dens_yz=0.0_dp
+!!$            do i=1,NM(xx)
+!!$               do j=1,NM(xx)
+!!$                  dens_yz(1:Ndeltay+1,1:Ndeltaz+1)=dens_yz(1:Ndeltay+1,1:Ndeltaz+1)-&
+!!$                       dimag(dosp(i,j,xx,iyz)*U_psi(iyz,imat(xx))%K(i+(j-1)*NM(xx),1:Ndeltay+1,1:Ndeltaz+1,ix))
+!!$               end do
+!!$            end do
+!!$            do i=1,Ndeltay+1
+!!$               do j=1,Ndeltaz+1
+!!$                  if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
+!!$               end do
+!!$            end do
+!!$            charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
+!!$            charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
+!!$            dens_yz(1:Ndeltay+1,1:Ndeltaz+1)/dble(Nex(ii))
+!!$         end if
+!!$      end do
+!!$   end do
+!!$      
+!!$   end do
+!!$   !$omp end do nowait
+!!$   
+!!$   deallocate(dens_yz)
+!!$   !$omp end parallel
    
 end if
 
@@ -1174,6 +1230,9 @@ if(phonons)then
    OPEN(UNIT=20,FILE=TRIM(outdir)//'scat_ndens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=30,FILE=TRIM(outdir)//'scat_LDOS_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=40,FILE=TRIM(outdir)//'scat_Jdens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   !OPEN(UNIT=47,FILE=TRIM(outdir)//'scat_Jdensx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   if(Jz)  OPEN(UNIT=48,FILE=TRIM(outdir)//'scat_Jz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   if(Jz)  OPEN(UNIT=49,FILE=TRIM(outdir)//'scat_Jdensz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=50,FILE=TRIM(outdir)//'scat_Jspectrum_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=41,FILE=TRIM(outdir)//'scat_Jx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=42,FILE=TRIM(outdir)//'scat_Junbalance_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
@@ -1185,6 +1244,9 @@ else
    OPEN(UNIT=20,FILE=TRIM(outdir)//'bal_ndens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=30,FILE=TRIM(outdir)//'bal_LDOS_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=40,FILE=TRIM(outdir)//'bal_Jdens_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   !OPEN(UNIT=47,FILE=TRIM(outdir)//'bal_Jdensx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   if(Jz) OPEN(UNIT=48,FILE=TRIM(outdir)//'bal_Jz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
+   if(Jz) OPEN(UNIT=49,FILE=TRIM(outdir)//'bal_Jdensz_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=41,FILE=TRIM(outdir)//'bal_Jx_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
    OPEN(UNIT=50,FILE=TRIM(outdir)//'bal_Jspectrum_convergence_vd_'//TRIM(STRINGA(ss))//'_vg_'//TRIM(STRINGA(gg))//'.dat',STATUS='replace')
 end if
@@ -1299,10 +1361,41 @@ do xx=1,ncx_d-1
    end do
    write(41,*)(xx-1)*ac1*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
 end do
+
+if (Jz) then
+do iz=1,nrz
+   do xx=1,ncx_d
+      ttr=0.0_dp
+      do iyz=1,NKYZ
+         if(k_selec(iyz))then
+            ttr = ttr + hbareV*hbareV/m0/(2.0*Dz**2) * Jdensz(iz,xx,iyz)
+         end if
+      end do
+      write(49,*)(xx-1)*ac1*1.0d7,(iz-1)*dz*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
+   end do
+   write(49,*)
+end do
+
+do xx=1,ncx_d
+   ttr=0.0_dp
+   do iz=1,nrz
+      do iyz=1,NKYZ
+         if(k_selec(iyz))then
+            ttr = ttr + hbareV*hbareV/m0/(2.0*Dz**2) * Jdensz(iz,xx,iyz)
+         end if
+      end do
+   end do
+   write(48,*)(xx-1)*ac1*1.0d7,ttr/dble(NCY*NCZ)/(hbar*2.0_dp*pi)*ELCH**2
+end do
+end if
+
 close(10)
 close(20)
 close(30)
 close(40)
+!close(47)
+if(Jz)close(48)
+if(Jz)close(49)
 close(50)
 close(41)
 close(42)
@@ -1313,6 +1406,7 @@ deallocate(ldos)
 deallocate(zdos)
 deallocate(ndos)
 deallocate(pdos)
+if(Jz)deallocate(Jdensz)
 deallocate(cur)
 deallocate(dosn)
 deallocate(dosp)
@@ -1464,7 +1558,7 @@ if(ff == 0)then
    allocate( sig(nmax,nmax), sigmal(nmax,nmax), sigmar(nmax,nmax) ) !, sigma_r_ph(nmax,nmax) )
    allocate( H00(nmax,nmax), H10(nmax,nmax), A(nmax,nmax), B(nmax,nmax), C(nmax,nmax), Id(nmax,nmax) )
    
-  z=dcmplx(E,0.0d-6)
+  z=dcmplx(E,0.0d-3)
 
   Gln=0.0_dp
   Glp=0.0_dp
