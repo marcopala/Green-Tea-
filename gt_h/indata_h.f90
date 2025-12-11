@@ -219,7 +219,6 @@ deallocate(work)
 deallocate(rwork)
 deallocate(supp)
 deallocate(iwork)
-!write(*,*)'info=',info
 if (INFO.ne.0)then
    write(*,*)'SEVERE WARNING: SUB_DEF HAS FAILED. INFO=',INFO
    stop

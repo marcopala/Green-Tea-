@@ -255,13 +255,13 @@ write(*,*)'a0/Dz',a0/Dz,'Dz',Dz
     
 
 do iyz=1,Nkyz  ! Loops over the transverse k vectors
-if(k_selec(iyz))then
+!if(k_selec(iyz))then
    write(*,*)'ikyz',iyz
    ky(iyz-((iyz-1)/nky))=k_vec(2,iyz)
    write(*,*)'iky',iyz-((iyz-1)/nky),ky(iyz-((iyz-1)/nky))    !!!! iyz = iy + (iz-1)*nky
    kz(1+((iyz-1)/nky))=k_vec(3,iyz)
    write(*,*)'ikz',1+((iyz-1)/nky),kz(1+((iyz-1)/nky)) !!!! iyz = iy + (iz-1)*nky
-end if
+!end if
 end do
 
 
@@ -459,7 +459,7 @@ if(num_het > 0)then
 end if
    
 
-n=60
+n=120
 allocate(bb_ev(n+1),bb_ec(n+1))
 
 do im=1,num_mat
@@ -1226,7 +1226,7 @@ if (.not. dfpt) then
                   C=0.0_dp
                   ip=1 !!! no polarization is assumed
                                     
-                  call omp_set_num_threads(Nrx)
+                  call omp_set_num_threads(Nomp_PP)
                   !$omp parallel default(none) private(ix,n,m) &
                   !$omp shared(nrx,nm,ngt,im,nband_val,ip,jj,iyz,jx,nn,ind_kx,PSIBB,C)
                   
@@ -1299,7 +1299,10 @@ forall(j=1:nkz, i=1:nky) deg_kyz(i+(j-1)*nky)=deg_ky(i)*deg_kz(j)
 
 do j=1,nkz
    do i=1,nky
-      write(*,*)'deg_kyz',i+(j-1)*nky,deg_kyz(i+(j-1)*nky)
+      iyz=i+(j-1)*nky
+      if(k_selec(iyz))then
+         write(*,*)'deg_kyz',i+(j-1)*nky,deg_kyz(iyz)
+      end if
    end do
 end do
 

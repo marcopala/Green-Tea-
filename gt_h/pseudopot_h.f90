@@ -734,14 +734,15 @@ write(*,*)
 allocate(Si(NM,NM))
 call ZGEMM('c','n',NM,NM,Nrx*Ngt*npol,alpha,PSI_MOD,Nrx*Ngt*npol,PSI_MOD,Nrx*Ngt*npol,beta,Si,NM)
 
-!do i=1,nm
-!   do j=1,nm
+open(unit=1113,file='overlap_nkyz_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
+do i=1,nm
+   do j=1,nm
 !      write(1112,*)i,j,(Si(i,j))
-!      write(1113,*)i,j,abs(Si(i,j))
-!   end do
+      write(1113,*)i,j,abs(Si(i,j))
+   end do
 !   write(1112,*)
-!   write(1113,*)
-!end do
+   write(1113,*)
+end do
 
 if(.not. refine)then
    
@@ -1130,6 +1131,14 @@ end if
 
 ic=1
 
+open(unit=13,file=TRIM(outdir)//'SSi_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(imat))//'.dat',status='unknown')
+do i=1,nm
+   do j=1,nm
+      write(13,'(2e25.15)')Si(i,j)
+   end do
+end do
+close(13)
+
 open(unit=13,file=TRIM(outdir)//'HH00_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(imat))//'.dat',status='unknown')
 if(.not. refine)then
    do i=1,nm
@@ -1231,7 +1240,7 @@ allocate(E(M))
 allocate(A(NM,NM))
 do ikx=1,n+1
    A=HLLL+TLLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
-        transpose(conjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+        transpose(dconjg(TLLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
    call SUB_DEF_Z0_GEN(1,M,NM,A,Si,E)  !!!!! call SUB_DEF_Z0(1,M,NM,A,E)
    do k=1,M
       hkl(ikx,k)=e(k)
@@ -1288,7 +1297,7 @@ end if
 allocate(kx2(nnn))
 if(nnn==2)kx2=(/ 0.0, 0.5/)
 if(nnn==4)kx2=(/-0.25, 0.0, 0.25, 0.5/)
-if(nnn==6)kx1=(/-1.0_dp/3.0_dp, -1.0_dp/6.0_dp, 0.0_dp, 1.0_dp/6.0_dp,  1.0_dp/3.0_dp, 0.5_dp/)
+if(nnn==6)kx2=(/-1.0_dp/3.0_dp, -1.0_dp/6.0_dp, 0.0_dp, 1.0_dp/6.0_dp,  1.0_dp/3.0_dp, 0.5_dp/)
 if(nnn==8)kx2=(/-0.375, -0.25, -0.125, 0.0, 0.125, 0.25, 0.375, 0.5/)
 nplus=mplus
 nn=nplus*nnn
@@ -1426,21 +1435,12 @@ if(nkx_add > 0)then
 end if
 
 
-
-do i=1,NModes
-   do j=1,NModes
-      write(700+iyz,*)i,j,abs(Si(i,j))
-   end do
-   write(700+iyz,*)
-end do
-close(700+iyz)
-
 allocate(inds(NModes))
 
 do i=1,nmodes
    do ikx=1,Nkx
       do n=1,N_bands
-         if(in_kx(i)==k_vec(1,ikx+(iyz-1)*nkx) .and. ind_bnd(i) == n)then 
+         if(abs(in_kx(i) - k_vec(1,ikx+(iyz-1)*nkx)) < 1.0d-6 .and. ind_bnd(i) == n)then 
             inds(i)=n+(ikx-1)*N_bands
          end if
       end do
@@ -1452,9 +1452,18 @@ do i=1,nmodes
       end if
    end do
    
-      write(*,*)'inds',i,inds(i)
+   write(*,*)'inds',i,inds(i)
 end do
 
+
+
+do i=1,NModes
+   do j=1,NModes
+      write(700+iyz,*)i,j,abs(Si(i,j))
+   end do
+   write(700+iyz,*)
+end do
+close(700+iyz)
 
 
 !allocate(inds(NModes))
@@ -1524,15 +1533,22 @@ end do
          if(is==2)open(unit=13,file=TRIM(outdir)//'Psi_Bloch_dw_nkyz_'//TRIM(STRINGA(iyz))//'_nmat_'//TRIM(STRINGA(imat))//'.dat',status='unknown')
       end if
       do j=1,NModes
-         do i=1,Nrx*Ngt*npol
-            write(13,'(2e25.15)')PSI_MOD(i,inds(j))
+!         do i=1,Nrx*Ngt*npol
+do jp=1,npol
+   do jgt=1,Ngt
+      do ix=1,nrx
+            write(13,'(2e25.15)')PSI_MOD(ix+(jgt-1)*nrx+(jp-1)*nrx*ngt,inds(j))
          end do
       end do
+   end do
+end do
       do j=1,NModes
          write(13,*)j,in_kx(j),ind_bnd(j)
       end do
       close(13)
-      
+
+
+
       !ic=1
       !if( nspin == 1 )then
       !   open(unit=13,file='Bloch_nkyz_'//TRIM(STRINGA(iyz))//'_ncell_'//TRIM(STRINGA(imat))//'.dat',status='unknown')
@@ -1551,17 +1567,23 @@ end do
 !   deallocate(A)
    deallocate(C)
    deallocate(ind_bnd,in_kx)
-   
-allocate(C(NModes,NModes))
-call ZGEMM('c','n',NModes,NModes,nrx*ngt*npol,alpha,psi_mod,nrx*ngt*npol,psi_mod,nrx*ngt*npol,beta,C,NModes)
-do i=1,NModes
-   do j=1,NModes
-      write(710+iyz,*)i,j,abs(c(i,j))
-   end do
-   write(710+iyz,*)
-end do
-close(710+iyz)
-deallocate(c)
+  
+
+!allocate(C(nrx*ngt*npol,nmodes))
+!do i=1,NModes
+!   C(1:nrx*ngt*npol,i)=psi_mod(1:nrx*ngt*npol,inds(i))
+!end do
+!allocate(a(NModes,NModes))
+!call ZGEMM('c','n',NModes,NModes,nrx*ngt*npol,alpha,c,nrx*ngt*npol,c,nrx*ngt*npol,beta,a,NModes)
+!do i=1,NModes
+!   do j=1,NModes
+!      write(760+iyz,*)i,j,abs(a(i,j))
+!   end do
+!   write(760+iyz,*)
+!end do
+!close(760+iyz)
+!deallocate(c,a)
+
 
 allocate(HLL(mmm,mmm),TLL(mmm,mmm))
 allocate(A(NM,mmm))
@@ -1574,16 +1596,17 @@ deallocate(kx1)
 if(allocated(kx2))deallocate(kx2)
 
 
-n=40
-allocate(hkl(n+1,mmm))
-allocate(E(mmm))
+n=60
+M=min(nband_v+10,mmm)
+allocate(hkl(n+1,M))
+allocate(E(M))
 allocate(A(mmm,mmm))
 
 do ikx=1,n+1
    A=HLL+TLL*exp(cmplx(0.0_dp,1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)+&
-        transpose(conjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
-   call SUB_DEF_Z0_GEN(1,mmm,mmm,A,Si,E) !!!call SUB_DEF_Z0(1,mmm,mmm,A,E)
-   do k=1,mmm
+        transpose(dconjg(TLL))*exp(cmplx(0.0_dp,-1.0_dp)*dble(ikx-1-n/2)/dble(n)*2.0_dp*pi)
+   call SUB_DEF_Z0_GEN(1,M,mmm,A,Si,E) !!!call SUB_DEF_Z0(1,mmm,mmm,A,E)
+   do k=1,M
       hkl(ikx,k)=e(k)
    end do
 end do
@@ -1591,7 +1614,7 @@ deallocate(A)
 deallocate(E)
 
 
-do k=1,mmm
+do k=1,M
    if( nspin == 1 )then
       open(unit=300,file=TRIM(outdir)//'Edisp_'//TRIM(STRINGA(k))//'_'//TRIM(STRINGA(iyz))//'.dat',status='unknown')
    else
@@ -1611,13 +1634,6 @@ NM=mmm
 NMODES=NM
 write(*,*)'NUMBER OF BLOCH STATES=',NMODES
 
-do i=1,NModes
-   do j=1,NModes
-      write(720+iyz,*)i,j,abs(Si(i,j))
-   end do
-   write(720+iyz,*)
-end do
-close(720+iyz)
 
 !if(ncell==1)then
 if( nspin == 1 )then

@@ -426,7 +426,7 @@ CONTAINS
     Dop_g=0.0_dp
     Nop_g=1
     Dac=0.0_dp
-    Nsub=3
+    Nsub=1
     seuil=1.0d1
     SCBA_alpha=1.0_dp
     SCBA_max_iter=50
@@ -1209,6 +1209,12 @@ END SUBROUTINE indata_CONNECTIVITY
 
  potA=0.0_dp
  
+call omp_set_num_threads(Nomp) !!! this sets the environment variable
+!$omp parallel default(none) &
+!$omp private(ii,x_index,y_index,z_index) &
+!$omp shared (nx,ny,nz,which,potelectr,potelectr11,potelectr12,num_add_gate,gate_pot,map,potB,potA)
+!
+!$omp do
  DO ii=0, nx*ny*nz-1
 
  x_index=ii/(ny*nz) +1
@@ -1229,13 +1235,16 @@ END SUBROUTINE indata_CONNECTIVITY
     potA(x_index,y_index,z_index)=potB(map(ii))
  END IF
  
+ END DO
+!$omp end do nowait
+!
+ !$omp end parallel
+ 
 !!!! IMPOSE NEUMANN conditions for the potential seen by the GREEN module
   pota(1:NX,1,1:NZ)  = pota(1:NX,2,1:NZ)
   pota(1:NX,NY,1:NZ) = pota(1:NX,NY-1,1:NZ)
   pota(1:NX,1:NY,1)  = pota(1:NX,1:NY,2)
   pota(1:NX,1:NY,NZ) = pota(1:NX,1:NY,NZ-1)
-
- END DO
 
  END SUBROUTINE map_potential
 
@@ -1254,6 +1263,12 @@ END SUBROUTINE indata_CONNECTIVITY
 
  rhoA=0.0_dp
  
+ call omp_set_num_threads(Nomp) !!! this sets the environment variable
+!$omp parallel default(none) &
+!$omp private(ii,x_index,y_index,z_index) &
+!$omp shared (nx,ny,nz,map,which,rhoB,rhoA)
+!
+!$omp do
  DO ii=0, nx*ny*nz-1
 
  x_index=ii/(ny*nz) +1
@@ -1265,7 +1280,9 @@ END SUBROUTINE indata_CONNECTIVITY
  END IF
  
  END DO
-
+!$omp end do nowait
+!$omp end parallel
+ 
  END SUBROUTINE inverse_map_charge
 
  SUBROUTINE map_charge(rhoA,rhoB,which,map,nx,ny,nz,lwork)
@@ -1282,17 +1299,25 @@ END SUBROUTINE indata_CONNECTIVITY
 
  rhoA=0.0_dp
 
+ call omp_set_num_threads(Nomp) !!! this sets the environment variable
+!$omp parallel default(none) &
+!$omp private(ii,x_index,y_index,z_index) &
+!$omp shared (nx,ny,nz,map,which,rhoB,rhoA)
+!
+!$omp do
  DO ii=0, nx*ny*nz-1
 
- x_index=ii/(ny*nz) +1
- y_index=mod(mod(ii,ny*nz),ny) +1
- z_index=mod(ii,ny*nz)/ny +1
+ x_index=ii/(ny*nz) + 1
+ y_index=mod(mod(ii,ny*nz),ny) + 1
+ z_index=mod(ii,ny*nz)/ny + 1
  
  IF(which(ii).le.0)THEN
     rhoA(map(ii))=rhoB(x_index,y_index,z_index)
  END IF
  
  END DO
+!$omp end do nowait
+!$omp end parallel
 
  END SUBROUTINE map_charge
 
@@ -1317,14 +1342,29 @@ END SUBROUTINE indata_CONNECTIVITY
  INTEGER                :: ll, nn, ii
  INTEGER                :: checked(0:lwork-1)
 
+ call omp_set_num_threads(Nomp) !!! this sets the environment variable
+ 
  checked=0
 
+!$omp parallel default(none) &
+!$omp private(ii) &
+!$omp shared (nx,ny,nz,econd,map,which,potB,potA)
+!
+!$omp do
  DO ii=0, nx*ny*nz-1
     IF(which(ii).le.0)THEN
        potA(map(ii))=potB(map(ii))+econd 
     endif
  enddo
+!$omp end do nowait
+!$omp end parallel
 
+ 
+!$omp parallel default(none) &
+!$omp private(ll,nn) &
+!$omp shared (numel,DIEL_OX,DIEL_O2,epsilon3D,which_ord,list_ord,checked,shift,potA)
+!
+!$omp do
  DO ll=0, numel-1
     
     IF((epsilon3D(ll).eq.DIEL_0*DIEL_OX).or.(epsilon3D(ll).eq.DIEL_0*DIEL_O2))THEN
@@ -1342,6 +1382,8 @@ END SUBROUTINE indata_CONNECTIVITY
        END DO
     END IF
  END DO
+!$omp end do nowait
+!$omp end parallel
  
 END SUBROUTINE shift_potential
 

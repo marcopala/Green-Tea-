@@ -266,8 +266,8 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   CALL shift_potential(EV_3D,-POT_3D,-3.0d0,0.0d0,whichkind_3D,map_3D,list_3D_ord,&
        whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
 
-  write(*,*)'e_gap',E_GAP
-  write(*,*)'diel_sc',diel_sc
+!!$  write(*,*)'e_gap',E_GAP
+!!$  write(*,*)'diel_sc',diel_sc
 
   CALL map_potential(pot3D,-POT_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
 
@@ -336,61 +336,61 @@ if(.not. no_SC)then
 
 
      
-     CALL map_potential(plotpot,EC_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='ec_y.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='ec_x.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
-
-     CALL map_potential(plotpot,EV_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='ev_y.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='ev_x.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
-     CALL map_potential(plotpot,POT_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='potpoisson_y.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='potpoisson_x.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
+!!$     CALL map_potential(plotpot,EC_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='ec_y.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='ec_x.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
+!!$
+!!$     CALL map_potential(plotpot,EV_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='ev_y.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='ev_x.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
+!!$     CALL map_potential(plotpot,POT_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='potpoisson_y.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='potpoisson_x.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
 
 
      write(*,*)'IMREF CALCULATION...'
@@ -399,140 +399,137 @@ if(.not. no_SC)then
      write(*,*)'...IMREF DONE'
 
      
-     CALL map_potential(plotpot,Fn,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='fn_y.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='fn_x.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
+!!$     CALL map_potential(plotpot,Fn,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='fn_y.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='fn_x.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
+!!$     
+!!$     CALL map_potential(plotpot,Fp,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='fp_y.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='fp_x.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
+!!$     
+!!$     CALL map_potential(plotpot,dop_vec,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='dop_y.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='dop_x.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
+!!$     
+!!$     CALL map_potential(plotpot,rho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='rho_n.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='rho_n.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
+!!$     CALL map_potential(plotpot,rho_3D_p,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='rho_p.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='rho_p.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
      
-     CALL map_potential(plotpot,Fp,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='fp_y.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='fp_x.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
+!!$     CALL map_potential(plotpot,drho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='drho_n.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='drho_n.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
+!!$     CALL map_potential(plotpot,drho_3D_p,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$     OPEN(UNIT=22,FILE='drho_p.dat',STATUS='UNKNOWN')
+!!$     OPEN(UNIT=23,FILE='drho_p.dat',STATUS='UNKNOWN')
+!!$     DO ii=1, NTOT_X
+!!$        DO jj=1, NTOT_Z
+!!$           write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$        END DO
+!!$        write(22,*)
+!!$     END DO
+!!$     DO ii=1, NTOT_Y
+!!$        DO jj=1, NTOT_Z
+!!$           write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$        END DO
+!!$        write(23,*)
+!!$     END DO
+!!$     CLOSE(22)
+!!$     CLOSE(23)
      
-     CALL map_potential(plotpot,dop_vec,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='dop_y.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='dop_x.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
-     
-     CALL map_potential(plotpot,rho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='rho_n.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='rho_n.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
-     CALL map_potential(plotpot,rho_3D_p,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='rho_p.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='rho_p.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
-
-     
-     CALL map_potential(plotpot,drho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='drho_n.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='drho_n.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
-     CALL map_potential(plotpot,drho_3D_p,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-     OPEN(UNIT=22,FILE='drho_p.dat',STATUS='UNKNOWN')
-     OPEN(UNIT=23,FILE='drho_p.dat',STATUS='UNKNOWN')
-     DO ii=1, NTOT_X
-        DO jj=1, NTOT_Z
-           write(22,*)plotpot(ii,NTOT_Y/2,jj)
-        END DO
-        write(22,*)
-     END DO
-     DO ii=1, NTOT_Y
-        DO jj=1, NTOT_Z
-           write(23,*)plotpot(NTOT_X/2,ii,jj)
-        END DO
-        write(23,*)
-     END DO
-     CLOSE(22)
-     CLOSE(23)
-     
-
-
   
   CALL poisson_nonlin_selfconsistent(POT_3D,EC_3D,EV_3D,rho_3D_n,drho_3D_n,Fn,rho_3D_p,drho_3D_p,Fp,dop_vec,coul,LWORK_3D,nnz_3D)
 
@@ -558,41 +555,41 @@ endif
   write(23,*) 'Iter=', transport_iter, 'Err=', transport_error
   close(23)
   
-  CALL map_potential(plotpot,rho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-
-  OPEN(UNIT=22,FILE='chargepoisson_y.dat',STATUS='UNKNOWN')
-  OPEN(UNIT=23,FILE='chargepoisson_x.dat',STATUS='UNKNOWN')
-  DO ii=1, NTOT_X
-     DO jj=1, NTOT_Z
-        write(22,*)plotpot(ii,NTOT_Y/2,jj)
-     END DO
-     write(22,*)
-  END DO
-  DO ii=1, NTOT_Y
-     DO jj=1, NTOT_Z
-        write(23,*)plotpot(NTOT_X/2,ii,jj)
-     END DO
-     write(23,*)
-  END DO
-  CLOSE(22)
-  CLOSE(23)
-  CALL map_potential(plotpot,rho_3D_p,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
-  OPEN(UNIT=22,FILE='chargepoissop_y.dat',STATUS='UNKNOWN')
-  OPEN(UNIT=23,FILE='chargepoissop_x.dat',STATUS='UNKNOWN')
-  DO ii=1, NTOT_X
-     DO jj=1, NTOT_Z
-        write(22,*)plotpot(ii,NTOT_Y/2,jj)
-     END DO
-     write(22,*)
-  END DO
-  DO ii=1, NTOT_Y
-     DO jj=1, NTOT_Z
-        write(23,*)plotpot(NTOT_X/2,ii,jj)
-     END DO
-     write(23,*)
-  END DO
-  CLOSE(22)
-  CLOSE(23)
+!!$  CALL map_potential(plotpot,rho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$
+!!$  OPEN(UNIT=22,FILE='chargepoisson_y.dat',STATUS='UNKNOWN')
+!!$  OPEN(UNIT=23,FILE='chargepoisson_x.dat',STATUS='UNKNOWN')
+!!$  DO ii=1, NTOT_X
+!!$     DO jj=1, NTOT_Z
+!!$        write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$     END DO
+!!$     write(22,*)
+!!$  END DO
+!!$  DO ii=1, NTOT_Y
+!!$     DO jj=1, NTOT_Z
+!!$        write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$     END DO
+!!$     write(23,*)
+!!$  END DO
+!!$  CLOSE(22)
+!!$  CLOSE(23)
+!!$  CALL map_potential(plotpot,rho_3D_p,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+!!$  OPEN(UNIT=22,FILE='chargepoissop_y.dat',STATUS='UNKNOWN')
+!!$  OPEN(UNIT=23,FILE='chargepoissop_x.dat',STATUS='UNKNOWN')
+!!$  DO ii=1, NTOT_X
+!!$     DO jj=1, NTOT_Z
+!!$        write(22,*)plotpot(ii,NTOT_Y/2,jj)
+!!$     END DO
+!!$     write(22,*)
+!!$  END DO
+!!$  DO ii=1, NTOT_Y
+!!$     DO jj=1, NTOT_Z
+!!$        write(23,*)plotpot(NTOT_X/2,ii,jj)
+!!$     END DO
+!!$     write(23,*)
+!!$  END DO
+!!$  CLOSE(22)
+!!$  CLOSE(23)
 
 open(10,file='Last_Potential-vd'//TRIM(STRINGA(ss))//'-vg'//TRIM(STRINGA(gg))//'.dat',status='replace')
 do ii=0,LWORK_3D-1
