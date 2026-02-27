@@ -61,5 +61,136 @@ module static
   complex(dp), parameter :: beta=dcmplx(0.0_dp,0.0_dp)
   complex(dp), parameter :: im=dcmplx(0.0_dp,1.0_dp)
 
+  interface
+     subroutine zhegvx(itype, jobz, range, uplo, n, a, lda, b, ldb, vl, vu, il, iu, &
+          abstol, m, w, z, ldz, work, lwork, rwork, iwork, ifail, info)
+       import :: dp
+       integer, intent(in) :: itype, n, lda, ldb, il, iu, ldz, lwork
+       character(len=1), intent(in) :: jobz, range, uplo
+       real(dp), intent(in) :: vl, vu, abstol
+       integer, intent(out) :: m, ifail(*), info
+       real(dp), intent(out) :: w(*)
+       complex(dp), intent(inout) :: a(lda, *), b(ldb, *)
+       complex(dp), intent(out)   :: z(ldz, *)
+       complex(dp), intent(inout) :: work(*)
+       real(dp), intent(inout)    :: rwork(*)
+       integer, intent(inout) :: iwork(*)
+     end subroutine zhegvx
+ 
+     subroutine dgetrf(m, n, a, lda, ipiv, info)
+       import :: dp
+       integer, intent(in) :: m, n, lda
+       integer, intent(out) :: ipiv(*)
+       integer, intent(out) :: info
+       real(dp), intent(inout) :: a(lda, *)
+     end subroutine dgetrf
+     
+     subroutine dgetri(n, a, lda, ipiv, work, lwork, info)
+      import :: dp
+      integer, intent(in)    :: n, lda, lwork
+      integer, intent(in)    :: ipiv(*)
+      integer, intent(out)   :: info
+      real(dp), intent(inout):: a(lda, *)
+      real(dp), intent(inout):: work(*)
+    end subroutine dgetri
+
+     subroutine zheevr(jobz, range, uplo, n, a, lda, vl, vu, il, iu, abstol, &
+          m, w, z, ldz, isuppz, work, lwork, rwork, lrwork, iwork, liwork, info)
+       import :: dp
+       character(len=1), intent(in) :: jobz, range, uplo
+       integer, intent(in) :: n, lda, il, iu, ldz, lwork, lrwork, liwork
+       real(dp), intent(in) :: vl, vu, abstol
+       integer, intent(out) :: m, isuppz(*), iwork(*), info
+       real(dp), intent(out) :: w(*)
+       complex(dp), intent(inout) :: a(lda, *)
+       complex(dp), intent(out)   :: z(ldz, *)
+       complex(dp), intent(inout) :: work(*)
+       real(dp), intent(inout)    :: rwork(*)
+     end subroutine zheevr
+
+     subroutine zgemm(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)
+       import :: dp
+       character(len=1), intent(in) :: transa, transb
+       integer, intent(in) :: m, n, k, lda, ldb, ldc
+       complex(dp), intent(in) :: alpha, beta
+       complex(dp), intent(in) :: a(lda, *), b(ldb, *)
+       complex(dp), intent(inout) :: c(ldc, *)
+     end subroutine zgemm
+ 
+     subroutine zgetrf(m, n, a, lda, ipiv, info)
+      import :: dp
+       integer, intent(in)  :: m, n, lda
+       integer, intent(out) :: ipiv(*)
+       integer, intent(out) :: info
+       complex(dp), intent(inout) :: a(lda, *)
+     end subroutine zgetrf
+     
+     subroutine zgetri(n, a, lda, ipiv, work, lwork, info)
+      import :: dp
+       integer, intent(in) :: n, lda, lwork
+       integer, intent(in) :: ipiv(*)
+       integer, intent(out) :: info
+       complex(dp), intent(inout) :: a(lda, *)
+       complex(dp), intent(inout) :: work(*)
+     end subroutine zgetri
+     
+     subroutine dgemv(trans, m, n, alpha, a, lda, x, incx, beta, y, incy)
+      import :: dp
+       character(len=1), intent(in) :: trans
+       integer, intent(in) :: m, n, lda, incx, incy
+       real(dp), intent(in) :: alpha, beta
+       real(dp), intent(in) :: a(lda, *), x(*)
+       real(dp), intent(inout) :: y(*)
+     end subroutine dgemv
+     
+
+    subroutine dcg_init(n, x, b, rci_request, ipar, dpar, tmp)
+      import :: dp
+      integer, intent(in) :: n
+      real(dp), intent(inout) :: x(*)
+      real(dp), intent(in)    :: b(*)
+      integer, intent(inout) :: rci_request
+      integer, intent(inout) :: ipar(*)
+      real(dp), intent(inout) :: dpar(*)
+      real(dp), intent(inout) :: tmp(n, *)
+    end subroutine dcg_init
+
+    subroutine dcg_check(n, x, b, rci_request, ipar, dpar, tmp)
+      import :: dp
+      integer, intent(in) :: n
+      real(dp), intent(inout) :: x(*)
+      real(dp), intent(in)    :: b(*)
+      integer, intent(inout) :: rci_request
+      integer, intent(inout) :: ipar(*)
+      real(dp), intent(inout) :: dpar(*)
+      real(dp), intent(inout) :: tmp(n, *)
+    end subroutine dcg_check
+
+    subroutine dcg(n, x, b, rci_request, ipar, dpar, tmp)
+      import :: dp
+      integer, intent(in) :: n
+      real(dp), intent(inout) :: x(*)
+      real(dp), intent(in)    :: b(*)
+      integer, intent(inout) :: rci_request
+      integer, intent(inout) :: ipar(*)
+      real(dp), intent(inout) :: dpar(*)
+      real(dp), intent(inout) :: tmp(n, *)
+    end subroutine dcg
+
+    subroutine dcg_get(n, x, b, rci_request, ipar, dpar, tmp, itercount)
+      import :: dp
+      integer, intent(in) :: n
+      real(dp), intent(inout) :: x(*)
+      real(dp), intent(in)    :: b(*)
+      integer, intent(inout) :: rci_request
+      integer, intent(inout) :: ipar(*)
+      real(dp), intent(inout) :: dpar(*)
+      real(dp), intent(inout) :: tmp(n, *)
+      integer, intent(out) :: itercount
+    end subroutine dcg_get
+
+  end interface
+
+  
 end module static
 

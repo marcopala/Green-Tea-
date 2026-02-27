@@ -98,6 +98,7 @@ SUBROUTINE poisson_nonlin_selfconsistent(pot3D,EC3D,EV3D,outer_rho,outer_drho,Fn
     INTEGER               :: ii,jj,ig,nel,icc,count
     INTEGER               :: prev_plane, next_plane, out_plane
 
+    REAL(DP), ALLOCATABLE :: pot(:)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     write(*,*)'STARTING THE ALLOCATION'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -496,12 +497,15 @@ END DO
   POT3D(:)=inner_potold(:)+POT3D(:)
  
   inner_potold(:)=POT3D(:) 
- 
-  CALL shift_potential(EC3D,-POT3D,3.0_dp,E_GAP,whichkind_3D,map_3D,list_3D_ord,&
+
+  allocate(pot(0:LWORK_3D-1))
+  POT=-POT3D
+  CALL shift_potential(EC3D,POT,3.0_dp,E_GAP,whichkind_3D,map_3D,list_3D_ord,&
        whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
-  CALL shift_potential(EV3D,-POT3D,-3.0_dp,0.0_dp,whichkind_3D,map_3D,list_3D_ord,&
+  POT=-POT3D
+  CALL shift_potential(EV3D,POT,-3.0_dp,0.0_dp,whichkind_3D,map_3D,list_3D_ord,&
        whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
- 
+  deallocate(pot)
  
 END DO !END DO WHILE
 

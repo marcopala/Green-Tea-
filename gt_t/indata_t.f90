@@ -32,9 +32,10 @@
 ! knowledge of the CeCILL license and that you accept its terms.
 
 MODULE indata
-
+  !
   USE static
-
+  use omp_lib
+  !
   IMPLICIT NONE
 
   SAVE
@@ -1205,7 +1206,7 @@ END SUBROUTINE indata_CONNECTIVITY
  INTEGER,  INTENT(IN)  :: ny
  INTEGER,  INTENT(IN)  :: nz
  INTEGER,  INTENT(IN)  :: lwork
- INTEGER               :: ii,ig,x_index,y_index,z_index
+ INTEGER               :: ii,x_index,y_index,z_index
 
  potA=0.0_dp
  
@@ -1436,33 +1437,34 @@ SUBROUTINE invertR(A,n,np)
   INTEGER, DIMENSION(np) :: ipiv
   REAL(DP), dimension(np,np) :: A
   REAL(DP), dimension(np*np) :: work
-  
+
+
   CALL dgetrf(n,n,A,n,ipiv,info)
   CALL dgetri(n,A,n,ipiv,work,np*np,info)
-  
+
 END SUBROUTINE invertR
 
 
 SUBROUTINE SUB_DEF_Z0(Mi,Mf,ny,A,subband)
 
   implicit none
-  integer                  :: ny,mi,mf
+  integer  ,intent(in)     :: ny,mi,mf
   real(dp)                 :: subband(1:(Mf-Mi+1))
   complex(dp)              :: A(1:NY,1:NY),Uii(1:NY,1:Mf-Mi+1)
-  integer                  :: INFO
+  integer                  :: INFO, n
   integer, allocatable     :: iwork(:), supp(:)
   complex(dp), allocatable :: work(:)
   real(dp), allocatable    :: rwork(:)
   REAL(DP), EXTERNAL       :: DLAMCH
 
-
+  
   allocate(WORK(20*ny))
   allocate(RWORK(24*ny))
   allocate(IWORK(10*ny))
   allocate(Supp(2*ny))
-  
-  call ZHEEVR('N','I','U',ny,A,ny,0.0,0.0,mi,mf,2*DLAMCH('S'),&
-       Mf-Mi+1,subband,Uii,ny,SUPP,WORK,20*ny,RWORK,24*ny,IWORK,10*ny,INFO)
+  n=Mf-Mi+1
+  call ZHEEVR('N','I','U',ny,A,ny,0.0d0,0.0d0,mi,mf,2*DLAMCH('S'),&
+       n,subband,Uii,ny,SUPP,WORK,20*ny,RWORK,24*ny,IWORK,10*ny,INFO)
   
   deallocate(work)
   deallocate(rwork)
@@ -1495,10 +1497,11 @@ end function stringa
 
 SUBROUTINE SUB_DEF_Z_GEN(Mi,Mf,ny,A,C,subband,U)
 implicit none
-integer :: ny,mi,mf
+integer,intent(in) :: ny,mi,mf
 real(dp) :: subband(1:(Mf-Mi+1))
-complex(dp) :: A(1:NY,1:NY),B(1:NY,1:NY),C(1:NY,1:NY),U(1:NY,1:(Mf-Mi+1))
-integer :: INFO
+complex(dp) :: A(1:NY,1:NY),B(1:NY,1:NY),C(1:NY,1:NY)
+complex(dp) :: U(1:NY,1:(Mf-Mi+1))
+integer :: INFO,n
 integer, allocatable :: iwork(:),ifail(:)
 complex(dp), allocatable :: work(:)
 real(dp), allocatable :: rwork(:)
@@ -1511,8 +1514,8 @@ allocate(RWORK(7*ny))
 allocate(IWORK(5*ny))
 allocate(ifail(ny))
 
-
-call zhegvx(1,'V','I','U',ny,A,ny,B,ny,0.0,0.0,mi,mf,2*DLAMCH('S'),(Mf-Mi+1),subband,U,ny,WORK,20*ny,RWORK,IWORK,ifail,INFO )
+n=Mf-Mi+1
+call zhegvx(1,'V','I','U',ny,A,ny,B,ny,0.0d0,0.0d0,mi,mf,2*DLAMCH('S'),n,subband,U,ny,WORK,20*ny,RWORK,IWORK,ifail,INFO )
 
 deallocate(ifail)
 deallocate(work)
@@ -1528,10 +1531,10 @@ END SUBROUTINE SUB_DEF_Z_GEN
 
 SUBROUTINE SUB_DEF_Z0_GEN(Mi,Mf,ny,A,C,subband)
 implicit none
-integer :: ny,mi,mf
+integer,intent(in) :: ny,mi,mf
 real(dp) :: subband(1:(Mf-Mi+1))
 complex(dp) :: A(1:NY,1:NY),B(1:NY,1:NY),C(1:NY,1:NY),U(1:NY,1:(Mf-Mi+1))
-integer :: INFO
+integer :: INFO,n
 integer, allocatable :: iwork(:),ifail(:)
 complex(dp), allocatable :: work(:)
 real(dp), allocatable :: rwork(:)
@@ -1544,7 +1547,8 @@ allocate(RWORK(7*ny))
 allocate(IWORK(5*ny))
 allocate(ifail(ny))
 
-CALL ZHEGVX (1,'N','I','U',ny,A,ny,B,ny,0.0,0.0,mi,mf,2*DLAMCH('S'), mf-mi+1, subband,U,ny,work,20*ny,rwork,iwork,ifail,info)
+n=Mf-Mi+1
+CALL ZHEGVX (1,'N','I','U',ny,A,ny,B,ny,0.0d0,0.0d0,mi,mf,2*DLAMCH('S'), n, subband,U,ny,work,20*ny,rwork,iwork,ifail,info)
 
 deallocate(ifail)
 deallocate(work)
@@ -1564,19 +1568,19 @@ implicit none
 integer :: ny,mi,mf
 real(dp) :: subband(1:(Mf-Mi+1))
 complex(dp) :: A(1:NY,1:NY),U(1:NY,1:(Mf-Mi+1))
-integer :: INFO!,LWORK
+integer :: INFO,n
 integer, allocatable :: iwork(:), supp(:)
 complex(dp), allocatable :: work(:)
 real(dp), allocatable :: rwork(:)
 REAL(DP), EXTERNAL :: DLAMCH
-
 
 allocate(WORK(20*ny))
 allocate(RWORK(24*ny))
 allocate(IWORK(10*ny))
 allocate(Supp(2*ny))
 
-call ZHEEVR('V','I','U',ny,A,ny,0.0,0.0,mi,mf,2*DLAMCH('S'),(Mf-Mi+1),subband,U,ny,SUPP,WORK,20*ny,RWORK,24*ny,IWORK,10*ny,INFO)
+n=Mf-Mi+1
+call ZHEEVR('V','I','U',ny,A,ny,0.0d0,0.0d0,mi,mf,2*DLAMCH('S'),n,subband,U,ny,SUPP,WORK,20*ny,RWORK,24*ny,IWORK,10*ny,INFO)
 
 deallocate(work)
 deallocate(rwork)
@@ -1589,6 +1593,39 @@ if (INFO.ne.0)then
 endif     
 
 END SUBROUTINE SUB_DEF_Z
+
+
+SUBROUTINE SUB_DEF_0(Mi,Mf,ny,A,subband)
+
+  implicit none
+  integer,intent(in)     :: ny,mi,mf
+  real(dp)    :: subband(1:(Mf-Mi+1))
+  complex(dp) :: A(1:NY,1:NY),Uii(1:NY,1:Mf-Mi+1)
+  integer     :: INFO,n
+  integer, allocatable     :: iwork(:), supp(:)
+  complex(dp), allocatable :: work(:)
+  real(dp), allocatable    :: rwork(:)
+  REAL(DP), EXTERNAL       :: DLAMCH
+  
+  allocate(WORK(20*ny))
+  allocate(RWORK(24*ny))
+  allocate(IWORK(10*ny))
+  allocate(Supp(2*ny))
+
+  n=Mf-Mi+1
+  call ZHEEVR('N','I','U',ny,A,ny,0.0d0,0.0d0,mi,mf,2*DLAMCH('S'),&
+       n,subband,Uii,ny,SUPP,WORK,20*ny,RWORK,24*ny,IWORK,10*ny,INFO)
+
+  deallocate(work)
+  deallocate(rwork)
+  deallocate(supp)
+  deallocate(iwork)
+  if (INFO.ne.0)then
+     write(*,*)'SEVERE WARNING: SUB_DEF HAS FAILED. INFO=',INFO
+     stop
+  endif
+  
+END SUBROUTINE SUB_DEF_0
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   

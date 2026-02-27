@@ -50,6 +50,7 @@ LOGICAL               :: init, sweepbz
 REAL(DP), ALLOCATABLE :: POT_3D(:)
 REAL(DP), ALLOCATABLE :: EC_3D(:)
 REAL(DP), ALLOCATABLE :: EV_3D(:)
+REAL(DP), ALLOCATABLE :: POT(:)
 REAL(DP), ALLOCATABLE :: outer_pot3D_old(:)
 REAL(DP), ALLOCATABLE :: pot3D(:,:,:)
 REAL(DP), ALLOCATABLE :: plotpot(:,:,:)
@@ -261,11 +262,14 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   rho_p=0.0d0
   drho_3D_p=0.0d0
 
-  CALL shift_potential(EC_3D,-POT_3D, 3.0d0,E_GAP,whichkind_3D,map_3D,list_3D_ord,&
+  allocate(pot(0:LWORK_3D-1))
+  POT=-POT_3D
+  CALL shift_potential(EC_3D,POT, 3.0d0,E_GAP,whichkind_3D,map_3D,list_3D_ord,&
        whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
-  CALL shift_potential(EV_3D,-POT_3D,-3.0d0,0.0d0,whichkind_3D,map_3D,list_3D_ord,&
+  POT=-POT_3D
+  CALL shift_potential(EV_3D,POT,-3.0d0,0.0d0,whichkind_3D,map_3D,list_3D_ord,&
        whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
-
+  deallocate(pot)
 !!$  write(*,*)'e_gap',E_GAP
 !!$  write(*,*)'diel_sc',diel_sc
 

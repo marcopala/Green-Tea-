@@ -48,22 +48,22 @@ implicit none
   
 character(len=80) :: comment
 integer(k15), allocatable :: miller_2D(:,:)
-integer                   :: i,ikx,iyz,jyz,irr,ik,nu,xx,ii,j,l,k,m,n,mm,nn,ll,nrx0,ncell,m1,ix,jx,iy,iz
-integer                   :: nm,nadd,nbnd,ngmax,n2,n3,jgt,igt,ip,im,jj,kk,iq,nksq,i0,i1,j0,j1,k0,k1
+integer                   :: i,ikx,iyz,jyz,irr,nu,xx,ii,j,l,k,m,n,nn,ll,nrx0,ncell,m1,ix,jx,iy,iz
+integer                   :: nm,nadd,nbnd,ngmax,n2,n3,jgt,ip,im,jj,kk,iq,nksq
 
 real(dp)                  :: a_1(3),a_2(3),a_3(3)
 real(dp)                  :: b_1(3),b_2(3),b_3(3)
-real(dp)                  :: vec(3), t0, tx, ty,tz, a0
+real(dp)                  :: vec(3), t0, a0
 real(dp)                  :: Ecutoff,refec,refev,tmp1,tmp2,tmp3
 real(dp),    allocatable  :: E(:), KGt(:,:), Gx(:), bb_ev(:), bb_ec(:), hkl(:,:)
 real(dp),    allocatable  :: xk(:,:), kread(:,:)
 
 complex(dp), allocatable  :: el_ph_mat(:,:,:,:)
-complex(dp), allocatable  :: A(:,:),B(:,:),C(:,:),D(:,:),U(:,:),Uk(:,:)
+complex(dp), allocatable  :: A(:,:),B(:,:),C(:,:),U(:,:),Uk(:,:)
 complex(dp), allocatable  :: HLL(:,:),TLL(:,:),HLLL(:,:),TLLL(:,:) 
 !complex(dp), allocatable  :: dens_z(:,:,:), dens_yz(:,:,:),
 complex(dp), allocatable  :: dens_x(:,:,:,:), dens_xyz(:,:,:,:)
-complex(dp)               :: tmp, zdotc
+complex(dp)               :: zdotc
 
 real(4) :: t1,t2
 
@@ -778,20 +778,20 @@ end do
 end do
 end do
 
-do iy = ndeltay/2, ndeltay/2
-do ix = 1, Ndeltax
-do iz = 1, ndeltaz+1
-   tmp1=0.0_dp
-   tmp2=0.0_dp
-   do i=1,NM*NM
-      tmp1=tmp1 + dble(psi_charge(iyz,im)%K(i, ix, iy, iz))
-      tmp2=tmp2 + dimag(psi_charge(iyz,im)%K(i, ix, iy, iz))
-   end do
-   write(4000+100*im+iyz,*)ix,iz,sqrt(tmp1**2+tmp2**2)
-end do
-write(1000+100*im+iyz,*)
-end do
-end do
+!do iy = ndeltay/2, ndeltay/2
+!do ix = 1, Ndeltax
+!do iz = 1, ndeltaz+1
+  ! tmp1=0.0_dp
+  ! tmp2=0.0_dp
+  ! do i=1,NM*NM
+   !   tmp1=tmp1 + dble(psi_charge(iyz,im)%K(i, ix, iy, iz))
+   !   tmp2=tmp2 + dimag(psi_charge(iyz,im)%K(i, ix, iy, iz))
+   !end do
+   !write(4000+100*im+iyz,*)ix,iz,sqrt(tmp1**2+tmp2**2)
+!end do!
+!write(1000+100*im+iyz,*)
+!end do
+!end do
 write(*,*)'interpolation done'
 !!stop
 !do i=1,nm
@@ -1459,37 +1459,6 @@ end subroutine coefficienti
  end function ind_Kyz
    
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-SUBROUTINE SUB_DEF_0(Mi,Mf,ny,A,subband)
-
-  implicit none
-  integer     :: ny,mi,mf
-  real(dp)    :: subband(1:(Mf-Mi+1))
-  complex(dp) :: A(1:NY,1:NY),Uii(1:NY,1:Mf-Mi+1)
-  integer     :: INFO
-  integer, allocatable     :: iwork(:), supp(:)
-  complex(dp), allocatable :: work(:)
-  real(dp), allocatable    :: rwork(:)
-  REAL(DP), EXTERNAL       :: DLAMCH
-  
-  allocate(WORK(20*ny))
-  allocate(RWORK(24*ny))
-  allocate(IWORK(10*ny))
-  allocate(Supp(2*ny))
-  
-  call ZHEEVR('N','I','U',ny,A,ny,0.0,0.0,mi,mf,2*DLAMCH('S'),&
-       Mf-Mi+1,subband,Uii,ny,SUPP,WORK,20*ny,RWORK,24*ny,IWORK,10*ny,INFO)
-
-  deallocate(work)
-  deallocate(rwork)
-  deallocate(supp)
-  deallocate(iwork)
-  if (INFO.ne.0)then
-     write(*,*)'SEVERE WARNING: SUB_DEF HAS FAILED. INFO=',INFO
-     stop
-  endif
-  
-END SUBROUTINE SUB_DEF_0
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 END MODULE Pseudopot_so_gen
