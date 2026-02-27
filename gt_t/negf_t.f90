@@ -58,8 +58,8 @@ INTEGER                  :: Nop,ref_index, nmax, ee, nee, nsol, SCBA_iter, comp_
 REAL(DP)                 :: Gcon, en, epsilon, emin_local
 REAL(DP), ALLOCATABLE    :: con(:),cone(:),conb(:)
 
-COMPLEX(DP), ALLOCATABLE :: g_lesser_diag_local(:,:,:), g_lesser(:,:,:,:,:), old_g_lesser(:,:,:,:,:), diff_g_lesser(:,:,:,:,:)
-COMPLEX(DP), ALLOCATABLE :: g_greater_diag_local(:,:,:), g_greater(:,:,:,:,:), old_g_greater(:,:,:,:,:), diff_g_greater(:,:,:,:,:)
+COMPLEX(DP), ALLOCATABLE :: g_lesser_diag_local(:,:,:), g_lesser(:,:,:,:,:)
+COMPLEX(DP), ALLOCATABLE :: g_greater_diag_local(:,:,:), g_greater(:,:,:,:,:)
 COMPLEX(DP), ALLOCATABLE :: g_r_diag_local(:,:,:)
 COMPLEX(DP), ALLOCATABLE :: sigma_lesser_ph(:,:,:,:,:)
 COMPLEX(DP), ALLOCATABLE :: sigma_greater_ph(:,:,:,:,:)
@@ -226,7 +226,7 @@ do iy=1,NY+1
    end do
 end do
 
-call omp_set_num_threads(Nomp) !!! this sets the environment variable
+call omp_set_num_threads(Nomp_PP) !!! this sets the environment variable
 
 !$omp parallel default(none) private(xx,ix,iy,iz,i,j,n,ip,pt,Gcc,tvec,GBB,A,B,C,CR,t1,t2,t3) &
 !$omp shared(NCX_D,Nrx,Ndeltax,Ndeltay,Ndeltaz,Ny,Nz,NMAX,NM,NGT,npol,iyz,imat,indij,ac,&
@@ -240,7 +240,7 @@ allocate(tvec(2*Ngt-1))
 
  !$omp do
 do xx=1,Ncx_D
-
+write(*,*)xx
 do ip=1,npol
 
    
@@ -301,9 +301,9 @@ do ip=1,npol
    deallocate(GBB,B)
 end do
 
-!$omp critical
+!!$omp critical
 Hi(1:NM(xx),1:NM(xx),xx,iyz)=(Hi(1:NM(xx),1:NM(xx),xx,iyz)+transpose(dconjg(Hi(1:NM(xx),1:NM(xx),xx,iyz))))/2.0_dp
-!$omp end critical
+!!$omp end critical
 
 end do
 !$omp end do nowait
@@ -509,15 +509,8 @@ if(phonons)then
      ALLOCATE(omega(1,1))
      omega=0.0_dp
      ALLOCATE(g_lesser(Nop,NMAX,NMAX,ncx_d,NKYZ),g_greater(Nop,NMAX,NMAX,Ncx_d,NKYZ))
-     ALLOCATE(old_g_lesser(Nop,NMAX,NMAX,ncx_d,NKYZ),old_g_greater(Nop,NMAX,NMAX,Ncx_d,NKYZ))
-     ALLOCATE(diff_g_lesser(Nop,NMAX,NMAX,ncx_d,NKYZ),diff_g_greater(Nop,NMAX,NMAX,Ncx_d,NKYZ))
-
         g_lesser  = 0.0d0
         g_greater = 0.0d0
-        old_g_lesser  = 0.0d0
-        old_g_greater = 0.0d0
-        diff_g_lesser  = 0.0d0
-        diff_g_greater = 0.0d0
         
      DO WHILE((SCBA_scalar.gt.SCBA_tolerance).and.(SCBA_iter.lt.SCBA_max_iter))
    
@@ -533,7 +526,7 @@ if(phonons)then
               !$omp parallel default(none)  private(jyz,ii,ll,ix,nee,xx,pp,nn,EN,tr,tre,g_lesser_diag_local,g_greater_diag_local,g_r_diag_local,A,B,C,D) &
               !$omp shared(scba_iter,ee,iyz,Nop,nm,imat,ncx_d,ncy,ncz,nmax,nkyz,nqmodes,k_vec,emin,emin_local,Eop,mus,mud,hi,&
               !$omp sigma_lesser_ph_prev,sigma_greater_ph_prev,cur,ldos,ndos,pdos,zdos,chtype,neutr,&
-              !$omp degeneracy,g_spin,w,temp,trans,g_lesser,g_greater,old_g_lesser,old_g_greater,diff_g_lesser,diff_g_greater,el_ph_mtrx,flag,k_selec,dfpt,Si,scba_tolerance)
+              !$omp degeneracy,g_spin,w,temp,trans,g_lesser,g_greater,el_ph_mtrx,flag,k_selec,dfpt,Si,scba_tolerance)
 
         ALLOCATE(g_lesser_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
         ALLOCATE(g_greater_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
@@ -556,15 +549,6 @@ if(phonons)then
               g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz) = (g_greater_diag_local(1:nm(xx),1:nm(xx),xx) - transpose(conjg(g_greater_diag_local(1:nm(xx),1:nm(xx),xx))))/2.0_dp
            end do
 
-!!!! TEST
-!!$           if( mod(scba_iter, 5) == 0 ) then
-!!$           do xx=1,ncx_d
-!!$              diff_g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz) = g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz) - old_g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
-!!$              old_g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz) = g_lesser (nee,1:nm(xx),1:nm(xx),xx,iyz)
-!!$              diff_g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz) = g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz) - old_g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz)
-!!$              old_g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz) = g_greater(nee,1:nm(xx),1:nm(xx),xx,iyz)
-!!$           end do
-!!$           end if
            
         end do  ! end do nee
         !$omp end do nowait
@@ -873,8 +857,6 @@ END DO ! END of the SCBA di Born
 
 
   DEALLOCATE(g_lesser,g_greater)
-  DEALLOCATE(old_g_lesser,old_g_greater)
-  DEALLOCATE(diff_g_lesser,diff_g_greater)
   DEALLOCATE(omega)
 
 end if ! endif phonons
@@ -1260,21 +1242,21 @@ do nee=1,Nop
       do xx=1,ncx_d
          sumt=0.0_dp
          do iyz=1,nkyz
-            if(k_selec(iyz))   sumt=sumt+pdos(ee,nee,xx,iyz)
+            if(k_selec(iyz))   sumt=sumt+pdos(ee,nee,xx,iyz)*degeneracy(iyz)
          end do
          write(10,*)(xx-1)*ac1*1.0d7,EN,sumt
       end do
       do xx=1,ncx_d
          sumt=0.0_dp
          do iyz=1,nkyz
-            if(k_selec(iyz))   sumt=sumt+ndos(ee,nee,xx,iyz)
+            if(k_selec(iyz))   sumt=sumt+ndos(ee,nee,xx,iyz)*degeneracy(iyz)
          end do
          write(20,*)(xx-1)*ac1*1.0d7,EN,sumt
       end do
       do xx=1,ncx_d
          sumt=0.0_dp
          do iyz=1,nkyz
-            if(k_selec(iyz))   sumt=sumt+ldos(ee,nee,xx,iyz)
+            if(k_selec(iyz))   sumt=sumt+ldos(ee,nee,xx,iyz)*degeneracy(iyz)
          end do
          write(30,*)(xx-1)*ac1*1.0d7,EN,sumt
       end do
