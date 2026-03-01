@@ -43,7 +43,7 @@ use negf
 
 implicit none 
 
-INTEGER               :: gg, ss, bb, ii, jj, transport_iter, MAXITER
+INTEGER               :: gg, ss, bb, ii, jj, i,j,l, transport_iter, MAXITER
 REAL(DP)              :: vg, bz, transport_error!, car, carp
 LOGICAL               :: init, sweepbz
 
@@ -269,11 +269,10 @@ DO WHILE ((transport_error.ge.ERROR_OUTER).and.(transport_iter.le.MAXITER))
   POT=-POT_3D
   CALL shift_potential(EV_3D,POT,-3.0d0,0.0d0,whichkind_3D,map_3D,list_3D_ord,&
        whichkind_3D_ord,epsilon_3D,NTOT_X,NTOT_Y,NTOT_Z,NUMEL_3D,LWORK_3D)
+  !
+  POT=-POT_3D
+  CALL map_potential(POT3D,POT,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
   deallocate(pot)
-!!$  write(*,*)'e_gap',E_GAP
-!!$  write(*,*)'diel_sc',diel_sc
-
-  CALL map_potential(pot3D,-POT_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
 
   write(*,*)
   write(*,*)' negf starts'
@@ -535,7 +534,84 @@ if(.not. no_SC)then
 !!$     CLOSE(23)
      
   
+ CALL map_potential(plotpot,Fn,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+ do l=1,NTOT_Z
+    do j=Ntot_y/2,NTOT_Y/2
+       do i=1,NTOT_X
+          write(6000+transport_iter,*) plotpot(i,j,l)
+       enddo
+    enddo
+    write(6000+transport_iter,*)
+ enddo
+ close(6000+transport_iter)
+ 
+ CALL map_potential(plotpot,EC_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+ do l=1,NTOT_Z
+    do j=Ntot_y/2,NTOT_Y/2
+       do i=1,NTOT_X
+          write(6100+transport_iter,*) plotpot(i,j,l)
+       enddo
+    enddo
+    write(6100+transport_iter,*)
+ enddo
+ close(6100+transport_iter)
+ 
+ CALL map_potential(plotpot,rho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+ do l=1,NTOT_Z
+    do j=Ntot_y/2,NTOT_Y/2
+       do i=1,NTOT_X
+          write(6600+transport_iter,*) plotpot(i,j,l)
+       enddo
+    enddo
+    write(6600+transport_iter,*)
+ enddo
+ close(6600+transport_iter)
+ 
+ CALL map_potential(plotpot,drho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+ do l=1,NTOT_Z
+    do j=Ntot_y/2,NTOT_Y/2
+       do i=1,NTOT_X
+          write(6500+transport_iter,*) plotpot(i,j,l)
+       enddo
+    enddo
+    write(6500+transport_iter,*)
+ enddo
+ close(6500+transport_iter)
+ 
   CALL poisson_nonlin_selfconsistent(POT_3D,EC_3D,EV_3D,rho_3D_n,drho_3D_n,Fn,rho_3D_p,drho_3D_p,Fp,dop_vec,coul,LWORK_3D,nnz_3D)
+
+ CALL map_potential(plotpot,rho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+ do l=1,NTOT_Z
+    do j=Ntot_y/2,NTOT_Y/2
+       do i=1,NTOT_X
+          write(7300+transport_iter,*) plotpot(i,j,l)
+       enddo
+    enddo
+    write(7300+transport_iter,*)
+ enddo
+
+ CALL map_potential(plotpot,drho_3D_n,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+ do l=1,NTOT_Z
+    do j=Ntot_y/2,NTOT_Y/2
+       do i=1,NTOT_X
+          write(7500+transport_iter,*) plotpot(i,j,l)
+       enddo
+    enddo
+    write(7500+transport_iter,*)
+ enddo
+ close(7500+transport_iter)
+
+ CALL map_potential(plotpot,POT_3D,whichkind_3D,map_3D,NTOT_X,NTOT_Y,NTOT_Z,LWORK_3D)
+ do l=1,NTOT_Z
+    do j=Ntot_y/2,NTOT_Y/2
+       do i=1,NTOT_X
+          write(7400+transport_iter,*) plotpot(i,j,l)
+       enddo
+    enddo
+    write(7400+transport_iter,*)
+ enddo
+ close(7400+transport_iter)
+
 
   write(*,*)'////////////////////////////////////////////////////////'
   write(*,*)'                      POISSON SOLVED                    '

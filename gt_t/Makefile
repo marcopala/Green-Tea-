@@ -8,8 +8,9 @@ FC90 = ifort                                                                    
 # COMPILATION OPTIONS
 
 #F90_FLAGS =  -O3 -cpp -fopenmp -ffree-line-length-300 -J$(MODDIR)                      # uncomment this line if you use gfortran
-F90_FLAGS = -qopenmp -O3 -traceback -fpp -I$(MODDIR) -module $(MODDIR)                           # uncomment this line if you use ifort
-#F90_FLAGS =  -check all -traceback -warn all -fstack-protector -assume protect_parens -implicitnone -qopenmp -fpp -I$(MODDIR) -module $(MODDIR) 
+#F90_FLAGS = -qopenmp -O0 -fp-model=strict -g -check all -fpe0 -warn all -traceback  -warn interfaces -gen-interfaces -implicitnone -init=snan -init=arrays -fpp -I$(MODDIR) -module $(MODDIR)   
+F90_FLAGS = -qopenmp -O3 -traceback  -fpp -I$(MODDIR) -module $(MODDIR)                           # uncomment this line if you use ifort
+#F90_FLAGS =  -check all -traceback -warn noexternal -fstack-protector -assume protect_parens -implicitnone -qopenmp -fpp -I$(MODDIR) -module $(MODDIR) 
 # Library options in general
 MKL_IFORT=/opt/intel/oneapi/mkl/latest/lib/intel64  
 #LIBS=-L$(MKL_IFORT) -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lmkl_lapack95_lp64 -lpthread

@@ -593,7 +593,7 @@ if (Jz) then
 !allocate(dxpsipsi(iyz,im)%H(nrz,NM_mat(im)*NM_mat(im)))
 !dxpsipsi(iyz,im)%H=0.0_dp
 end if
-      call omp_set_num_threads(Nomp_PP)
+      !call omp_set_num_threads(Nomp_PP)
       allocate(dens_xyz(nm,nrx,ndeltay+1,ndeltaz+1))
       dens_xyz=0.0_dp
      
@@ -1226,7 +1226,7 @@ if (.not. dfpt) then
                   C=0.0_dp
                   ip=1 !!! no polarization is assumed
                                     
-                  call omp_set_num_threads(Nomp_PP)
+                 ! call omp_set_num_threads(Nomp_PP)
                   !$omp parallel default(none) private(ix,n,m) &
                   !$omp shared(nrx,nm,ngt,im,nband_val,ip,jj,iyz,jx,nn,ind_kx,PSIBB,C)
                   

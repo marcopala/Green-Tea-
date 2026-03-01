@@ -322,9 +322,9 @@ MODULE indata
        &  VDMIN,                               &
        &  VDMAX,                               &
        &  DELTAVD,                             &
-!       &  BZMIN,                               &
-!       &  BZMAX,                               &
-!       &  DELTABZ,                             &
+       &  BZMIN,                               &
+       &  BZMAX,                               &
+       &  DELTABZ,                             &
        &  workgate                         
  NAMELIST /indata_inout/                       &
        &  outdir, inputdir,                    &
@@ -437,11 +437,13 @@ CONTAINS
     NUMBZ=1
     BZMIN=0.0_dp
     BZMAX=0.0_dp
+    Deltabz=1.0_dp
+    Deltavg=1.0_dp
+    Deltavd=1.0_dp
     source_sol=0.0_dp
     channel_sol=0.0_dp
     drain_sol=0.0_dp
-!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+!!!!!!!!!!!!!!!!!!!!!!!!!!    
     
     READ(*,NML=indata_mesh)
     READ(*,NML=indata_lenghts)
@@ -561,7 +563,6 @@ CONTAINS
        end do
     end do
 
-
     !allocate(kq_vec(3,nqx*Nkyz))
     !do iz=1,nkz
     !   do iy=1,nky
@@ -571,7 +572,7 @@ CONTAINS
     !   end do
     !end do
     
-    magnetic='F'
+    magnetic=.FALSE.
     updw='ni'
     READ(*,NML=indata_basis)
     if(magnetic)then
@@ -614,20 +615,31 @@ CONTAINS
     allocate(psipsi(Nkyz,num_mat))     
     allocate(dxpsipsi(Nkyz,num_mat))    
     allocate(dzpsipsi(Nkyz,num_mat))   
-
-    
+    !
     deltax=ac1/dble(Ndeltax)
     deltay=ac2/dble(Ndeltay)
     deltaz=ac3/dble(Ndeltaz)
     write(*,*)'deltax=',deltax
     write(*,*)'deltay=',deltay
     write(*,*)'deltaz=',deltaz
-
+    !
     READ(*,NML=indata_convergence)
     READ(*,NML=indata_energy)
     READ(*,NML=indata_stimulus)
+    if(DELTAVG == 0.0_dp)then
+       print*, "INPUT ERROR: DELTAVG cannot be zero!"
+       stop
+    end if
+    if(DELTAVD == 0.0_dp)then
+       print*, "INPUT ERROR: DELTAVD cannot be zero!"
+       stop
+    end if
+    if(DELTABZ == 0.0_dp)then
+       print*, "INPUT ERROR: DELTABZ cannot be zero!"
+       stop
+    end if
     READ(*,NML=indata_inout)
-
+    !
     write(*,*) 'Channel height  (no ox)=',tsc_h*deltaz
     write(*,*) 'Channel width (no ox)=',tsc_w*deltay 
     write(*,*) 'Channel length =',gate_len*deltax
@@ -1210,12 +1222,12 @@ END SUBROUTINE indata_CONNECTIVITY
 
  potA=0.0_dp
  
-call omp_set_num_threads(Nomp) !!! this sets the environment variable
-!$omp parallel default(none) &
-!$omp private(ii,x_index,y_index,z_index) &
-!$omp shared (nx,ny,nz,which,potelectr,potelectr11,potelectr12,num_add_gate,gate_pot,map,potB,potA)
-!
-!$omp do
+!call omp_set_num_threads(Nomp) !!! this sets the environment variable
+!!$omp parallel default(none) &
+!!$omp private(ii,x_index,y_index,z_index) &
+!!$omp shared (nx,ny,nz,which,potelectr,potelectr11,potelectr12,num_add_gate,gate_pot,map,potB,potA)
+!!
+!!$omp do
  DO ii=0, nx*ny*nz-1
 
  x_index=ii/(ny*nz) +1
@@ -1237,9 +1249,9 @@ call omp_set_num_threads(Nomp) !!! this sets the environment variable
  END IF
  
  END DO
-!$omp end do nowait
+!!$omp end do nowait
 !
- !$omp end parallel
+! !$omp end parallel
  
 !!!! IMPOSE NEUMANN conditions for the potential seen by the GREEN module
   pota(1:NX,1,1:NZ)  = pota(1:NX,2,1:NZ)
@@ -1264,12 +1276,12 @@ call omp_set_num_threads(Nomp) !!! this sets the environment variable
 
  rhoA=0.0_dp
  
- call omp_set_num_threads(Nomp) !!! this sets the environment variable
-!$omp parallel default(none) &
-!$omp private(ii,x_index,y_index,z_index) &
-!$omp shared (nx,ny,nz,map,which,rhoB,rhoA)
+! call omp_set_num_threads(Nomp) !!! this sets the environment variable
+!!$omp parallel default(none) &
+!!$omp private(ii,x_index,y_index,z_index) &
+!!$omp shared (nx,ny,nz,map,which,rhoB,rhoA)
 !
-!$omp do
+!!$omp do
  DO ii=0, nx*ny*nz-1
 
  x_index=ii/(ny*nz) +1
@@ -1281,8 +1293,8 @@ call omp_set_num_threads(Nomp) !!! this sets the environment variable
  END IF
  
  END DO
-!$omp end do nowait
-!$omp end parallel
+!!$omp end do nowait
+!!$omp end parallel
  
  END SUBROUTINE inverse_map_charge
 
@@ -1300,12 +1312,12 @@ call omp_set_num_threads(Nomp) !!! this sets the environment variable
 
  rhoA=0.0_dp
 
- call omp_set_num_threads(Nomp) !!! this sets the environment variable
-!$omp parallel default(none) &
-!$omp private(ii,x_index,y_index,z_index) &
-!$omp shared (nx,ny,nz,map,which,rhoB,rhoA)
+! call omp_set_num_threads(Nomp) !!! this sets the environment variable
+!!$omp parallel default(none) &
+!!$omp private(ii,x_index,y_index,z_index) &
+!!$omp shared (nx,ny,nz,map,which,rhoB,rhoA)
 !
-!$omp do
+!!$omp do
  DO ii=0, nx*ny*nz-1
 
  x_index=ii/(ny*nz) + 1
@@ -1317,8 +1329,8 @@ call omp_set_num_threads(Nomp) !!! this sets the environment variable
  END IF
  
  END DO
-!$omp end do nowait
-!$omp end parallel
+!!$omp end do nowait
+!!$omp end parallel
 
  END SUBROUTINE map_charge
 
@@ -1343,29 +1355,29 @@ call omp_set_num_threads(Nomp) !!! this sets the environment variable
  INTEGER                :: ll, nn, ii
  INTEGER                :: checked(0:lwork-1)
 
- call omp_set_num_threads(Nomp) !!! this sets the environment variable
+! call omp_set_num_threads(Nomp) !!! this sets the environment variable
  
  checked=0
 
-!$omp parallel default(none) &
-!$omp private(ii) &
-!$omp shared (nx,ny,nz,econd,map,which,potB,potA)
+!!$omp parallel default(none) &
+!!$omp private(ii) &
+!!$omp shared (nx,ny,nz,econd,map,which,potB,potA)
 !
-!$omp do
+!!$omp do
  DO ii=0, nx*ny*nz-1
     IF(which(ii).le.0)THEN
        potA(map(ii))=potB(map(ii))+econd 
     endif
  enddo
-!$omp end do nowait
-!$omp end parallel
+!!$omp end do nowait
+!!$omp end parallel
 
  
-!$omp parallel default(none) &
-!$omp private(ll,nn) &
-!$omp shared (numel,DIEL_OX,DIEL_O2,epsilon3D,which_ord,list_ord,checked,shift,potA)
+!!$omp parallel default(none) &
+!!$omp private(ll,nn) &
+!!$omp shared (numel,DIEL_OX,DIEL_O2,epsilon3D,which_ord,list_ord,checked,shift,potA)
 !
-!$omp do
+!!$omp do
  DO ll=0, numel-1
     
     IF((epsilon3D(ll).eq.DIEL_0*DIEL_OX).or.(epsilon3D(ll).eq.DIEL_0*DIEL_O2))THEN
@@ -1383,8 +1395,8 @@ call omp_set_num_threads(Nomp) !!! this sets the environment variable
        END DO
     END IF
  END DO
-!$omp end do nowait
-!$omp end parallel
+!!$omp end do nowait
+!!$omp end parallel
  
 END SUBROUTINE shift_potential
 

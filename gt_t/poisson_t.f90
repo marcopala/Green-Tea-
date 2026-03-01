@@ -714,7 +714,8 @@ END SUBROUTINE pot_init
   INTEGER, INTENT(IN)     :: lwork
 
   REAL(DP) :: N_c, N3D, f, df, TOLERANCE, delta, fn_old
-  INTEGER :: ii, nn  
+  INTEGER :: ii, nn
+  INTEGER :: nmax = 500  
   
   Fn=3.0_dp
 
@@ -728,29 +729,26 @@ END SUBROUTINE pot_init
 
   f=rho(ii)-N3D*FDP0P5((Fn(ii)-Ec(ii))/(BOLTZ*TEMP))
   df=N3D*(FDM0P5((Fn(ii)-Ec(ii))/(BOLTZ*TEMP)) )/(BOLTZ*TEMP)
-  delta=-f/df
+  delta=-f/(df + 1.0d-20)
   fn_old=Fn(ii)
-  if(rho(ii).eq.0.0_DP)then
+  if(rho(ii) < 1.0d1)then
   Fn(ii)=100.0_dp
   else
   nn=0
-  DO WHILE((ABS(delta).gt.TOLERANCE).and.(nn.lt.400))
-
+  DO WHILE((ABS(delta).gt.TOLERANCE).and.(nn.lt.nmax))
   Fn(ii)=Fn(ii)-delta
   f=rho(ii)-N3D*FDP0P5((Fn(ii)-Ec(ii))/(BOLTZ*TEMP))
   df=N3D*(FDM0P5((Fn(ii)-Ec(ii))/(BOLTZ*TEMP)))/(BOLTZ*TEMP)
-  delta=-f/df
-  
+  delta=-f / (df + 1.0d-25)  
+        if (nn > nmax-10) then
+           print*,"warning fn",nn,delta,delta
+        end if
   nn=nn+1
-  if(nn.gt.500)then
-     write(*,*)'problem in imref',nn
-     stop
-  endif
   END DO
   
   end if
 
-  IF(ABS(Fn(ii)).gt.100.0_dp)Fn(ii)=3.0_dp
+ ! IF(ABS(Fn(ii)).gt.100.0_dp)Fn(ii)=3.0_dp
   
 END DO
 
@@ -766,11 +764,12 @@ END SUBROUTINE poisson_imref_n
   INTEGER, INTENT(IN)     :: lwork
 
   REAL(DP) :: N_v, N3D, f, df, TOLERANCE, delta, fp_old
-  INTEGER :: ii, nn  
+  INTEGER :: ii, nn
+  INTEGER :: nmax = 500  
   
   Fp=-3.0_dp
 
-  N_v=6.5d19
+  N_v=6.5d17
   N3D=N_v*(TEMP)**(1.5) 
   
   TOLERANCE=1.0d-15
@@ -779,23 +778,26 @@ END SUBROUTINE poisson_imref_n
   DO ii=0, lwork-1
   f=rho(ii)-N3D*FDP0P5(-(Fp(ii)-Ev(ii))/(BOLTZ*TEMP))
   df=N3D*(FDM0P5(-(Fp(ii)-Ev(ii))/(BOLTZ*TEMP)) )/(BOLTZ*TEMP)
-  delta=f/df
+  delta=f / (df + 1.0d-20)
   fp_old=Fp(ii)
-  if(rho(ii).lt.1.0_DP)then
+  if(rho(ii) < 1.0d1)then
   Fp(ii)=100.0_dp
   else
   nn=0 
-  DO WHILE((ABS(delta).gt.TOLERANCE).and.(nn.lt.200))
+  DO WHILE((ABS(delta).gt.TOLERANCE).and.(nn.lt.nmax))
      Fp(ii)=Fp(ii)-delta
      f=rho(ii)-N3D*FDP0P5(-(Fp(ii)-Ev(ii))/(BOLTZ*TEMP))
      df=N3D*(FDM0P5(-(Fp(ii)-Ev(ii))/(BOLTZ*TEMP)) )/(BOLTZ*TEMP)
-     delta=f/df
+     delta=f / (df + 1.0d-25)
      nn=nn+1
+        if (nn > nmax-10) then
+           print*,"warning fp",nn,delta
+        end if
   END DO
   
   end if
 
-  if(nn.ge.200)Fp(ii)=fp_old
+  !!!if(nn.ge.500)Fp(ii)=fp_old
   
   END DO
 
@@ -838,7 +840,7 @@ SUBROUTINE poisson_charge_from_imref_p(rho, Ev, Fp, lwork)
   REAL(DP) :: N_v, N3D
   INTEGER :: ii
     
-  N_v=6.5d19
+  N_v=6.5d17
   N3D=N_v*(TEMP)**(1.5) 
 
   rho=0.0_dp
@@ -885,7 +887,7 @@ SUBROUTINE poisson_deriv_from_imref_p(drho, Ev, Fp, lwork)
     REAL(DP) :: N_v, N3D
     INTEGER :: ii
      
-    N_v=6.5d19
+    N_v=6.5d17
     N3D=N_v*(TEMP)**(1.5) 
    
     drho=0.0_dp
