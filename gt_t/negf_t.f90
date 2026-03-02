@@ -531,9 +531,9 @@ if(phonons)then
         ALLOCATE(g_lesser_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
         ALLOCATE(g_greater_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
         ALLOCATE(g_r_diag_local(1:NMAX,1:NMAX,1:Ncx_d))
-        allocate(A(NMAX,NMAX),B(NMAX,NMAX),C(NMAX,NMAX),D(NMAX,NMAX))
+!        allocate(A(NMAX,NMAX),B(NMAX,NMAX),C(NMAX,NMAX),D(NMAX,NMAX))
         allocate(pt(1:Ncx_d-1))
-        !$omp do reduction(+:g_lesser,g_greater)
+        !$omp do 
         do nee=1,Nop
         
            EN=emin+emin_local+dble(nee-1)*Eop
@@ -555,7 +555,7 @@ if(phonons)then
         DEALLOCATE(g_lesser_diag_local)
         DEALLOCATE(g_greater_diag_local)
         DEALLOCATE(g_r_diag_local)
-        DEALLOCATE(A,B,C,D)
+!        DEALLOCATE(A,B,C,D)
         deallocate(pt)
         !$omp end parallel
         
@@ -589,7 +589,7 @@ if(phonons)then
     
     allocate(A(NMAX,NMAX),B(NMAX,NMAX),C(NMAX,NMAX),D(NMAX,NMAX),U(NMAX,NMAX))
     
-    !$omp do reduction(+: sigma_lesser_ph, sigma_greater_ph )
+    !$omp do 
     DO nee=1,Nop
        
        do jyz = 1,NKYZ   ! index of k_yz 
@@ -633,15 +633,13 @@ if(phonons)then
                           call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),U(1:nm(xx),1:nm(xx)),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))
                           
                           sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
-                               degeneracy(iyz)/g_spin/dble(NQX*NCY*NCZ)*&
-                               A(1:nm(xx),1:nm(xx))
+                               degeneracy(iyz)/g_spin/dble(NQX*NCY*NCZ) * A(1:nm(xx),1:nm(xx))
                           
                           call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,U(1:nm(xx),1:nm(xx)),nm(xx),D(1:nm(xx),1:nm(xx)),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                           call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),U(1:nm(xx),1:nm(xx)),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))      
                                                     
                           sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
-                               degeneracy(iyz)/g_spin/dble(NQX*NCY*NCZ)*&
-                               A(1:nm(xx),1:nm(xx))
+                               degeneracy(iyz)/g_spin/dble(NQX*NCY*NCZ) * A(1:nm(xx),1:nm(xx))
                           
                        end do
 
@@ -662,7 +660,8 @@ if(phonons)then
                     
   if ( .not. dfpt) then
      
-     !$omp parallel default(none)  private(i,j,ii,ix,iyz,jyz,nee,xx,A,B,C,D,U) shared(Nop,nmax,nqx,nkyz,g_spin,ncx_d,ncy,ncz,nm,Nop_g_x, &
+     !$omp parallel default(none)  private(i,j,ii,ix,iyz,jyz,nee,xx,A,B,C,D,U) &
+     !$omp shared(Nop,nmax,nqx,nkyz,g_spin,ncx_d,ncy,ncz,nm,Nop_g_x, &
      !$omp sigma_lesser_ph,sigma_greater_ph,sigma_lesser_ph_prev,sigma_greater_ph_prev, &
      !$omp g_lesser,g_greater,SCBA_iter,Dop_g_x,n_bose_g,Dac_x,Eop,temp,k_selec,dfpt,el_ph_mtrx,k_vec,imat,degeneracy)
      
@@ -735,16 +734,14 @@ if(phonons)then
                     call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),U(1:nm(xx),1:nm(xx)),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))
                     
                     sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_lesser_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
-                         degeneracy(iyz)/g_spin/dble(nqx*NCY*NCZ)*&
-                         A(1:nm(xx),1:nm(xx))
+                         degeneracy(iyz)/g_spin/dble(nqx*NCY*NCZ) * A(1:nm(xx),1:nm(xx))
                     
                     call zgemm('n','n',nm(xx),nm(xx),nm(xx),alpha,U(1:nm(xx),1:nm(xx)),nm(xx),D(1:nm(xx),1:nm(xx)),nm(xx),beta,B(1:nm(xx),1:nm(xx)),nm(xx)) 
                     call zgemm('n','c',nm(xx),nm(xx),nm(xx),alpha,B(1:nm(xx),1:nm(xx)),nm(xx),U(1:nm(xx),1:nm(xx)),nm(xx),beta,A(1:nm(xx),1:nm(xx)),nm(xx))      
                  
                     
                     sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)=sigma_greater_ph(nee,1:nm(xx),1:nm(xx),xx,jyz)+&
-                         degeneracy(iyz)/g_spin/dble(nqx*NCY*NCZ)*&
-                         A(1:nm(xx),1:nm(xx))
+                         degeneracy(iyz)/g_spin/dble(nqx*NCY*NCZ) * A(1:nm(xx),1:nm(xx))
                     enddo
                  
                  end do
@@ -757,8 +754,8 @@ if(phonons)then
      end do
      
   end DO
-!$omp end do nowait
-  DEALLOCATE(A,B,C,D)
+  !$omp end do nowait
+  DEALLOCATE(A,B,C,D,U)
   !$omp end parallel
      
 end if
@@ -804,7 +801,7 @@ WRITE(*,*)'TIME SPENT TO COMPUTE SIGMA_LESSER_PH (s)',t2
   !$omp parallel default(none)  private(nee,xx,i,jyz) shared(Nop,nkyz,ncx_d,k_selec,NM,SCBA_f,SCBA_x, &
   !$omp sigma_lesser_ph,sigma_greater_ph,sigma_lesser_ph_prev,sigma_greater_ph_prev)
 
-  !$omp do  reduction(+: SCBA_F, SCBA_X)
+  !$omp do  
   do nee=1,Nop
      do jyz=1,NKYZ
         if(k_selec(jyz))then
@@ -828,7 +825,7 @@ WRITE(*,*)'TIME SPENT TO COMPUTE SIGMA_LESSER_PH (s)',t2
 
   !$omp parallel default(none)  private(nee,xx,jyz) shared(Nop,nkyz,ncx_d,k_selec,NM,&
   !$omp sigma_lesser_ph,sigma_greater_ph,sigma_lesser_ph_prev,sigma_greater_ph_prev,scba_alpha)
-  !$omp do reduction(+: sigma_lesser_ph_prev, sigma_greater_ph_prev)
+  !$omp do 
   DO xx=1,Ncx_D
      DO jyz=1,NKYZ
         if(k_selec(jyz))then
@@ -872,7 +869,7 @@ do iyz=1,NKYZ !loop over kyz
   ALLOCATE(A(1:nmax,1:nmax))
   allocate(pt(1:Ncx_d-1))
         
-  !$omp do  reduction(+: conb, con, cone, dosn_loc, dosp_loc)
+  !$omp do  
   do nee=1,Nop
      EN=emin+emin_local+dble(nee-1)*Eop
      
