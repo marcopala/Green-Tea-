@@ -132,7 +132,8 @@ MODULE indata
   REAL(DP) :: ERROR_OUTER
   INTEGER  :: MAX_ITER_OUTER
   REAL(DP) :: alphapot       
-  REAL(DP) :: TEMP
+  REAL(DP) :: TEMP     
+  REAL(DP) :: N_C,N_V
   INTEGER  :: NKT
 
   INTEGER  :: nband,nband_c,nband_v,nk1,MM,ni,nf,nkx,nqx,Nk,nkyz,nky,nkz,nmod,nmodes_ph
@@ -217,9 +218,9 @@ MODULE indata
   REAL(DP) :: DIEL_OX
   REAL(DP) :: DIEL_O2
   
-  CHARACTER(LEN=60) :: outdir
-  CHARACTER(LEN=60) :: inputdir
-  CHARACTER(LEN=100) :: input_file_DFPT
+  CHARACTER(LEN=200) :: outdir
+  CHARACTER(LEN=200) :: inputdir
+  CHARACTER(LEN=200) :: input_file_DFPT
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -269,7 +270,8 @@ MODULE indata
        &  chtype,                              &
        &  DIEL_SC,                             &      
        &  DIEL_OX,                             &     
-       &  DIEL_O2	   
+       &  DIEL_O2,     	                       &     
+       &  N_C, N_V	   
   NAMELIST /indata_dimensionality/             &
        &  Ncy,                                 &
        &  Ncz,                                 &
@@ -408,6 +410,7 @@ CONTAINS
     DIEL_SC=1.0d0
     DIEL_OX=1.0d0
     DIEL_O2=1.0d0
+    N_C = 5.4d15; N_V = 2.0d15  ! default for bulk Si
     ncy=1
     ncz=1
     nqx=5

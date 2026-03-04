@@ -713,13 +713,13 @@ END SUBROUTINE pot_init
   REAL(DP), INTENT(IN)    :: rho(0:lwork-1)
   INTEGER, INTENT(IN)     :: lwork
 
-  REAL(DP) :: N_c, N3D, f, df, TOLERANCE, delta, fn_old
+  REAL(DP) :: N3D, f, df, TOLERANCE, delta, fn_old
   INTEGER :: ii, nn
   INTEGER :: nmax = 500  
   
   Fn=3.0_dp
 
-  N_c=6.2d17
+  !N_c=6.2d17
   N3D=N_c*(TEMP)**(1.5) 
   
   TOLERANCE=1.0d-15
@@ -763,13 +763,13 @@ END SUBROUTINE poisson_imref_n
   REAL(DP), INTENT(IN)    :: rho(0:lwork-1)
   INTEGER, INTENT(IN)     :: lwork
 
-  REAL(DP) :: N_v, N3D, f, df, TOLERANCE, delta, fp_old
+  REAL(DP) :: N3D, f, df, TOLERANCE, delta, fp_old
   INTEGER :: ii, nn
   INTEGER :: nmax = 500  
   
   Fp=-3.0_dp
 
-  N_v=6.5d17
+  !N_v=6.5d18
   N3D=N_v*(TEMP)**(1.5) 
   
   TOLERANCE=1.0d-15
@@ -812,11 +812,11 @@ SUBROUTINE poisson_charge_from_imref_n(rho, Ec, Fn, lwork)
   REAL(DP), INTENT(IN)  :: Ec(0:lwork-1)
   REAL(DP), INTENT(IN)  :: Fn(0:lwork-1)
   INTEGER,  INTENT(IN)  :: lwork
-  REAL(DP) :: N_c, N3D
+  REAL(DP) :: N3D
   INTEGER :: ii
 
 
-  N_c=6.2d17
+  !N_c=6.2d17
   N3D=N_c*(TEMP)**(1.5) 
 
   rho=0.0_dp
@@ -837,10 +837,10 @@ SUBROUTINE poisson_charge_from_imref_p(rho, Ev, Fp, lwork)
   REAL(DP), INTENT(IN)  :: Fp(0:lwork-1)
   INTEGER,  INTENT(IN)  :: lwork
     
-  REAL(DP) :: N_v, N3D
+  REAL(DP) :: N3D
   INTEGER :: ii
     
-  N_v=6.5d17
+  !N_v=6.5d18
   N3D=N_v*(TEMP)**(1.5) 
 
   rho=0.0_dp
@@ -859,10 +859,10 @@ SUBROUTINE poisson_deriv_from_imref_n(drho, Ec, Fn, lwork)
   REAL(DP), INTENT(IN)  :: Ec(0:lwork-1)
   REAL(DP), INTENT(IN)  :: Fn(0:lwork-1)
   INTEGER,  INTENT(IN)  :: lwork
-  REAL(DP) :: N_c, N3D
+  REAL(DP) :: N3D
   INTEGER :: ii
   
-  N_c=6.2d17
+  !N_c=6.2d17
   N3D=N_c*(TEMP)**(1.5) 
 
   drho=0.0_dp
@@ -884,10 +884,10 @@ SUBROUTINE poisson_deriv_from_imref_p(drho, Ev, Fp, lwork)
     REAL(DP), INTENT(IN)  :: Fp(0:lwork-1)
     INTEGER,  INTENT(IN)  :: lwork
     
-    REAL(DP) :: N_v, N3D
+    REAL(DP) :: N3D
     INTEGER :: ii
      
-    N_v=6.5d17
+    !N_v=6.5d18
     N3D=N_v*(TEMP)**(1.5) 
    
     drho=0.0_dp

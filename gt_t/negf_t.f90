@@ -440,8 +440,6 @@ end do  ! end of loop over kyz
      emax=max(emax,max(mus,mud))+NKT*(BOLTZ*TEMP)
   end if
 
-Emin=mud-NKT*(BOLTZ*TEMP)
-  
   deallocate(emin_yz,emax_yz)
 
   Nop=FLOOR((emax-emin)/Eop+0.5_dp)
@@ -1151,62 +1149,6 @@ if(.not.onlyT)then
 
    
    
-!!$  !$omp parallel default(none) private(xx,n,i,ii,j,ix,iy,iz,dens_yz,dens_z) &
-!!$  !$omp shared(chtype,iyz,imat,NCX_D,Nrx,Ndeltax,Ndeltay,Ndeltaz,NM,Ny,Nz,ac,Ry,Rz,dosn,dosp, &
-!!$  !$omp U_PSI,DX,DY,DZ,charge_n,charge_p,Nex,NTOT_Y,NTOT_Z,to2_lft,to2_bot,comp_ch)
-!!$
-!!$   allocate(dens_yz(Ndeltay+1,Ndeltaz+1))
-!!$
-!!$  !$omp do
-!!$   do xx=1,NCX_D
-!!$
-!!$      ix=0
-!!$      do ii=1,Ndeltax
-!!$         do n=1,Nex(ii)
-!!$            ix=ix+1
-!!$            if((chtype .eq. 'n') .or. (chtype .eq. 't'))then
-!!$               dens_yz=0.0_dp
-!!$            do i=1,NM(xx)
-!!$               do j=1,NM(xx)
-!!$                  dens_yz(1:Ndeltay+1,1:Ndeltaz+1)=dens_yz(1:Ndeltay+1,1:Ndeltaz+1)+&
-!!$                       dimag(dosn(i,j,xx,iyz)*U_psi(iyz,imat(xx))%K(i+(j-1)*NM(xx),1:Ndeltay+1,1:Ndeltaz+1,ix))
-!!$               end do
-!!$            end do
-!!$            do i=1,Ndeltay+1
-!!$               do j=1,Ndeltaz+1
-!!$                  if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
-!!$               end do
-!!$            end do
-!!$            charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
-!!$            charge_n(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
-!!$            dens_yz(1:Ndeltay+1,1:Ndeltaz+1)/dble(Nex(ii))
-!!$         end if
-!!$         if((chtype .eq. 'p') .or. (chtype .eq. 't'))then
-!!$            dens_yz=0.0_dp
-!!$            do i=1,NM(xx)
-!!$               do j=1,NM(xx)
-!!$                  dens_yz(1:Ndeltay+1,1:Ndeltaz+1)=dens_yz(1:Ndeltay+1,1:Ndeltaz+1)-&
-!!$                       dimag(dosp(i,j,xx,iyz)*U_psi(iyz,imat(xx))%K(i+(j-1)*NM(xx),1:Ndeltay+1,1:Ndeltaz+1,ix))
-!!$               end do
-!!$            end do
-!!$            do i=1,Ndeltay+1
-!!$               do j=1,Ndeltaz+1
-!!$                  if(dens_yz(i,j)<0.0_dp)dens_yz(i,j)=0.0_dp
-!!$               end do
-!!$            end do
-!!$            charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )=&
-!!$            charge_p(ii+(xx-1)*Ndeltax,1+to2_lft:Ndeltay+1+to2_lft ,1+to2_bot:Ndeltaz+1+to2_bot )+&
-!!$            dens_yz(1:Ndeltay+1,1:Ndeltaz+1)/dble(Nex(ii))
-!!$         end if
-!!$      end do
-!!$   end do
-!!$      
-!!$   end do
-!!$   !$omp end do nowait
-!!$   
-!!$   deallocate(dens_yz)
-!!$   !$omp end parallel
-   
 end if
 
 end if
@@ -1531,9 +1473,9 @@ subroutine RGF(nmax,ff,E,mul,mur,Hii,sigma_lesser_ph,sigma_greater_ph,ndens,pden
   implicit none
   
   INTEGER, intent(inout)    :: ff 
-  INTEGER                   :: nmax,i,j,l
+  INTEGER                   :: nmax,i,j,l,s
   REAL(dp), intent(in)      :: E,mul,mur
-  REAL(dp), intent(out)     ::   tr,tre
+  REAL(dp), intent(out)     :: tr,tre
   REAL(dp) , intent(out)    :: cur(Ncx_d-1)
   COMPLEX(dp), intent(in)   :: Hii(nmax,nmax,ncx_d),sigma_lesser_ph(nmax,nmax,Ncx_d),sigma_greater_ph(nmax,nmax,Ncx_d)
   COMPLEX(dp), allocatable  :: sig(:,:),sigmal(:,:),sigmar(:,:) !,sigma_r_ph(:,:)
@@ -1579,23 +1521,23 @@ if(ff == 0)then
   H10(1:nm(l),1:nm(l)) = TL(iyz,ihet(l))%H(1:NM(l),1:NM(l)) !!!! H_{1,0}
   A(1:nm(l),1:nm(l))=transpose(dconjg(H10(1:nm(l),1:nm(l))))
   call sancho(nm(l),E,H00(1:nm(l),1:nm(l)),A(1:nm(l),1:nm(l)),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l))) 
-  
+  s = 0
   do i=1,nm(l)
      do j=1,nm(l)
         if ( G00(i,j) /= G00(i,j) )then
            G00=0.0_dp
+           s=1
            exit
         end if
      end do
   end do
   
-!  if(flag_nan)call oldsancho(nm(l),E,H00(1:nm(l),1:nm(l)),transpose(dconjg(H10(1:nm(l),1:nm(l)))),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l)))
-!  flag_nan=.false.
+  if(s == 1 ) call oldsancho(nm(l),E,H00(1:nm(l),1:nm(l)),A(1:nm(l),1:nm(l)),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l)))
+ 
   do i=1,nm(l)
      do j=1,nm(l)
         if ( G00(i,j) /= G00(i,j) )then
            G00=0.0_dp
-           !ff=l
            write(*,*)'NaN warning! Pb w lft snch. Eliminating E =',E
            exit
         end if
@@ -1669,27 +1611,25 @@ if(ff == 0)then
   !sigma_r_ph(1:nm(l),1:nm(l))=(sigma_greater_ph(1:nm(l),1:nm(l),l) - sigma_lesser_ph(1:nm(l),1:nm(l),l))/2.0_dp
   H00(1:nm(l),1:nm(l))=Hii(1:nm(l),1:nm(l),l)+(sigma_greater_ph(1:nm(l),1:nm(l),l) - sigma_lesser_ph(1:nm(l),1:nm(l),l))/2.0_dp !sigma_r_ph(1:nm(l),1:nm(l))
   H10(1:nm(l),1:nm(l))=TL(iyz,ihet(l+1))%H(1:NM(l),1:NM(l))   !!! H(N+1,N)
-
+  
   call sancho(nm(l),E,H00(1:nm(l),1:nm(l)),H10(1:nm(l),1:nm(l)),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l)))
+  s=0
   do i=1,nm(l)
      do j=1,nm(l)
         if ( G00(i,j) /= G00(i,j) )then
            G00=0.0_dp
-           !ff=l
-           write(*,*)'NaN warning! Pb w lft snch. Eliminating E =',E
-           !write(*,*)'NaN warning! Pb w lft snch. E =',E,'trying again'
+           s=1
            exit
         end if
      end do
   end do
-!  if(traccia(dimag(G00(1:nm(l),1:nm(l)))) <= 0.0_dp)flag_nan=.true.
-!  if(flag_nan)call oldsancho(nm(l),E,H00(1:nm(l),1:nm(l)),H10(1:nm(l),1:nm(l)),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l)))
-!  flag_nan=.false.
+
+  if( s==1 ) call oldsancho(nm(l),E,H00(1:nm(l),1:nm(l)),H10(1:nm(l),1:nm(l)),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l)))
+
   do i=1,nm(l)
      do j=1,nm(l)
         if ( G00(i,j) /= G00(i,j) )then
            G00=0.0_dp
-          ! ff=l
            write(*,*)'NaN warning! Pb w rgt snch. Eliminating E =',E
            exit
         end if
@@ -2007,7 +1947,6 @@ subroutine oldsancho(nm,E,H00,H10,Id,G00)
 
   z = E+dcmplx(0.0_dp,eta**(0.5_dp))
 
-!  write(*,*)'using old sancho',E
   H_BB = H00
   H_10 = H10
   H_01 = TRANSPOSE( DCONJG( H10 ) )
