@@ -729,7 +729,7 @@ END SUBROUTINE pot_init
 
   f=rho(ii)-N3D*FDP0P5((Fn(ii)-Ec(ii))/(BOLTZ*TEMP))
   df=N3D*(FDM0P5((Fn(ii)-Ec(ii))/(BOLTZ*TEMP)) )/(BOLTZ*TEMP)
-  delta=-f/(df + 1.0d-20)
+  delta=-f/(df)
   fn_old=Fn(ii)
   if(rho(ii) < 1.0d1)then
   Fn(ii)=100.0_dp
@@ -739,9 +739,9 @@ END SUBROUTINE pot_init
   Fn(ii)=Fn(ii)-delta
   f=rho(ii)-N3D*FDP0P5((Fn(ii)-Ec(ii))/(BOLTZ*TEMP))
   df=N3D*(FDM0P5((Fn(ii)-Ec(ii))/(BOLTZ*TEMP)))/(BOLTZ*TEMP)
-  delta=-f / (df + 1.0d-25)  
+  delta=-f / (df)  
         if (nn > nmax-10) then
-           print*,"warning fn",nn,delta,delta
+           print*,"warning fn",nn,delta,Fn(ii)
         end if
   nn=nn+1
   END DO
@@ -778,7 +778,7 @@ END SUBROUTINE poisson_imref_n
   DO ii=0, lwork-1
   f=rho(ii)-N3D*FDP0P5(-(Fp(ii)-Ev(ii))/(BOLTZ*TEMP))
   df=N3D*(FDM0P5(-(Fp(ii)-Ev(ii))/(BOLTZ*TEMP)) )/(BOLTZ*TEMP)
-  delta=f / (df + 1.0d-20)
+  delta=f / (df)
   fp_old=Fp(ii)
   if(rho(ii) < 1.0d1)then
   Fp(ii)=100.0_dp
@@ -788,10 +788,10 @@ END SUBROUTINE poisson_imref_n
      Fp(ii)=Fp(ii)-delta
      f=rho(ii)-N3D*FDP0P5(-(Fp(ii)-Ev(ii))/(BOLTZ*TEMP))
      df=N3D*(FDM0P5(-(Fp(ii)-Ev(ii))/(BOLTZ*TEMP)) )/(BOLTZ*TEMP)
-     delta=f / (df + 1.0d-25)
+     delta=f / (df)
      nn=nn+1
         if (nn > nmax-10) then
-           print*,"warning fp",nn,delta
+           print*,"warning fp",nn,delta,Fp(ii)
         end if
   END DO
   

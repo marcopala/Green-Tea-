@@ -1531,9 +1531,9 @@ if(ff == 0)then
         end if
      end do
   end do
-  
+  !
   if(s == 1 ) call oldsancho(nm(l),E,H00(1:nm(l),1:nm(l)),A(1:nm(l),1:nm(l)),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l)))
- 
+  !
   do i=1,nm(l)
      do j=1,nm(l)
         if ( G00(i,j) /= G00(i,j) )then
@@ -1623,9 +1623,9 @@ if(ff == 0)then
         end if
      end do
   end do
-
+  !
   if( s==1 ) call oldsancho(nm(l),E,H00(1:nm(l),1:nm(l)),H10(1:nm(l),1:nm(l)),id(1:nm(l),1:nm(l)),G00(1:nm(l),1:nm(l)))
-
+  !
   do i=1,nm(l)
      do j=1,nm(l)
         if ( G00(i,j) /= G00(i,j) )then
