@@ -731,7 +731,7 @@ END SUBROUTINE pot_init
   df=N3D*(FDM0P5((Fn(ii)-Ec(ii))/(BOLTZ*TEMP)) )/(BOLTZ*TEMP)
   delta=-f/(df)
   fn_old=Fn(ii)
-  if(rho(ii) < 1.0d1)then
+  if(rho(ii) == 0.0_dp)then
   Fn(ii)=100.0_dp
   else
   nn=0
@@ -780,7 +780,7 @@ END SUBROUTINE poisson_imref_n
   df=N3D*(FDM0P5(-(Fp(ii)-Ev(ii))/(BOLTZ*TEMP)) )/(BOLTZ*TEMP)
   delta=f / (df)
   fp_old=Fp(ii)
-  if(rho(ii) < 1.0d1)then
+  if(rho(ii) == 0.0_dp)then
   Fp(ii)=100.0_dp
   else
   nn=0 

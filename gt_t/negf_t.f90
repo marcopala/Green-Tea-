@@ -1348,8 +1348,8 @@ deallocate(Hi)
      
 
 
-charge_n=charge_n/(DX*DY*DZ)/dble(NCY*NCZ)
-charge_p=charge_p/(DX*DY*DZ)/dble(NCY*NCZ)
+charge_n=abs(charge_n)/(DX*DY*DZ)/dble(NCY*NCZ)
+charge_p=abs(charge_p)/(DX*DY*DZ)/dble(NCY*NCZ)
 
 
 
